@@ -91,7 +91,11 @@ public static class IntentStateMachinePanel
 
         var entry = MonsterIntentMetadata.Get(monsterId, monster);
         var displayName = TryName(monster, monsterId);
-        var panel = InfoModPanel.Create(displayName);
+        var panel = InfoModPanel.Create(displayName, Config.L.Get("intent.subtitle"));
+
+        // Scale the whole panel from the F7 setting.
+        var scale = Mathf.Clamp(Config.ModConfig.IntentPanelScale, 0.5f, 1.25f);
+        panel.Scale = new Vector2(scale, scale);
 
         if (entry == null || entry.States.Count == 0)
         {

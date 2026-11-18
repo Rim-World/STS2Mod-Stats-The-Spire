@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Godot;
+using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Models;
 
 namespace CommunityStats.Util;
@@ -42,15 +44,15 @@ public static class AncientPoolMap
         public List<Pool> Pools { get; init; } = new();
     }
 
-    private static readonly Dictionary<string, ElderInfo> _elders = Build();
+    private static readonly Lazy<Dictionary<string, ElderInfo>> _elders = new(Build);
 
     public static ElderInfo? Get(string elderId) =>
-        _elders.TryGetValue(elderId, out var info) ? info : null;
+        _elders.Value.TryGetValue(elderId, out var info) ? info : null;
 
     public static int ActIndexOf(string elderId) =>
-        _elders.TryGetValue(elderId, out var info) ? info.ActIndex : 0;
+        _elders.Value.TryGetValue(elderId, out var info) ? info.ActIndex : 0;
 
-    public static IEnumerable<ElderInfo> AllElders => _elders.Values;
+    public static IEnumerable<ElderInfo> AllElders => _elders.Value.Values;
 
     /// <summary>Try to load an elder's run-history icon via the game's model db.</summary>
     public static Texture2D? GetElderIcon(string elderId)
@@ -293,6 +295,90 @@ public static class AncientPoolMap
             },
         };
 
+        HydrateNeowPools(d);
         return d;
+    }
+
+    /// <summary>
+    /// Neow's option pool is assembled dynamically by AncientEventModel.
+    /// The hand-curated fallback above can drift when the game adds relics.
+    /// Read the live model and merge its options into the first two pools.
+    /// </summary>
+    private static void HydrateNeowPools(Dictionary<string, ElderInfo> elders)
+    {
+        if (!elders.TryGetValue("NEOW", out var neowInfo) || neowInfo.Pools.Count < 2)
+            return;
+
+        try
+        {
+            var neow = ModelDb.AllAncients.FirstOrDefault(a => a.Id.Entry == "NEOW");
+            if (neow == null) return;
+
+            var pool0 = new HashSet<string>(neowInfo.Pools[0].RelicIds);
+            var pool1 = new HashSet<string>(neowInfo.Pools[1].RelicIds);
+            var all = new HashSet<string>(pool0.Concat(pool1));
+
+            var properties = neow.GetType().GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            foreach (var prop in properties)
+            {
+                if (prop.Name == "AllPossibleOptions") continue;
+
+                IEnumerable<EventOption>? options = null;
+                try
+                {
+                    if (typeof(EventOption).IsAssignableFrom(prop.PropertyType))
+                    {
+                        if (prop.GetValue(neow) is EventOption option)
+                            options = new[] { option };
+                    }
+                    else if (typeof(IEnumerable<EventOption>).IsAssignableFrom(prop.PropertyType))
+                    {
+                        options = prop.GetValue(neow) as IEnumerable<EventOption>;
+                    }
+                }
+                catch { continue; }
+
+                if (options == null) continue;
+
+                bool curseLike = prop.Name.Contains("Curse", StringComparison.OrdinalIgnoreCase)
+                    || prop.Name.Contains("Bundle", StringComparison.OrdinalIgnoreCase)
+                    || prop.Name.Contains("Empower", StringComparison.OrdinalIgnoreCase);
+
+                foreach (var option in options)
+                {
+                    var relicId = option?.Relic?.Id.Entry;
+                    if (string.IsNullOrEmpty(relicId)) continue;
+
+                    if (curseLike)
+                    {
+                        pool0.Remove(relicId);
+                        pool1.Add(relicId);
+                    }
+                    else if (!pool1.Contains(relicId))
+                    {
+                        pool0.Add(relicId);
+                    }
+                    all.Add(relicId);
+                }
+            }
+
+            foreach (var option in neow.AllPossibleOptions)
+            {
+                var relicId = option?.Relic?.Id.Entry;
+                if (!string.IsNullOrEmpty(relicId) && all.Add(relicId))
+                    pool0.Add(relicId);
+            }
+
+            neowInfo.Pools[0].RelicIds.Clear();
+            neowInfo.Pools[0].RelicIds.AddRange(pool0.OrderBy(id => id));
+            neowInfo.Pools[1].RelicIds.Clear();
+            neowInfo.Pools[1].RelicIds.AddRange(pool1.OrderBy(id => id));
+        }
+        catch (Exception ex)
+        {
+            Safe.Warn("AncientPoolMap: dynamic Neow discovery failed, using fallback map: " + ex.Message);
+        }
     }
 }

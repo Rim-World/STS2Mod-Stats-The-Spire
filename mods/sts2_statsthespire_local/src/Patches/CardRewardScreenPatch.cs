@@ -1,4 +1,5 @@
 using CommunityStats.Collection;
+using CommunityStats.UI;
 using CommunityStats.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -14,6 +15,13 @@ namespace CommunityStats.Patches;
 [HarmonyPatch]
 public static class CardRewardScreenPatch
 {
+    [HarmonyPatch(typeof(NCardRewardSelectionScreen), "AfterOverlayOpened")]
+    [HarmonyPostfix]
+    public static void AfterOverlayOpened()
+    {
+        Safe.Run(() => ContributionPanel.HideIfVisible());
+    }
+
     [HarmonyPatch(typeof(NCardRewardSelectionScreen), "SelectCard")]
     [HarmonyPostfix]
     public static void AfterSelectCard(NCardRewardSelectionScreen __instance,

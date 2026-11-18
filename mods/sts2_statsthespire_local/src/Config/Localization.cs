@@ -1,3 +1,5 @@
+using Godot;
+
 namespace CommunityStats.Config;
 
 /// <summary>
@@ -28,6 +30,21 @@ public static class L
     /// need to reload data — the numbers haven't changed.
     /// </summary>
     public static event Action? LanguageChanged;
+
+    public static string GetByGame(string key)
+    {
+        try
+        {
+            var locale = TranslationServer.GetLocale();
+            return locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase)
+                ? (CN.TryGetValue(key, out var cn) ? cn : key)
+                : (EN.TryGetValue(key, out var en) ? en : key);
+        }
+        catch
+        {
+            return Get(key);
+        }
+    }
 
     public static string Get(string key) =>
         Current == Lang.CN
@@ -86,6 +103,7 @@ public static class L
         ["char.DEFECT"] = "Defect",
         ["char.NECROBINDER"] = "Necrobinder",
         ["char.REGENT"] = "Regent",
+        ["char.FOOL"] = "The Fool",
 
         // StatsLabel
         ["stats.pick"] = "Pick {0}% | Win {1}%",
@@ -165,6 +183,10 @@ public static class L
         ["toggle.unknown_room_odds"] = "Unknown Room Encounter Odds",
         ["toggle.shop_prices"] = "Shop Price Table",
         ["toggle.intent_state_machine"] = "Enemy Intent State Machine",
+        ["settings.ui_title"] = "Interface",
+        ["settings.intent_panel_scale"] = "Intent Panel Size",
+        ["toggle.potion_odds"] = "Potion Drop Odds",
+        ["toggle.card_drop_odds"] = "Card Drop Odds",
 
         // ContributionPanel v2 (§3.7, §4.5)
         ["contrib.dps"] = "Avg Damage per Turn:",
@@ -195,6 +217,8 @@ public static class L
         ["contrib.help_dps"] = "DPS row = TotalDamageDealt ÷ TurnCount",
         ["contrib.help_pct"] = "Per-row % = source contribution ÷ total positive contributions of that section",
         ["contrib.help_source"] = "Data: live CombatTracker (this combat) + RunContributionAggregator (run summary)",
+        ["source.untracked"] = "Unattributed",
+        ["contrib.resize_hint"] = "Drag to resize",
         ["contrib.help_hotkeys"] = "Hotkeys: F8 toggle panel, F9 settings, drag title bar to reposition",
 
         // Probability panels (§3.8, §3.9, §3.16, §3.17)
@@ -232,6 +256,14 @@ public static class L
         ["career.title"] = "Career Statistics",
         ["career.summary_title"] = "Summary",
         ["career.character"] = "Character",
+        ["career.mode_filter"] = "Game Mode",
+        ["career.mode_all"] = "All",
+        ["career.mode_standard"] = "Standard / Random Seed",
+        ["career.mode_custom"] = "Custom Mode",
+        ["career.mode_dread"] = "Dread",
+        ["career.mode_blitz"] = "Blitz",
+        ["career.mode_daily"] = "Daily Challenge",
+        ["career.mode_multiplayer"] = "Multiplayer",
         ["career.recent_runs"] = "Recent Runs",
         ["career.recent_runs_all"] = "All",
         ["career.recent_runs_last_n"] = "Last N Runs",
@@ -273,6 +305,7 @@ public static class L
         ["career.win_rate"] = "Win Rate",
         ["career.delta"] = "Delta",
         ["career.loading"] = "Loading career data...",
+        ["career.no_matching_runs"] = "No runs match the current filters.",
         ["career.community_comparison"] = "Community Comparison",
         ["career.cause_abandoned"] = "Abandoned",
         ["career.act_n"] = "Act {0}",
@@ -283,6 +316,12 @@ public static class L
         ["career.encounters"] = "encounters",
         ["career.no_data_short"] = "—",
         ["career.deck_section"] = "Deck Construction",
+        ["career.deck_avg_title"] = "Per-run averages",
+        ["career.avg_time"] = "Avg run time",
+        ["career.avg_deck_size"] = "Avg deck size",
+        ["career.avg_relics"] = "Avg relics",
+        ["career.avg_types"] = "Avg card types (Attack/Skill/Power)",
+        ["career.avg_rarities"] = "Avg card rarities (Common/Uncommon/Rare)",
         ["career.path_section"] = "Path Stats",
         ["ancient.pool_1"] = "Option 1 Pool",
         ["ancient.pool_2"] = "Option 2 Pool",
@@ -389,6 +428,7 @@ public static class L
         ["char.DEFECT"] = "缺陷体",
         ["char.NECROBINDER"] = "亡灵契约师",
         ["char.REGENT"] = "储君",
+        ["char.FOOL"] = "愚者",
 
         // StatsLabel
         ["stats.pick"] = "选取 {0}% | 胜率 {1}%",
@@ -468,6 +508,10 @@ public static class L
         ["toggle.unknown_room_odds"] = "问号房间遭遇概率显示",
         ["toggle.shop_prices"] = "商店价格显示",
         ["toggle.intent_state_machine"] = "敌人意图状态机显示",
+        ["settings.ui_title"] = "界面",
+        ["settings.intent_panel_scale"] = "意图面板大小",
+        ["toggle.potion_odds"] = "药水掉落概率显示",
+        ["toggle.card_drop_odds"] = "卡牌掉落概率显示",
 
         // ContributionPanel v2 (§3.7, §4.5)
         ["contrib.dps"] = "每回合平均伤害:",
@@ -498,6 +542,8 @@ public static class L
         ["contrib.help_dps"] = "每回合伤害 = 总伤害 ÷ 回合数",
         ["contrib.help_pct"] = "每行 % = 该来源贡献 ÷ 该分区所有正向贡献之和",
         ["contrib.help_source"] = "数据来源：实时 CombatTracker（本场战斗）+ RunContributionAggregator（本局汇总）",
+        ["source.untracked"] = "未归因",
+        ["contrib.resize_hint"] = "拖动以调整面板大小",
         ["contrib.help_hotkeys"] = "打开/关闭快捷键: F8",
 
         // Probability panels (§3.8, §3.9, §3.16, §3.17)
@@ -535,6 +581,14 @@ public static class L
         ["career.title"] = "个人生涯统计",
         ["career.summary_title"] = "数据汇总",
         ["career.character"] = "角色",
+        ["career.mode_filter"] = "对局模式",
+        ["career.mode_all"] = "全部",
+        ["career.mode_standard"] = "随机种子",
+        ["career.mode_custom"] = "自定义模式",
+        ["career.mode_dread"] = "恐惧",
+        ["career.mode_blitz"] = "极速",
+        ["career.mode_daily"] = "每日挑战",
+        ["career.mode_multiplayer"] = "多人模式",
         ["career.recent_runs"] = "最近对局",
         ["career.recent_runs_all"] = "全部",
         ["career.recent_runs_last_n"] = "最近N局（输入数字）",
@@ -576,6 +630,7 @@ public static class L
         ["career.win_rate"] = "胜率",
         ["career.delta"] = "浮动",
         ["career.loading"] = "加载生涯数据中...",
+        ["career.no_matching_runs"] = "没有符合当前筛选条件的对局。",
         ["career.community_comparison"] = "社区对比",
         ["career.cause_abandoned"] = "中途放弃",
         ["career.act_n"] = "第{0}幕",
@@ -586,6 +641,12 @@ public static class L
         ["career.encounters"] = "遭遇次数",
         ["career.no_data_short"] = "—",
         ["career.deck_section"] = "卡组构筑",
+        ["career.deck_avg_title"] = "生涯平均",
+        ["career.avg_time"] = "平均用时",
+        ["career.avg_deck_size"] = "平均卡组大小",
+        ["career.avg_relics"] = "平均遗物数量",
+        ["career.avg_types"] = "平均卡牌类型（攻击/技能/能力）",
+        ["career.avg_rarities"] = "平均卡牌稀有度（普通/罕见/稀有）",
         ["career.path_section"] = "路线统计",
         ["ancient.pool_1"] = "选项一池",
         ["ancient.pool_2"] = "选项二池",

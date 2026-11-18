@@ -20,11 +20,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
-#if STS2_GE_V105
 using CombatStateType = MegaCrit.Sts2.Core.Combat.ICombatState;
-#else
-using CombatStateType = MegaCrit.Sts2.Core.Combat.CombatState;
-#endif
 
 namespace CommunityStats.Patches;
 
@@ -47,6 +43,9 @@ public static class CombatHistoryPatch
             return LocalContext.IsMe(player);
         return true; // single-player: the one player IS local
     }
+
+    public static bool IsLocalCreature(Creature? creature)
+        => creature != null && creature.IsPlayer && IsLocalPlayer(creature.Player);
 
     [HarmonyPatch(typeof(CombatHistory), nameof(CombatHistory.CardPlayStarted))]
     [HarmonyPostfix]
@@ -84,6 +83,7 @@ public static class CombatHistoryPatch
     {
         Safe.Run(() =>
         {
+            if (!IsLocalPlayer(cardPlay.Card?.Owner)) return;
             CombatTracker.Instance.OnCardPlayFinished();
             // Round 9 round 33: real-time refresh always fires regardless of
             // the ContributionPanel toggle (which now only gates auto-open
@@ -101,7 +101,7 @@ public static class CombatHistoryPatch
     {
         Safe.Run(() =>
         {
-            if (creature.IsPlayer)
+            if (IsLocalCreature(creature))
                 ContributionMap.Instance.ClearBlockPool();
         });
     }
@@ -113,6 +113,11 @@ public static class CombatHistoryPatch
     {
         Safe.Run(() =>
         {
+            // Multiplayer: ignore damage involving another player's creature/card.
+            if (receiver.IsPlayer && !IsLocalCreature(receiver)) return;
+            if (dealer != null && dealer.IsPlayer && !IsLocalCreature(dealer)) return;
+            if (cardSource?.Owner != null && !IsLocalPlayer(cardSource.Owner)) return;
+
             // Mark this result as processed so KillingBlowPatcher won't double-count
             CombatTracker.Instance.MarkDamageResultProcessed(
                 System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(result));
@@ -129,11 +134,7 @@ public static class CombatHistoryPatch
             // rationale. Still pass through so encounter tracking / damage
             // dedup run normally; only the enemy-side damage ledger is
             // suppressed.
-#if STS2_GE_V105
             bool invincible = !isPlayerReceiver && receiver.HpDisplay.IsInfinite();
-#else
-            bool invincible = !isPlayerReceiver && receiver.ShowsInfiniteHp;
-#endif
 
             CombatTracker.Instance.OnDamageDealt(
                 result.TotalDamage,
@@ -196,7 +197,7 @@ public static class CombatHistoryPatch
     {
         Safe.Run(() =>
         {
-            if (!receiver.IsPlayer) return;
+            if (!IsLocalCreature(receiver)) return;
             var cardPlayId = cardPlay?.Card?.Id.Entry;
             CombatTracker.Instance.OnBlockGained(amount, cardPlayId);
 
@@ -217,19 +218,20 @@ public static class CombatHistoryPatch
     public static void AfterPowerReceived(CombatStateType combatState,
         PowerModel power, decimal amount, Creature? applier)
     {
-        Safe.Run(() =>
-        {
-            var powerId = power?.Id.Entry;
-            if (powerId == null) return;
-            CombatTracker.Instance.OnPowerSourceRecorded(powerId);
-        });
+        // Power source recording is handled by PowerHookContextPatcher, which
+        // has the actual owner/applier context. This hook intentionally does
+        // nothing to avoid duplicate source entries.
     }
 
     [HarmonyPatch(typeof(CombatHistory), nameof(CombatHistory.CardDrawn))]
     [HarmonyPostfix]
     public static void AfterCardDrawn(CombatStateType combatState, CardModel card, bool fromHandDraw)
     {
-        Safe.Run(() => CombatTracker.Instance.OnCardDrawn(fromHandDraw));
+        Safe.Run(() =>
+        {
+            if (!IsLocalPlayer(card?.Owner)) return;
+            CombatTracker.Instance.OnCardDrawn(fromHandDraw);
+        });
     }
 }
 
@@ -309,9 +311,9 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(DemonTongue), "AfterDamageReceived", prefix, postfix);
 
         // ── Damage relics (outside card play) ──
-        TryPatch(harmony, typeof(ScreamingFlagon), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(StoneCalendar), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(ParryingShield), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(ScreamingFlagon), "BeforeSideTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(StoneCalendar), "BeforeSideTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(ParryingShield), "AfterSideTurnEnd", prefix, postfix);
         TryPatch(harmony, typeof(CharonsAshes), "AfterCardExhausted", prefix, postfix);
         TryPatch(harmony, typeof(ForgottenSoul), "AfterCardExhausted", prefix, postfix);
         TryPatch(harmony, typeof(FestivePopper), "AfterPlayerTurnStart", prefix, postfix);
@@ -326,10 +328,10 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(LostWisp), "AfterCardPlayed", prefix, postfix);
 
         // ── Block relics (outside card play) ──
-        TryPatch(harmony, typeof(CloakClasp), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(FakeOrichalcum), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(Orichalcum), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(RippleBasin), "BeforeTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(CloakClasp), "BeforeSideTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(FakeOrichalcum), "BeforeSideTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(Orichalcum), "BeforeSideTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(RippleBasin), "BeforeSideTurnEnd", prefix, postfix);
         TryPatch(harmony, typeof(ToughBandages), "AfterCardDiscarded", prefix, postfix);
         TryPatch(harmony, typeof(IntimidatingHelmet), "BeforeCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(HornCleat), "AfterBlockCleared", prefix, postfix);
@@ -363,11 +365,13 @@ public static class RelicHookContextPatcher
         // turns, draws a card when counter wraps to 0. The old `AfterShuffle`
         // hook doesn't exist on this Pendulum override at all — patch would
         // silently bind to nothing and the draw attributed to UNTRACKED.
-        TryPatch(harmony, typeof(Pendulum), "AfterPlayerTurnStart", prefix, postfix);
+        Safe.TryPatchFirst(harmony, typeof(Pendulum),
+            new[] { "AfterPlayerTurnStart", "BeforeHandDraw" }, prefix, postfix, "[RelicPatch]");
         TryPatch(harmony, typeof(BlessedAntler), "BeforeHandDraw", prefix, postfix);
 
         // ── Power application relics (records relic as power source) ──
-        TryPatch(harmony, typeof(HandDrill), "AfterDamageGiven", prefix, postfix);
+        // HandDrill's damage is tracked through the card-play path; the relic
+        // does not override AfterDamageGiven on v0.113.1.
         TryPatch(harmony, typeof(Kunai), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(Shuriken), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(RainbowRing), "AfterCardPlayed", prefix, postfix);
@@ -379,7 +383,7 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(SlingOfCourage), "AfterRoomEntered", prefix, postfix);
 
         // ── Stars relic ──
-        TryPatch(harmony, typeof(LunarPastry), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(LunarPastry), "AfterSideTurnEnd", prefix, postfix);
 
         // ── Orb relic ──
         TryPatch(harmony, typeof(EmotionChip), "AfterPlayerTurnStart", prefix, postfix);
@@ -441,7 +445,8 @@ public static class RelicHookContextPatcher
         // Upgrade: Bellows upgrades hand cards on first player turn.
         TryPatch(harmony, typeof(Bellows), "AfterPlayerTurnStart", prefix, postfix);
         // Upgrade: BoneTea upgrades hand on first round (consumes charge).
-        TryPatch(harmony, typeof(BoneTea), "AfterSideTurnStart", prefix, postfix);
+        // BoneTea relies on the generic turn-start path on v0.113.1; it does
+        // not override AfterSideTurnStart.
         // Debuff: TeaOfDiscourtesy adds Dazed cards before combat.
         TryPatch(harmony, typeof(TeaOfDiscourtesy), "BeforeCombatStart", prefix, postfix);
         // Power: FencingManual applies Forge (dexterity) on first turn.
@@ -453,7 +458,7 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(LavaLamp), "AfterRoomEntered", prefix, postfix);
         // Extra turn: PaelsEye grants extra turn if no cards played.
         TryPatch(harmony, typeof(PaelsEye), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(PaelsEye), "BeforeTurnEndEarly", prefix, postfix);
+        TryPatch(harmony, typeof(PaelsEye), "BeforeSideTurnEndEarly", prefix, postfix);
         TryPatch(harmony, typeof(PaelsEye), "AfterTakingExtraTurn", prefix, postfix);
         TryPatch(harmony, typeof(PaelsEye), "BeforeCardPlayed", prefix, postfix);
         // Post-combat: PaelsTooth grants stored upgraded card after combat.
@@ -515,7 +520,7 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(StoneCracker), "AfterRoomEntered", prefix, postfix);
         TryPatch(harmony, typeof(Pantograph), "AfterRoomEntered", prefix, postfix);
         TryPatch(harmony, typeof(SwordOfJade), "AfterRoomEntered", prefix, postfix);
-        TryPatch(harmony, typeof(PumpkinCandle), "AfterRoomEntered", prefix, postfix);
+        // PumpkinCandle does not override AfterRoomEntered on v0.113.1.
         TryPatch(harmony, typeof(PumpkinCandle), "AfterObtained", prefix, postfix);
         TryPatch(harmony, typeof(BigMushroom), "AfterRoomEntered", prefix, postfix);
         TryPatch(harmony, typeof(BigMushroom), "AfterObtained", prefix, postfix);
@@ -552,14 +557,15 @@ public static class RelicHookContextPatcher
 
         // Turn start / side turn start triggers.
         TryPatch(harmony, typeof(TwistedFunnel), "BeforeSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(FuneraryMask), "AfterSideTurnStart", prefix, postfix);
+        // FuneraryMask does not override AfterSideTurnStart on v0.113.1.
         TryPatch(harmony, typeof(SymbioticVirus), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(OrangeDough), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(BigHat), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(Sai), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(Crossbow), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(SealOfGold), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(PollinousCore), "BeforeSideTurnStart", prefix, postfix);
+        // PollinousCore does not override BeforeSideTurnStart on v0.113.1;
+        // its draw bonus is handled by the ModifyHandDraw patch below.
         TryPatch(harmony, typeof(PollinousCore), "AfterCombatEnd", prefix, postfix);
         TryPatch(harmony, typeof(GamblingChip), "AfterPlayerTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(VexingPuzzlebox), "AfterPlayerTurnStart", prefix, postfix);
@@ -575,17 +581,18 @@ public static class RelicHookContextPatcher
 
         // Osty-related modifiers.
         TryPatch(harmony, typeof(TungstenRod), "AfterModifyingHpLostAfterOsty", prefix, postfix);
-        TryPatch(harmony, typeof(TheBoot), "AfterModifyingHpLostBeforeOsty", prefix, postfix);
+        // TheBoot does not override AfterModifyingHpLostBeforeOsty on v0.113.1.
 
         // Turn-end / shuffle triggers.
-        TryPatch(harmony, typeof(Bookmark), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(Bookmark), "AfterFlush", prefix, postfix);
         TryPatch(harmony, typeof(TheAbacus), "AfterShuffle", prefix, postfix);
 
         // Hand draw triggers.
         TryPatch(harmony, typeof(Toolbox), "BeforeHandDraw", prefix, postfix);
         TryPatch(harmony, typeof(NinjaScroll), "BeforeHandDraw", prefix, postfix);
         TryPatch(harmony, typeof(RadiantPearl), "BeforeHandDraw", prefix, postfix);
-        TryPatch(harmony, typeof(ToastyMittens), "BeforeHandDraw", prefix, postfix);
+        Safe.TryPatchFirst(harmony, typeof(ToastyMittens),
+            new[] { "BeforeHandDraw", "AfterPlayerTurnStart" }, prefix, postfix, "[RelicPatch]");
         TryPatch(harmony, typeof(JeweledMask), "BeforeHandDraw", prefix, postfix);
 
         // Stars relic: MiniRegent.
@@ -614,10 +621,7 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(BrilliantScarf), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(BrilliantScarf), "BeforeSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(BrilliantScarf), "AfterCombatEnd", prefix, postfix);
-        TryPatch(harmony, typeof(DiamondDiadem), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(DiamondDiadem), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(DiamondDiadem), "BeforeTurnEnd", prefix, postfix);
-        TryPatch(harmony, typeof(DiamondDiadem), "AfterCombatEnd", prefix, postfix);
         TryPatch(harmony, typeof(MusicBox), "BeforeCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(MusicBox), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(MusicBox), "BeforeSideTurnStart", prefix, postfix);
@@ -627,7 +631,7 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(UnsettlingLamp), "AfterCombatEnd", prefix, postfix);
 
         // Regalite: combat enter / card spawn.
-        TryPatch(harmony, typeof(Regalite), "AfterCardEnteredCombat", prefix, postfix);
+        // Regalite does not override AfterCardEnteredCombat on v0.113.1.
 
         // BookRepairKnife: Doom resurrection heal.
         TryPatch(harmony, typeof(BookRepairKnife), "AfterDiedToDoom", prefix, postfix);
@@ -682,6 +686,10 @@ public static class PowerHookContextPatcher
     {
         Safe.Run(() =>
         {
+            var powerOwner = __instance.Owner;
+            if (powerOwner != null && powerOwner.IsPlayer && !CombatHistoryPatch.IsLocalCreature(powerOwner))
+                return;
+
             var powerId = __instance.Id.Entry;
             if (string.IsNullOrEmpty(powerId)) return;
 
@@ -763,13 +771,13 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(RagePower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(FlameBarrierPower), "AfterDamageReceived", prefix, postfix);
         TryPatch(harmony, typeof(FeelNoPainPower), "AfterCardExhausted", prefix, postfix);
-        TryPatch(harmony, typeof(PlatingPower), "BeforeTurnEndEarly", prefix, postfix);
+        TryPatch(harmony, typeof(PlatingPower), "BeforeSideTurnEndEarly", prefix, postfix);
         TryPatch(harmony, typeof(InfernoPower), "AfterDamageReceived", prefix, postfix);
         TryPatch(harmony, typeof(InfernoPower), "AfterPlayerTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(JuggernautPower), "AfterBlockGained", prefix, postfix);
         TryPatch(harmony, typeof(CrimsonMantlePower), "AfterPlayerTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(DarkEmbracePower), "AfterCardExhausted", prefix, postfix);
-        TryPatch(harmony, typeof(DarkEmbracePower), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(DarkEmbracePower), "AfterSideTurnEnd", prefix, postfix);
         // Fix 3.3 (Round 14 v5): DemonForm applies Str+N at turn start.
         // Without this patch, the Strength apply sees no power context, so
         // the global STRENGTH_POWER source list stays empty, and Strike's
@@ -784,7 +792,9 @@ public static class PowerHookContextPatcher
 
         // ── Silent ──
         TryPatch(harmony, typeof(PoisonPower), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(OutbreakPower), "AfterPowerAmountChanged", prefix, postfix);
+        var outbreakPowerType = AccessTools.TypeByName("MegaCrit.Sts2.Core.Models.Powers.OutbreakPower");
+        if (outbreakPowerType != null)
+            TryPatch(harmony, outbreakPowerType, "AfterPowerAmountChanged", prefix, postfix);
         TryPatch(harmony, typeof(PanachePower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(AfterimagePower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(SneakyPower), "AfterCardPlayed", prefix, postfix);
@@ -806,12 +816,12 @@ public static class PowerHookContextPatcher
 
         // ── Defect ──
         TryPatch(harmony, typeof(StormPower), "AfterCardPlayed", prefix, postfix);
-        TryPatch(harmony, typeof(HailstormPower), "BeforeTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(HailstormPower), "BeforeSideTurnEnd", prefix, postfix);
         TryPatch(harmony, typeof(AutomationPower), "AfterCardDrawn", prefix, postfix);
         TryPatch(harmony, typeof(IterationPower), "AfterCardDrawn", prefix, postfix);
         TryPatch(harmony, typeof(SubroutinePower), "BeforeCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(SubroutinePower), "AfterCardPlayed", prefix, postfix);
-        TryPatch(harmony, typeof(ConsumingShadowPower), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(ConsumingShadowPower), "AfterSideTurnEnd", prefix, postfix);
         TryPatch(harmony, typeof(LoopPower), "AfterPlayerTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(LightningRodPower), "AfterEnergyReset", prefix, postfix);
         TryPatch(harmony, typeof(SpinnerPower), "AfterEnergyReset", prefix, postfix);
@@ -838,7 +848,7 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(BlackHolePower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(BlackHolePower), "AfterStarsGained", prefix, postfix);
         TryPatch(harmony, typeof(ChildOfTheStarsPower), "AfterStarsSpent", prefix, postfix);
-        TryPatch(harmony, typeof(ParryPower), "AfterSovereignBladePlayed", prefix, postfix);
+        // ParryPower has no AfterSovereignBladePlayed override on v0.113.1.
         TryPatch(harmony, typeof(PillarOfCreationPower), "AfterCardGeneratedForCombat", prefix, postfix);
         TryPatch(harmony, typeof(OrbitPower), "AfterEnergySpent", prefix, postfix);
         // ArsenalPower in the current game: applies StrengthPower to owner on
@@ -865,9 +875,10 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(EnragePower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(GalvanicPower), "AfterCardPlayed", prefix, postfix);
         // Draw / hand-manipulation powers.
-        TryPatch(harmony, typeof(JugglingPower), "AfterCardPlayed", prefix, postfix);
+        Safe.TryPatchFirst(harmony, typeof(JugglingPower),
+            new[] { "AfterCardPlayed", "BeforeCardPlayed" }, prefix, postfix, "[PowerPatch]");
         TryPatch(harmony, typeof(PrepTimePower), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(MayhemPower), "BeforeHandDrawLate", prefix, postfix);
+        TryPatch(harmony, typeof(MayhemPower), "AfterAutoPrePlayPhaseEntered", prefix, postfix);
         TryPatch(harmony, typeof(StratagemPower), "AfterShuffle", prefix, postfix);
         // Energy-on-turn-start powers (AfterEnergyReset fires once per player turn).
         TryPatch(harmony, typeof(RadiancePower), "AfterEnergyReset", prefix, postfix);
@@ -875,7 +886,7 @@ public static class PowerHookContextPatcher
         // Burst / EchoForm duplicate next card plays — treat their effect-setup hook
         // as the attribution context for the duplicated plays.
         TryPatch(harmony, typeof(BurstPower), "AfterModifyingCardPlayCount", prefix, postfix);
-        TryPatch(harmony, typeof(BurstPower), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(BurstPower), "AfterSideTurnEnd", prefix, postfix);
         TryPatch(harmony, typeof(EchoFormPower), "AfterModifyingCardPlayCount", prefix, postfix);
         TryPatch(harmony, typeof(MasterPlannerPower), "AfterCardPlayed", prefix, postfix);
 
@@ -883,7 +894,7 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(ThornsPower), "BeforeDamageReceived", prefix, postfix);
 
         // ── Healing powers ──
-        TryPatch(harmony, typeof(RegenPower), "AfterTurnEnd", prefix, postfix);
+        TryPatch(harmony, typeof(RegenPower), "BeforeSideTurnEndEarly", prefix, postfix);
 
         // ── Shared / Colorless ──
         TryPatch(harmony, typeof(SmokestackPower), "AfterCardGeneratedForCombat", prefix, postfix);
@@ -902,7 +913,7 @@ public static class PowerHookContextPatcher
         // StampedePower.BeforeTurnEnd not patchable at runtime (not implemented, only inherited)
         // Stampede's auto-played cards generate their own CardPlay events.
 
-        // NOTE: TemporaryStrengthPower.AfterTurnEnd is handled by TempStrengthRevertPatch
+        // NOTE: TemporaryStrengthPower.AfterSideTurnEnd is handled by TempStrengthRevertPatch
         // with specific revert logic, not the generic Set/Clear power context.
     }
 
@@ -982,7 +993,7 @@ public static class DamageModifierPatch
                     if (string.IsNullOrEmpty(powerId)) continue;
 
                     // For additive modifiers (Strength, Vigor, etc.), get the additive contribution
-                    decimal additive = power.ModifyDamageAdditive(target, baseDmg, props, dealer, cardSource);
+                    decimal additive = power.ModifyDamageAdditive(target, baseDmg, props, dealer, cardSource, null);
 
                     if (additive != 0)
                     {
@@ -995,7 +1006,7 @@ public static class DamageModifierPatch
                     }
 
                     // For multiplicative modifiers
-                    decimal multiplicative = power.ModifyDamageMultiplicative(target, baseDmg + additive, props, dealer, cardSource);
+                    decimal multiplicative = power.ModifyDamageMultiplicative(target, baseDmg + additive, props, dealer, cardSource, null);
                     if (multiplicative == 1m || multiplicative <= 0) continue;
 
                     // Round 9 round 53: skip multiplicative modifiers < 1.
@@ -1033,7 +1044,7 @@ public static class DamageModifierPatch
                     var relicId = relic.Id.Entry;
                     if (string.IsNullOrEmpty(relicId)) continue;
 
-                    decimal additive = relic.ModifyDamageAdditive(target, baseDmg, props, dealer, cardSource);
+                    decimal additive = relic.ModifyDamageAdditive(target, baseDmg, props, dealer, cardSource, null);
                     if (additive != 0)
                     {
                         modList.Add(new ContributionMap.ModifierContribution(
@@ -1042,7 +1053,7 @@ public static class DamageModifierPatch
                     }
 
                     decimal multiplicative = relic.ModifyDamageMultiplicative(
-                        target, baseDmg + additive, props, dealer, cardSource);
+                        target, baseDmg + additive, props, dealer, cardSource, null);
                     if (multiplicative != 1m && multiplicative > 0)
                     {
                         if (multiplicative < 1m) continue;
@@ -1198,6 +1209,8 @@ public static class RealDamageGuardPatch
             typeof(ValueProp),
             typeof(Creature),   // dealer (nullable)
             typeof(CardModel),  // cardSource (nullable)
+            typeof(CardPlay),   // cardPlay (nullable)
+            typeof(ModifyDamageHookType),
         })]
     [HarmonyPrefix]
     public static void BeforeDamage() => IsInsideCreatureDamage = true;
@@ -1210,6 +1223,8 @@ public static class RealDamageGuardPatch
             typeof(ValueProp),
             typeof(Creature),
             typeof(CardModel),
+            typeof(CardPlay),
+            typeof(ModifyDamageHookType),
         })]
     [HarmonyPostfix]
     public static void AfterDamage() => IsInsideCreatureDamage = false;
@@ -1323,7 +1338,7 @@ public static class EnemyDamageIntentPatch
                         try
                         {
                             multiplicative = power.ModifyDamageMultiplicative(
-                                target, baseDmg, props, dealer, cardSource);
+                                target, baseDmg, props, dealer, cardSource, null);
                         }
                         catch { continue; }
                         if (multiplicative <= 0m || multiplicative >= 1m) continue;
@@ -1358,7 +1373,7 @@ public static class EnemyDamageIntentPatch
                     if (string.IsNullOrEmpty(relicId)) continue;
 
                     decimal multiplicative = relic.ModifyDamageMultiplicative(
-                        target, baseDmg, props, dealer, cardSource);
+                        target, baseDmg, props, dealer, cardSource, null);
                     // Only reductions (< 1m) count as defense here.
                     if (multiplicative >= 1m || multiplicative <= 0) continue;
 
@@ -1941,16 +1956,16 @@ public static class KillingBlowPatcher
             if (isPlayerReceiver) return;
             if (results.TotalDamage <= 0) return;
 
+            // Multiplayer: ignore damage caused by another player's actions.
+            if (dealer != null && dealer.IsPlayer && !CombatHistoryPatch.IsLocalCreature(dealer)) return;
+            if (cardSource?.Owner != null && !CombatHistoryPatch.IsLocalPlayer(cardSource.Owner)) return;
+
             var cardSourceId = cardSource?.Id.Entry;
 
             Safe.Info($"[KillingBlow] Capturing missed damage: {cardSourceId ?? "?"} → {results.TotalDamage} to {target}");
 
             // Invincible-phase guard — same reasoning as AfterDamageReceived.
-#if STS2_GE_V105
             bool invincible = receiver.HpDisplay.IsInfinite();
-#else
-            bool invincible = receiver.ShowsInfiniteHp;
-#endif
 
             CombatTracker.Instance.OnDamageDealt(
                 results.TotalDamage,
@@ -2091,15 +2106,10 @@ public static class CostReductionSourceTagPatch
 
     // ── Hook-based energy reduction tagging ──
 
-    [HarmonyPatch(typeof(VoidFormPower), nameof(VoidFormPower.TryModifyEnergyCostInCombat))]
-    [HarmonyPostfix]
-    public static void AfterVoidFormEnergy(bool __result, VoidFormPower __instance,
-        CardModel card, decimal originalCost, decimal modifiedCost)
-    {
-        Safe.Run(() => TagPowerReduction(__result, __instance, card, originalCost, modifiedCost));
-    }
+    // VoidForm energy reduction is handled by VoidFormEnergyCostPatch with
+    // a fallback target lookup. Keep star-cost tagging here.
 
-    [HarmonyPatch(typeof(FreeAttackPower), nameof(FreeAttackPower.TryModifyEnergyCostInCombat))]
+    [HarmonyPatch(typeof(FreeAttackPower), nameof(FreeAttackPower.TryModifyEnergyCostInCombatLate))]
     [HarmonyPostfix]
     public static void AfterFreeAttackEnergy(bool __result, FreeAttackPower __instance,
         CardModel card, decimal originalCost, decimal modifiedCost)
@@ -2107,7 +2117,7 @@ public static class CostReductionSourceTagPatch
         Safe.Run(() => TagPowerReduction(__result, __instance, card, originalCost, modifiedCost));
     }
 
-    [HarmonyPatch(typeof(FreeSkillPower), nameof(FreeSkillPower.TryModifyEnergyCostInCombat))]
+    [HarmonyPatch(typeof(FreeSkillPower), nameof(FreeSkillPower.TryModifyEnergyCostInCombatLate))]
     [HarmonyPostfix]
     public static void AfterFreeSkillEnergy(bool __result, FreeSkillPower __instance,
         CardModel card, decimal originalCost, decimal modifiedCost)
@@ -2115,7 +2125,7 @@ public static class CostReductionSourceTagPatch
         Safe.Run(() => TagPowerReduction(__result, __instance, card, originalCost, modifiedCost));
     }
 
-    [HarmonyPatch(typeof(FreePowerPower), nameof(FreePowerPower.TryModifyEnergyCostInCombat))]
+    [HarmonyPatch(typeof(FreePowerPower), nameof(FreePowerPower.TryModifyEnergyCostInCombatLate))]
     [HarmonyPostfix]
     public static void AfterFreePowerEnergy(bool __result, FreePowerPower __instance,
         CardModel card, decimal originalCost, decimal modifiedCost)
@@ -2123,7 +2133,7 @@ public static class CostReductionSourceTagPatch
         Safe.Run(() => TagPowerReduction(__result, __instance, card, originalCost, modifiedCost));
     }
 
-    [HarmonyPatch(typeof(CorruptionPower), nameof(CorruptionPower.TryModifyEnergyCostInCombat))]
+    [HarmonyPatch(typeof(CorruptionPower), nameof(CorruptionPower.TryModifyEnergyCostInCombatLate))]
     [HarmonyPostfix]
     public static void AfterCorruptionEnergy(bool __result, CorruptionPower __instance,
         CardModel card, decimal originalCost, decimal modifiedCost)
@@ -2131,7 +2141,7 @@ public static class CostReductionSourceTagPatch
         Safe.Run(() => TagPowerReduction(__result, __instance, card, originalCost, modifiedCost));
     }
 
-    [HarmonyPatch(typeof(VeilpiercerPower), nameof(VeilpiercerPower.TryModifyEnergyCostInCombat))]
+    [HarmonyPatch(typeof(VeilpiercerPower), nameof(VeilpiercerPower.TryModifyEnergyCostInCombatLate))]
     [HarmonyPostfix]
     public static void AfterVeilpiercerEnergy(bool __result, VeilpiercerPower __instance,
         CardModel card, decimal originalCost, decimal modifiedCost)
@@ -2430,22 +2440,6 @@ public static class MaxHpGainPatch
 [HarmonyPatch]
 public static class HandDrawBonusPatch
 {
-    [HarmonyPatch(typeof(PaleBlueDotPower), nameof(PaleBlueDotPower.ModifyHandDraw))]
-    [HarmonyPostfix]
-    public static void AfterPaleBlueDotDraw(decimal __result, PaleBlueDotPower __instance,
-        Player player, decimal count)
-    {
-        Safe.Run(() =>
-        {
-            if (player != __instance.Owner.Player) return;
-            int extra = (int)(__result - count);
-            if (extra <= 0) return;
-            var source = ContributionMap.Instance.GetPowerSource(__instance.Id.Entry);
-            if (source != null)
-                ContributionMap.Instance.RecordHandDrawBonus(source.SourceId, source.SourceType, extra);
-        });
-    }
-
     [HarmonyPatch(typeof(TyrannyPower), nameof(TyrannyPower.ModifyHandDraw))]
     [HarmonyPostfix]
     public static void AfterTyrannyDraw(decimal __result, TyrannyPower __instance,
@@ -2702,14 +2696,6 @@ public static class RelicHandDrawBonusPatch
     {
         if (player == __instance.Owner) RecordRelicDrawBonus(__instance, __result, count);
     }
-
-    [HarmonyPatch(typeof(Fiddle), nameof(Fiddle.ModifyHandDrawLate))]
-    [HarmonyPostfix]
-    public static void AfterFiddle(decimal __result, Fiddle __instance,
-        Player player, decimal count)
-    {
-        if (player == __instance.Owner) RecordRelicDrawBonus(__instance, __result, count);
-    }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2831,7 +2817,7 @@ public static class EnemyStrReductionPatch
 // ═══════════════════════════════════════════════════════════
 // TemporaryStrengthPower revert — mark source around the revert window
 //
-// TemporaryStrengthPower.AfterTurnEnd fires on each player/enemy turn end;
+// TemporaryStrengthPower.AfterSideTurnEnd fires on each player/enemy turn end;
 // when `side == Owner.Side`, it `await PowerCmd.Apply<StrengthPower>(+Amount)`
 // to undo the temp strength. That fires StrengthPower.SetAmount with delta
 // > 0 which our EnemyStrReductionPatch postfix interprets as "revert,
@@ -2855,7 +2841,7 @@ public static class EnemyStrReductionPatch
 [HarmonyPatch]
 public static class TempStrengthRevertPatch
 {
-    [HarmonyPatch(typeof(TemporaryStrengthPower), nameof(TemporaryStrengthPower.AfterTurnEnd))]
+    [HarmonyPatch(typeof(TemporaryStrengthPower), nameof(TemporaryStrengthPower.AfterSideTurnEnd))]
     [HarmonyPrefix]
     public static void BeforeTempStrRevert(TemporaryStrengthPower __instance)
     {
@@ -2877,7 +2863,7 @@ public static class TempStrengthRevertPatch
         });
     }
 
-    [HarmonyPatch(typeof(TemporaryStrengthPower), nameof(TemporaryStrengthPower.AfterTurnEnd))]
+    [HarmonyPatch(typeof(TemporaryStrengthPower), nameof(TemporaryStrengthPower.AfterSideTurnEnd))]
     [HarmonyPostfix]
     public static void AfterTempStrRevert()
     {
@@ -2890,31 +2876,88 @@ public static class TempStrengthRevertPatch
 // Records origin for cards generated via CardPileCmd.AddGeneratedCardsToCombat.
 // ═══════════════════════════════════════════════════════════
 
-[HarmonyPatch]
 public static class CardGenerationOriginPatch
 {
-    [HarmonyPatch(typeof(Hook), nameof(Hook.AfterCardGeneratedForCombat))]
-#if STS2_GE_V105
-    [HarmonyPostfix]
-    public static void AfterCardGenerated(CardModel card, Player? creator)
+    /// <summary>
+    /// Register the postfix that matches the running game's signature.
+    /// v0.111 passes a bool; v0.113 passes the creating Player. One DLL
+    /// handles both without compile-time version symbols.
+    /// </summary>
+    public static void Patch(Harmony harmony)
+    {
+        var method = AccessTools.DeclaredMethod(
+            typeof(Hook), "AfterCardGeneratedForCombat");
+        if (method == null)
+        {
+            Safe.Warn("[CardGenerationOriginPatch] hook not found");
+            return;
+        }
+
+        var parameters = method.GetParameters();
+        if (parameters.Length == 3
+            && parameters[1].ParameterType == typeof(CardModel)
+            && parameters[2].ParameterType == typeof(Player))
+        {
+            harmony.Patch(method, postfix: new HarmonyMethod(
+                typeof(CardGenerationOriginPatch),
+                nameof(AfterCardGeneratedWithState)));
+            Safe.Info("[CardGenerationOriginPatch] patched combat-state signature");
+            return;
+        }
+
+        if (parameters.Length == 2)
+        {
+            if (parameters[1].ParameterType == typeof(Player))
+            {
+                harmony.Patch(method, postfix: new HarmonyMethod(
+                    typeof(CardGenerationOriginPatch),
+                    nameof(AfterCardGeneratedWithCreator)));
+                Safe.Info("[CardGenerationOriginPatch] patched creator signature");
+                return;
+            }
+
+            if (parameters[1].ParameterType == typeof(bool))
+            {
+                harmony.Patch(method, postfix: new HarmonyMethod(
+                    typeof(CardGenerationOriginPatch),
+                    nameof(AfterCardGeneratedWithFlag)));
+                Safe.Info("[CardGenerationOriginPatch] patched bool signature");
+                return;
+            }
+        }
+
+        Safe.Warn($"[CardGenerationOriginPatch] unsupported signature: {method}");
+    }
+
+    public static void AfterCardGeneratedWithState(
+        MegaCrit.Sts2.Core.Combat.ICombatState __0,
+        CardModel __1,
+        Player? __2)
     {
         Safe.Run(() =>
         {
-            if (creator == null) return;
-            RecordCardOriginInternal(card);
+            if (__2 == null) return;
+            RecordCardOriginInternal(__1);
         });
     }
-#else
-    [HarmonyPostfix]
-    public static void AfterCardGenerated(CardModel card, bool addedByPlayer)
+
+    public static void AfterCardGeneratedWithCreator(CardModel __0, Player? __1)
     {
         Safe.Run(() =>
         {
-            if (!addedByPlayer) return;
-            RecordCardOriginInternal(card);
+            if (__1 == null) return;
+            RecordCardOriginInternal(__0);
         });
     }
-#endif
+
+    public static void AfterCardGeneratedWithFlag(CardModel __0, bool __1)
+    {
+        Safe.Run(() =>
+        {
+            if (!__1) return;
+            RecordCardOriginInternal(__0);
+        });
+    }
 
     private static void RecordCardOriginInternal(CardModel card)
     {

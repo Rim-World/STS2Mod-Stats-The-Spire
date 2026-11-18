@@ -1,4 +1,3 @@
-using CommunityStats.Api;
 using CommunityStats.Config;
 using CommunityStats.Patches;
 using CommunityStats.UI;
@@ -25,8 +24,6 @@ public static class CommunityStatsMod
     {
         Safe.Info($"Stats the Spire (Local) v{ModConfig.ModVersion} initializing...");
 
-        Updater.Instance.Edition = "local";
-
         // Load saved settings (feature toggles, language, etc.) from disk.
         ModConfig.LoadOverrides();
 
@@ -35,10 +32,6 @@ public static class CommunityStatsMod
 
         // Ensure data directories exist
         ModConfig.EnsureDirectories();
-
-        // Background: check for mod updates.
-        Safe.Info("[Updater] Kicking off background update check...");
-        _ = Updater.Instance.CheckForUpdateAsync();
 
         // Prune contribution snapshots older than 90 days.
         ContributionPersistence.PruneOldFiles();
@@ -88,6 +81,7 @@ public static class CommunityStatsMod
         OrbPassivePatch.PatchOrbTurnEndTriggers(_harmony);
         OrbEvokePatch.PatchOrbEvokeMethods(_harmony);
         KillingBlowPatcher.PatchAll(_harmony);
+        CardGenerationOriginPatch.Patch(_harmony);
 
         // Register ModManager.OnMetricsUpload hook for run contribution saving
         RunLifecyclePatch.RegisterMetricsHook();

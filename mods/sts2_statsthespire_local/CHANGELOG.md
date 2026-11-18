@@ -1,69 +1,87 @@
 # Changelog
 
-## v1.1.0 (2026-05-08) — v0.105.0 Beta 兼容 + 新功能
+本文件遵循 Keep a Changelog。
 
-### v0.105.0 Beta 适配
+## [1.4.1] - 2026-11-19
 
-- `CombatState` → `ICombatState`：`#if STS2_GE_V105` 编译期宏，`dotnet build -p:DefineConstants=STS2_GE_V105`
-- `ShowsInfiniteHp` → `HpDisplay.IsInfinite()`；`AfterCardGeneratedForCombat` bool→Player?
+### Added
 
-### 新功能：个人生涯统计"最近对局"筛选
-
-- OptionButton（全部/最近N局）+ SpinBox，按 `StartTime` 降序 `Take(N)`
-
-### Bug 修复
-
-- Infused Core orb 值修饰器追踪（列表替代单例）
-- 荆棘/火焰屏障多源归因
-- Sword Sage Replay 1 后 FORGE:BASE 修复
-- F7 功能开关持久化
-
----
-
-## v1.0.1 (2026-05-06) — Bug 修复
-
-### 怪物意图状态机面板残留修复
-
-- 怪物死亡时若鼠标仍悬停，`OnUnfocus` 不触发 → 面板永久残留。
-- `IntentHoverPatch` 新增 `ForceHideAll()`，战斗开始/结束时移除所有 intent 面板。
-- `ShowPanel` 增加 `IsInsideTree()` + `IsDead` 检查。
-- `ForceHideAll` 改为按 metadata 标记查找面板（修复 `InfoModPanel.Create()` 固定名称导致查找失败）。
-
-### save&load 后 avg Damage per turn 数据失真修复
-
-- `RunContributionAggregator._encounters` 未持久化 → save&load 后 `TotalRunTurns = 0`。
-- `LiveContributionSnapshot` 新增 `Encounters` 字段，完整保存/恢复 encounter 记录。
-
----
-
-## v1.0.0 (2026-05-05) — Local Edition Initial Release
-
-Forked from `sts2_community_stats` v0.14.0. All server-dependent features removed; only local functionality retained.
-
-### Removed (vs. community edition)
-- All server communication (API client, stats provider, cache, offline queue, history import)
-- Community stat labels on card rewards, shop items, relic tooltips, event options
-- Map encounter danger overlay
-- Data upload / download
-- Filter panel community data controls (ascension range, version, branch, win rate, character filter)
-- "My data" vs "Community" dual-column comparison
+- 生涯统计角色筛选加入「愚者」；角色列表改为运行时读取 `ModelDb.AllCharacters`。
+- 愚者卡牌、遗物与角色本地化名称。
+- v0.113 的「恐惧」「极速」对局模式筛选。
+- 个人 fork 维护分支源码。
 
 ### Changed
-- **F9 → F7**: Settings panel hotkey
-- **Settings panel**: simplified to language selector + feature toggles only
-- **Compendium card library / relic collection**: show personal data only (single column, from local RunHistory)
-- Mod ID: `sts2_community_stats` → `sts2_statsthespire_local`
 
-### Retained (all local features)
-- Combat contribution tracking and panel (F8)
-- Real-time contribution updates during combat
-- Mid-run save/quit contribution persistence
-- Personal career statistics (Compendium → Character Data)
-- Run history single-run stats and contribution replay
-- Shop price panel
-- Card drop odds indicator
-- Potion drop odds indicator
-- Unknown room encounter probability
-- Monster intent state machine
-- Feature toggles
-- Language switching (中文 / English)
+- 角色筛选只统计本地玩家为所选角色的历史。
+- 对局模式按 `GameMode` 名称匹配，不再按枚举数值匹配。
+- 卡牌生成钩子按运行时方法签名注册，移除 `STS2_GE_V105` 编译期分支。
+- 版本号升级到 `1.4.1`。
+
+### Fixed
+
+- v0.111 的 `Custom=3` 与 v0.113 的 `Dread=3` 数值冲突。
+- 英文界面未知角色显示原始 `char.*` 键。
+- 卡牌生成来源补丁在 v0.113 注册失败。
+
+## [1.4.0] - 2026-11-19
+
+### Added
+
+- 生涯统计对局模式筛选：全部、标准、自定义、每日、多人。
+- 生涯统计每局平均用时、卡组大小、遗物数、卡牌类型与稀有度。
+- 贡献面板拖动缩放与尺寸持久化。
+- 药水掉落、卡牌掉落独立功能开关。
+- 意图面板缩放设置。
+- Fiddle、PaleBlueDot、VoidForm 贡献归因补丁。
+- Neow 选项池动态补充。
+
+### Changed
+
+- 源码基线切换为公开仓库 `reddots1453/STS2mod-Stats_the_Spire`。
+- 游戏程序集引用改为 `STS2GameDir` 构建属性。
+- 版本号升级到 `1.4.0`。
+
+### Removed
+
+- 联网更新器、上传提示、历史导入、离线队列与服务器配置。
+
+### Fixed
+
+- 适配 Slay the Spire 2 v0.113.1：
+  - `RunManager` 单人/多人启动方法改名。
+  - `TemporaryStrengthPower.AfterSideTurnEnd`。
+  - 商店库存改从 `MerchantSynchronizer` 读取。
+  - 伤害修正方法新增 `CardPlay?` 参数。
+  - `OutbreakPower` 改为运行时探测。
+
+## [1.1.0] - 2026-05-08
+
+### Added
+
+- v0.105.0 Beta 兼容。
+- 个人生涯统计「最近对局」筛选。
+
+### Fixed
+
+- Infused Core orb 值修饰器追踪。
+- 荆棘/火焰屏障多源归因。
+- Sword Sage Replay 1 后 FORGE:BASE。
+- F7 功能开关持久化。
+
+## [1.0.1] - 2026-05-06
+
+### Fixed
+
+- 怪物意图状态机面板残留。
+- save/load 后平均每回合伤害数据失真。
+
+## [1.0.0] - 2026-05-05
+
+### Added
+
+- 本地版初始发布：战斗贡献、生涯统计、意图状态机、商店价格、概率提示、功能开关、中英双语。
+
+### Removed
+
+- 社区版服务器通信、上传下载、社区统计对比。

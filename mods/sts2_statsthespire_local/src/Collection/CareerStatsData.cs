@@ -30,6 +30,20 @@ public sealed class CareerStatsData
     /// <summary>0 = all runs; >0 = only the most recent N runs.</summary>
     public int RecentRunsCount { get; init; }
 
+    /// <summary>Game mode filter that produced this snapshot.</summary>
+    public CareerRunModeFilter ModeFilter { get; init; }
+
+    /// <summary>Average run duration in seconds; 0 when unavailable.</summary>
+    public float AverageRunTimeSeconds { get; init; }
+    public float AverageDeckSize { get; init; }
+    public float AverageRelicCount { get; init; }
+    public float AverageAttackCount { get; init; }
+    public float AverageSkillCount { get; init; }
+    public float AveragePowerCount { get; init; }
+    public float AverageCommonCount { get; init; }
+    public float AverageUncommonCount { get; init; }
+    public float AverageRareCount { get; init; }
+
     /// <summary>How many runs were considered (after character filter).</summary>
     public int TotalRuns { get; init; }
 
@@ -96,11 +110,12 @@ public sealed class CareerStatsData
     /// <summary>true when no usable history was found.</summary>
     public bool IsEmpty => TotalRuns == 0;
 
-    public static CareerStatsData Empty(string? characterFilter, int minAscension = 0, int recentCount = 0) => new()
+    public static CareerStatsData Empty(string? characterFilter, int minAscension = 0, int recentCount = 0, CareerRunModeFilter modeFilter = CareerRunModeFilter.All) => new()
     {
         CharacterFilter = characterFilter,
         MinAscension = minAscension,
         RecentRunsCount = recentCount,
+        ModeFilter = modeFilter,
         TotalRuns = 0,
         Wins = 0,
     };

@@ -28,11 +28,11 @@ public static class CareerStatsCache
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
     };
 
-    public static CareerStatsData? Load(string? characterFilter)
+    public static CareerStatsData? Load(string? characterFilter, CareerRunModeFilter modeFilter = CareerRunModeFilter.All)
     {
         try
         {
-            var path = PathFor(characterFilter);
+            var path = PathFor(characterFilter, modeFilter);
             if (!File.Exists(path)) return null;
             var json = File.ReadAllText(path);
             var dto = JsonSerializer.Deserialize<CareerStatsDto>(json, JsonOpts);
@@ -61,7 +61,7 @@ public static class CareerStatsCache
         try
         {
             ModConfig.EnsureDirectories();
-            var path = PathFor(data.CharacterFilter);
+            var path = PathFor(data.CharacterFilter, data.ModeFilter);
             var dto = ToDto(data);
             File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
         }
@@ -89,10 +89,10 @@ public static class CareerStatsCache
         }
     }
 
-    private static string PathFor(string? characterFilter)
+    private static string PathFor(string? characterFilter, CareerRunModeFilter modeFilter)
     {
         var key = string.IsNullOrEmpty(characterFilter) ? "all" : Sanitize(characterFilter!);
-        return Path.Combine(ModConfig.CacheDir, FilePrefix + key + FileSuffix);
+        return Path.Combine(ModConfig.CacheDir, $"{FilePrefix}{key}_{modeFilter}{FileSuffix}");
     }
 
     private static string Sanitize(string s)
@@ -109,6 +109,16 @@ public static class CareerStatsCache
     private static CareerStatsDto ToDto(CareerStatsData d) => new()
     {
         CharacterFilter = d.CharacterFilter,
+        ModeFilter = d.ModeFilter,
+        AverageRunTimeSeconds = d.AverageRunTimeSeconds,
+        AverageDeckSize = d.AverageDeckSize,
+        AverageRelicCount = d.AverageRelicCount,
+        AverageAttackCount = d.AverageAttackCount,
+        AverageSkillCount = d.AverageSkillCount,
+        AveragePowerCount = d.AveragePowerCount,
+        AverageCommonCount = d.AverageCommonCount,
+        AverageUncommonCount = d.AverageUncommonCount,
+        AverageRareCount = d.AverageRareCount,
         TotalRuns = d.TotalRuns,
         Wins = d.Wins,
         MaxWinStreak = d.MaxWinStreak,
@@ -177,6 +187,16 @@ public static class CareerStatsCache
     private static CareerStatsData FromDto(CareerStatsDto d) => new()
     {
         CharacterFilter = d.CharacterFilter,
+        ModeFilter = d.ModeFilter,
+        AverageRunTimeSeconds = d.AverageRunTimeSeconds,
+        AverageDeckSize = d.AverageDeckSize,
+        AverageRelicCount = d.AverageRelicCount,
+        AverageAttackCount = d.AverageAttackCount,
+        AverageSkillCount = d.AverageSkillCount,
+        AveragePowerCount = d.AveragePowerCount,
+        AverageCommonCount = d.AverageCommonCount,
+        AverageUncommonCount = d.AverageUncommonCount,
+        AverageRareCount = d.AverageRareCount,
         TotalRuns = d.TotalRuns,
         Wins = d.Wins,
         MaxWinStreak = d.MaxWinStreak,
@@ -247,6 +267,16 @@ public static class CareerStatsCache
     private sealed class CareerStatsDto
     {
         [JsonPropertyName("char")]   public string? CharacterFilter { get; set; }
+        [JsonPropertyName("mode")]   public CareerRunModeFilter ModeFilter { get; set; }
+        [JsonPropertyName("rt")]     public float AverageRunTimeSeconds { get; set; }
+        [JsonPropertyName("deck")]   public float AverageDeckSize { get; set; }
+        [JsonPropertyName("relics")] public float AverageRelicCount { get; set; }
+        [JsonPropertyName("atk")]    public float AverageAttackCount { get; set; }
+        [JsonPropertyName("skl")]    public float AverageSkillCount { get; set; }
+        [JsonPropertyName("pwr")]    public float AveragePowerCount { get; set; }
+        [JsonPropertyName("com")]    public float AverageCommonCount { get; set; }
+        [JsonPropertyName("unc")]    public float AverageUncommonCount { get; set; }
+        [JsonPropertyName("rar")]    public float AverageRareCount { get; set; }
         [JsonPropertyName("runs")]   public int TotalRuns { get; set; }
         [JsonPropertyName("wins")]   public int Wins { get; set; }
         [JsonPropertyName("mws")]    public int MaxWinStreak { get; set; }

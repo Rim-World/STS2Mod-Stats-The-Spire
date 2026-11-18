@@ -5,10 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityStats.Config;
 using CommunityStats.Util;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace CommunityStats.Collection;
 
@@ -28,12 +31,12 @@ public sealed class RunHistoryAnalyzer
     public static RunHistoryAnalyzer Instance { get; } = new();
 
     // ── Cache ───────────────────────────────────────────────
-    // (characterFilter, minAscension, recentCount) → cached snapshot
-    private readonly Dictionary<(string, int, int), CareerStatsData> _cache = new();
+    // (characterFilter, minAscension, recentCount, modeFilter) → cached snapshot
+    private readonly Dictionary<(string, int, int, CareerRunModeFilter), CareerStatsData> _cache = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    private static (string, int, int) Key(string? characterFilter, int minAscension, int recentCount = 0)
-        => (characterFilter ?? "", minAscension, recentCount);
+    private static (string, int, int, CareerRunModeFilter) Key(string? characterFilter, int minAscension, int recentCount = 0, CareerRunModeFilter modeFilter = CareerRunModeFilter.All)
+        => (characterFilter ?? "", minAscension, recentCount, modeFilter);
 
     /// <summary>Fired on the worker thread when a new snapshot is ready.</summary>
     public event Action<CareerStatsData>? CareerStatsLoaded;
@@ -60,9 +63,9 @@ public sealed class RunHistoryAnalyzer
     /// Use to populate UI synchronously without re-loading. Disk hits are
     /// promoted into the in-memory cache so subsequent calls are free.
     /// </summary>
-    public CareerStatsData? GetCached(string? characterFilter, int minAscension = 0, int recentCount = 0)
+    public CareerStatsData? GetCached(string? characterFilter, int minAscension = 0, int recentCount = 0, CareerRunModeFilter modeFilter = CareerRunModeFilter.All)
     {
-        var key = Key(characterFilter, minAscension, recentCount);
+        var key = Key(characterFilter, minAscension, recentCount, modeFilter);
         lock (_cache)
         {
             if (_cache.TryGetValue(key, out var v)) return v;
@@ -74,7 +77,7 @@ public sealed class RunHistoryAnalyzer
         // stale unfiltered data.
         if (minAscension == 0 && recentCount == 0)
         {
-            return CareerStatsCache.Load(characterFilter);
+            return CareerStatsCache.Load(characterFilter, modeFilter);
         }
         return null;
     }
@@ -85,12 +88,12 @@ public sealed class RunHistoryAnalyzer
     /// Pass force=true to bypass the cache (used after a run finishes so the
     /// fresh on-disk file gets re-aggregated).
     /// </summary>
-    public async Task<CareerStatsData> LoadAllAsync(string? characterFilter, CancellationToken ct = default, bool force = false, int minAscension = 0, int recentCount = 0)
+    public async Task<CareerStatsData> LoadAllAsync(string? characterFilter, CancellationToken ct = default, bool force = false, int minAscension = 0, int recentCount = 0, CareerRunModeFilter modeFilter = CareerRunModeFilter.All)
     {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var key = Key(characterFilter, minAscension, recentCount);
+            var key = Key(characterFilter, minAscension, recentCount, modeFilter);
             if (!force)
             {
                 lock (_cache)
@@ -103,8 +106,8 @@ public sealed class RunHistoryAnalyzer
                 lock (_cache) _cache.Remove(key);
             }
 
-            Safe.Info($"[RunHistoryAnalyzer] LoadAllAsync starting (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount}, force={force})");
-            var snapshot = await Task.Run(() => BuildSnapshot(characterFilter, minAscension, recentCount, ct), ct)
+            Safe.Info($"[RunHistoryAnalyzer] LoadAllAsync starting (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount}, mode={modeFilter}, force={force})");
+            var snapshot = await Task.Run(() => BuildSnapshot(characterFilter, minAscension, recentCount, modeFilter, ct), ct)
                                      .ConfigureAwait(false);
             Safe.Info($"[RunHistoryAnalyzer] LoadAllAsync built snapshot: TotalRuns={snapshot.TotalRuns}, cards={_cardBundle.Cards.Count}, relics={_relicBundle.Relics.Count}");
 
@@ -123,9 +126,9 @@ public sealed class RunHistoryAnalyzer
 
             lock (_cache) { _cache[key] = snapshot; }
 
-            // Persist only the asc=0 snapshot (per-ascension snapshots aren't
-            // worth caching to disk — they're cheap to recompute).
-            if (minAscension == 0)
+            // Persist only the unfiltered snapshot (per-ascension/per-recent
+            // snapshots are cheap to recompute and would overwrite each other).
+            if (minAscension == 0 && recentCount == 0)
             {
                 try { CareerStatsCache.Save(snapshot); }
                 catch (Exception ex) { Safe.Warn($"CareerStatsCache.Save threw: {ex.Message}"); }
@@ -157,7 +160,7 @@ public sealed class RunHistoryAnalyzer
 
     // ── Worker ──────────────────────────────────────────────
 
-    private CareerStatsData BuildSnapshot(string? characterFilter, int minAscension, int recentCount, CancellationToken ct)
+    private CareerStatsData BuildSnapshot(string? characterFilter, int minAscension, int recentCount, CareerRunModeFilter modeFilter, CancellationToken ct)
     {
         _lastBuildFailed = false;
         List<string> names;
@@ -169,11 +172,11 @@ public sealed class RunHistoryAnalyzer
         {
             Safe.Warn($"RunHistoryAnalyzer: GetAllRunHistoryNames failed: {ex.Message}");
             _lastBuildFailed = true;
-            return CareerStatsData.Empty(characterFilter, minAscension, recentCount);
+            return CareerStatsData.Empty(characterFilter, minAscension, recentCount, modeFilter);
         }
 
         Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: GetAllRunHistoryNames returned {names.Count} files");
-        if (names.Count == 0) return CareerStatsData.Empty(characterFilter, minAscension, recentCount);
+        if (names.Count == 0) return CareerStatsData.Empty(characterFilter, minAscension, recentCount, modeFilter);
 
         var loaded = new List<RunHistory>(capacity: names.Count);
         foreach (var name in names)
@@ -194,10 +197,12 @@ public sealed class RunHistoryAnalyzer
 
             if (characterFilter != null)
             {
-                bool matches = history.Players.Any(p => p.Character.Entry == characterFilter);
+                var local = GetLocalPlayer(history);
+                bool matches = local != null && local.Character.Entry == characterFilter;
                 if (!matches) continue;
             }
             if (minAscension > 0 && history.Ascension < minAscension) continue;
+            if (!MatchesMode(history, modeFilter)) continue;
             loaded.Add(history);
         }
 
@@ -209,12 +214,12 @@ public sealed class RunHistoryAnalyzer
             Godot.GD.Print($"[StatsTheSpire] BuildSnapshot: recent filter applied, trimmed {loaded.Count + (loaded.Count < recentCount ? 0 : 0)} → {loaded.Count}");
         }
 
-        Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: loaded {loaded.Count} histories (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount})");
+        Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: loaded {loaded.Count} histories (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount}, mode={modeFilter})");
         if (loaded.Count == 0)
         {
             _cardBundle = LocalCardStatsBundle.Empty;
             _relicBundle = LocalRelicStatsBundle.Empty;
-            return CareerStatsData.Empty(characterFilter, minAscension, recentCount);
+            return CareerStatsData.Empty(characterFilter, minAscension, recentCount, modeFilter);
         }
 
         // Sort newest first by StartTime for rolling-window calculation.
@@ -227,11 +232,22 @@ public sealed class RunHistoryAnalyzer
         _cardBundle = ComputeLocalCardBundle(loaded);
         _relicBundle = ComputeLocalRelicBundle(loaded);
 
+        var averages = ComputeDeckAverages(loaded);
         return new CareerStatsData
         {
             CharacterFilter = characterFilter,
+            ModeFilter = modeFilter,
             MinAscension = minAscension,
             RecentRunsCount = recentCount,
+            AverageRunTimeSeconds = averages.runTimeSeconds,
+            AverageDeckSize = averages.deckSize,
+            AverageRelicCount = averages.relicCount,
+            AverageAttackCount = averages.attackCount,
+            AverageSkillCount = averages.skillCount,
+            AveragePowerCount = averages.powerCount,
+            AverageCommonCount = averages.commonCount,
+            AverageUncommonCount = averages.uncommonCount,
+            AverageRareCount = averages.rareCount,
             TotalRuns = loaded.Count,
             Wins = loaded.Count(r => r.Win),
             MaxWinStreak = ComputeMaxWinStreak(loaded),
@@ -246,6 +262,96 @@ public sealed class RunHistoryAnalyzer
     }
 
     // ── Aggregations ────────────────────────────────────────
+
+    private static RunHistoryPlayer? GetLocalPlayer(RunHistory run)
+    {
+        if (run.Players == null || run.Players.Count == 0) return null;
+        try
+        {
+            var localId = PlatformUtil.GetLocalPlayerId(run.PlatformType);
+            var local = run.Players.FirstOrDefault(p => p.Id == localId);
+            if (local != null) return local;
+        }
+        catch { /* platform id unavailable; fall back to first player */ }
+        return run.Players[0];
+    }
+
+    private static bool MatchesMode(RunHistory run, CareerRunModeFilter filter)
+    {
+        if (filter == CareerRunModeFilter.All) return true;
+
+        bool multiplayer = (run.Players?.Count ?? 0) > 1;
+        if (filter == CareerRunModeFilter.Multiplayer) return multiplayer;
+        if (multiplayer) return false;
+
+        // Match by name. v0.111 and v0.113 assign different numeric values
+        // to Custom/Dread, so casts to int are not portable.
+        string mode;
+        try { mode = run.GameMode.ToString(); }
+        catch { return false; }
+
+        return filter switch
+        {
+            CareerRunModeFilter.Standard => mode == "Standard",
+            CareerRunModeFilter.Custom   => mode == "Custom",
+            CareerRunModeFilter.Daily    => mode == "Daily",
+            CareerRunModeFilter.Dread    => mode == "Dread",
+            CareerRunModeFilter.Blitz    => mode == "Blitz",
+            _ => true,
+        };
+    }
+
+    private static (float runTimeSeconds, float deckSize, float relicCount,
+        float attackCount, float skillCount, float powerCount,
+        float commonCount, float uncommonCount, float rareCount)
+        ComputeDeckAverages(List<RunHistory> runs)
+    {
+        if (runs.Count == 0)
+            return (0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
+
+        double runTime = 0, deckSize = 0, relicCount = 0;
+        double attack = 0, skill = 0, power = 0;
+        double common = 0, uncommon = 0, rare = 0;
+
+        foreach (var run in runs)
+        {
+            runTime += run.RunTime;
+            var player = GetLocalPlayer(run);
+            if (player == null) continue;
+
+            var cards = player.Deck?.ToList() ?? new List<SerializableCard>();
+            var relics = player.Relics?.ToList() ?? new List<SerializableRelic>();
+            deckSize += cards.Count;
+            relicCount += relics.Count;
+
+            foreach (var card in cards)
+            {
+                if (card?.Id == null) continue;
+                CardModel? model = null;
+                try { model = ModelDb.GetByIdOrNull<CardModel>(card.Id); }
+                catch { }
+                if (model == null) continue;
+
+                switch (model.Type)
+                {
+                    case CardType.Attack: attack++; break;
+                    case CardType.Skill:  skill++;  break;
+                    case CardType.Power:  power++;  break;
+                }
+                switch (model.Rarity)
+                {
+                    case CardRarity.Common:   common++;   break;
+                    case CardRarity.Uncommon: uncommon++; break;
+                    case CardRarity.Rare:     rare++;     break;
+                }
+            }
+        }
+
+        double n = runs.Count;
+        return ((float)(runTime / n), (float)(deckSize / n), (float)(relicCount / n),
+                (float)(attack / n), (float)(skill / n), (float)(power / n),
+                (float)(common / n), (float)(uncommon / n), (float)(rare / n));
+    }
 
     /// <summary>
     /// When KilledBy* fields are both unset, look at the deepest visited floor.

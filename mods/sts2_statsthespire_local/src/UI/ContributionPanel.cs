@@ -59,8 +59,9 @@ public partial class ContributionPanel : PanelContainer
         };
         panel.AddThemeStyleboxOverride("panel", style);
 
-        // Panel size: 570 wide (75% of 760), height anchored to 50% of screen
-        panel.CustomMinimumSize = new Vector2(570, 340);
+        // Panel size: resizable; 570 wide by default, min 480×300.
+        var minimumPanelSize = new Vector2(480, 300);
+        panel.CustomMinimumSize = minimumPanelSize;
 
         panel.AnchorLeft = 0.0f;
         panel.AnchorRight = 0.0f;
@@ -131,11 +132,43 @@ public partial class ContributionPanel : PanelContainer
         // reflects the dataset currently visible (本场战斗 vs 本局汇总).
         panel._tabs.TabChanged += _ => Safe.Run(() => panel.UpdateDps());
 
+        // Bottom-right resize handle.
+        var resizeRow = new HBoxContainer
+        {
+            CustomMinimumSize = new Vector2(0, 20),
+            MouseFilter = MouseFilterEnum.Pass,
+        };
+        var resizeSpacer = new Control
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        resizeRow.AddChild(resizeSpacer);
+
+        var resizeHandle = new Label
+        {
+            Text = "◢",
+            TooltipText = L.Get("contrib.resize_hint"),
+            CustomMinimumSize = new Vector2(28, 20),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Stop,
+        };
+        resizeHandle.AddThemeColorOverride("font_color", new Color(0.48f, 0.62f, 0.86f, 0.85f));
+        resizeHandle.AddThemeFontSizeOverride("font_size", 17);
+        resizeRow.AddChild(resizeHandle);
+        vbox.AddChild(resizeRow);
+        ResizablePanel.Attach(panel, resizeHandle, minimumPanelSize);
+
         // Enable drag via title bar (PRD 4.5)
         DraggablePanel.Attach(panel, header);
 
-        // Restore saved position if present
-        panel.Ready += () => DraggablePanel.RestorePosition(panel, panel.GlobalPosition);
+        // Restore saved position and size if present
+        panel.Ready += () =>
+        {
+            ResizablePanel.RestoreSize(panel, new Vector2(660, panel.Size.Y), minimumPanelSize);
+            DraggablePanel.RestorePosition(panel, panel.GlobalPosition);
+        };
 
         // Subscribe to real-time updates (PRD 3.6)
         CombatTracker.Instance.CombatDataUpdated += panel.OnCombatDataUpdated;
@@ -418,6 +451,12 @@ public partial class ContributionPanel : PanelContainer
         if (_instance != null)
             _instance.Visible = false;
         _replayRunData = null;
+    }
+
+    /// <summary>Hide the panel only when it is currently visible.</summary>
+    public static void HideIfVisible()
+    {
+        if (IsVisible) Hide();
     }
 
     /// <summary>

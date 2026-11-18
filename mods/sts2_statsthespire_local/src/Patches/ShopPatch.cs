@@ -4,6 +4,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace CommunityStats.Patches;
 
@@ -36,7 +37,7 @@ public static class ShopPatch
     {
         Safe.Run(() =>
         {
-            var inventory = __instance.Inventory;
+            var inventory = RunManager.Instance.MerchantSynchronizer.GetLocalInventory();
             if (inventory == null) return;
 
             var floor = RunDataCollector.CurrentFloor;

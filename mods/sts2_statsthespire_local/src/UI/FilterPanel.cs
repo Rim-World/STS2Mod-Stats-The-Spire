@@ -13,6 +13,8 @@ public partial class FilterPanel : PanelContainer
     private static FilterPanel? _instance;
 
     private OptionButton? _langDropdown;
+    private HSlider? _intentScaleSlider;
+    private Label? _intentScaleValue;
     private readonly Dictionary<string, CheckBox> _toggleCheckboxes = new();
 
     private const int TitleSize   = 28;
@@ -122,6 +124,37 @@ public partial class FilterPanel : PanelContainer
         panel._langDropdown.AddItem("English", 1);
         panel._langDropdown.Selected = L.Current == L.Lang.EN ? 1 : 0;
         AddLabeledControl(langGrid, L.Get("settings.language"), panel._langDropdown);
+
+        body.AddChild(NewSeparator());
+
+        // ── Interface scale ─────────────────────────────────
+        body.AddChild(MakeSectionHeader(L.Get("settings.ui_title")));
+        var uiGrid = NewRowGrid();
+        body.AddChild(uiGrid);
+
+        var scaleRow = new HBoxContainer();
+        scaleRow.AddThemeConstantOverride("separation", 10);
+        scaleRow.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
+        panel._intentScaleSlider = new HSlider
+        {
+            MinValue = 0.5,
+            MaxValue = 1.25,
+            Step = 0.05,
+            Value = ModConfig.IntentPanelScale,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+        };
+        panel._intentScaleValue = MakeLabel($"{ModConfig.IntentPanelScale:F2}×", Cream, LabelSize);
+        panel._intentScaleValue.CustomMinimumSize = new Vector2(54, 0);
+        panel._intentScaleSlider.ValueChanged += v =>
+        {
+            if (panel._intentScaleValue != null)
+                panel._intentScaleValue.Text = $"{v:F2}×";
+        };
+        scaleRow.AddChild(panel._intentScaleSlider);
+        scaleRow.AddChild(panel._intentScaleValue);
+        AddLabeledControl(uiGrid, L.Get("settings.intent_panel_scale"), scaleRow);
 
         body.AddChild(NewSeparator());
 
@@ -240,7 +273,11 @@ public partial class FilterPanel : PanelContainer
             foreach (var (key, cb) in _toggleCheckboxes)
                 ModConfig.Toggles.SetByName(key, cb.ButtonPressed);
 
+            if (_intentScaleSlider != null)
+                ModConfig.IntentPanelScale = Math.Clamp((float)_intentScaleSlider.Value, 0.5f, 1.25f);
+
             ModConfig.SaveSettings();
+            CommunityStats.Patches.CombatUiOverlayPatch.RefreshVisibility();
 
             Visible = false;
         });

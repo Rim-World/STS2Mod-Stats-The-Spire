@@ -32,6 +32,18 @@ public static class ContributionPersistence
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
     };
 
+    private static string? _activeSeed;
+    private static int _activeFloor;
+
+    public static void SetActiveSeed(string seed) => _activeSeed = seed;
+    public static void SetActiveFloor(int floor) => _activeFloor = floor;
+
+    public static void ClearRunContext()
+    {
+        _activeSeed = null;
+        _activeFloor = 0;
+    }
+
     // ── Public API ──────────────────────────────────────────
 
     /// <summary>
@@ -39,6 +51,7 @@ public static class ContributionPersistence
     /// </summary>
     public static string? GetActiveSeed()
     {
+        if (!string.IsNullOrEmpty(_activeSeed)) return _activeSeed;
         try
         {
             var state = RunManager.Instance?.DebugOnlyGetState();
@@ -60,14 +73,15 @@ public static class ContributionPersistence
         var seed = GetActiveSeed();
         if (string.IsNullOrEmpty(seed)) return;
 
+        int effectiveFloor = floor > 0 ? floor : _activeFloor;
         Safe.Run(() =>
         {
             ModConfig.EnsureDirectories();
-            var path = CombatPath(seed, floor);
+            var path = CombatPath(seed, effectiveFloor);
             var dto = new ContributionDoc
             {
                 Seed = seed,
-                Floor = floor,
+                Floor = effectiveFloor,
                 Kind = "combat",
                 SavedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Sources = data.Values.Select(ToDto).ToList(),
@@ -123,7 +137,9 @@ public static class ContributionPersistence
         {
             var json = File.ReadAllText(path);
             var dto = JsonSerializer.Deserialize<ContributionDoc>(json, JsonOpts);
-            return dto?.Sources?.ToDictionary(s => s.SourceId, FromDto);
+            return dto?.Sources != null && dto.Sources.Count > 0
+                ? ToDictionaryMerge(dto.Sources)
+                : null;
         }
         catch (Exception ex)
         {

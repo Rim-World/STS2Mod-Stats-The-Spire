@@ -14,14 +14,15 @@ namespace CommunityStats.Patches;
 [HarmonyPatch]
 public static class RunLifecyclePatch
 {
-    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpNewSinglePlayer))]
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpNewSingleplayer))]
     [HarmonyPostfix]
     public static void OnRunStartSP(RunManager __instance, RunState state)
     {
         Safe.Run(() =>
         {
-            Safe.Info("[DIAG:RunLifecycle] SetUpNewSinglePlayer Postfix fired");
+            Safe.Info("[DIAG:RunLifecycle] SetUpNewSingleplayer Postfix fired");
             RunDataCollector.OnRunStart();
+            RememberSeed(state);
             TryHydrateLiveState(state?.Rng?.StringSeed);
             // PRD §3.9 / §3.17 round 9: top-bar indicators get built once
             // per run (lifetime mirrors NTopBar's). Defer one frame so
@@ -32,7 +33,7 @@ public static class RunLifecyclePatch
 
     /// <summary>
     /// Round 9 fix: when the user clicks "Continue" from the main menu the
-    /// game routes through `SetUpSavedSinglePlayer`, NOT `SetUpNewSinglePlayer`.
+    /// game routes through `SetUpSavedSingleplayer`, NOT `SetUpNewSingleplayer`.
     /// Without this hook the run-start path never fires for resumed runs and
     /// every per-run init (live-state hydrate, top-bar indicators) is skipped.
     /// Crash dump analysis showed the second crash was in the resume path
@@ -40,42 +41,52 @@ public static class RunLifecyclePatch
     /// `_potion / _cardDrop` stayed null → `AfterSetUpCombat` fallback tried
     /// to lazy-create them mid-combat-init and AV'd inside the Godot binding.
     /// </summary>
-    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedSinglePlayer))]
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedSingleplayer))]
     [HarmonyPostfix]
     public static void OnRunResumeSP(RunManager __instance, RunState state)
     {
         Safe.Run(() =>
         {
-            Safe.Info("[DIAG:RunLifecycle] SetUpSavedSinglePlayer Postfix fired");
+            Safe.Info("[DIAG:RunLifecycle] SetUpSavedSingleplayer Postfix fired");
             RunDataCollector.OnRunStart();
+            RememberSeed(state);
             TryHydrateLiveState(state?.Rng?.StringSeed);
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
     }
 
-    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedMultiPlayer))]
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedMultiplayer))]
     [HarmonyPostfix]
     public static void OnRunResumeMP(RunManager __instance, RunState state)
     {
         Safe.Run(() =>
         {
-            Safe.Info("[DIAG:RunLifecycle] SetUpSavedMultiPlayer Postfix fired");
+            Safe.Info("[DIAG:RunLifecycle] SetUpSavedMultiplayer Postfix fired");
             RunDataCollector.OnRunStart();
+            RememberSeed(state);
             TryHydrateLiveState(state?.Rng?.StringSeed);
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
     }
 
-    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpNewMultiPlayer))]
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpNewMultiplayer))]
     [HarmonyPostfix]
     public static void OnRunStartMP(RunManager __instance, RunState state)
     {
         Safe.Run(() =>
         {
             RunDataCollector.OnRunStart();
+            RememberSeed(state);
             TryHydrateLiveState(state?.Rng?.StringSeed);
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
+    }
+
+    private static void RememberSeed(RunState? state)
+    {
+        var seed = state?.Rng?.StringSeed;
+        if (!string.IsNullOrEmpty(seed))
+            ContributionPersistence.SetActiveSeed(seed);
     }
 
     /// <summary>

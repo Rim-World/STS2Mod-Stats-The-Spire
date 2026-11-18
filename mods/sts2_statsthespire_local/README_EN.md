@@ -1,7 +1,7 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.0.0
-**For**: Slay the Spire 2 (Early Access v0.99.x+)
+**Version**: 1.4.1
+**For**: Slay the Spire 2 Early Access v0.111.1 and v0.113.1
 **Type**: Info display only, no gameplay impact. No network, fully offline.
 
 ---
@@ -144,7 +144,7 @@ Go to **Compendium → Character Data → Personal Career Stats** to see aggrega
 - **Deck building + Path stats**: per-Act averages for cards obtained / bought / removed / upgraded, plus monster / elite / ? room / shop / rest site counts
 - **Ancient relic pick rates**: grouped by Elder, with pick rate / pick count / win rate / win rate delta for each pool
 - **Boss damage taken**: average HP loss + death rate for all act bosses
-- Character filter: all characters / single character
+- Character filter: all characters / single character (includes the Fool)
 
 ### Run History Single-Run Stats
 
@@ -223,4 +223,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-The mod works with Slay the Spire 2 Early Access. Card/relic ID changes across game versions are handled automatically.
+One `sts2_statsthespire_local.dll` supports v0.111.1 and v0.113.1. Card/relic ID changes across game versions are handled automatically. v0.113.1 is verified in-game; v0.111.1 in-game verification is not done.
