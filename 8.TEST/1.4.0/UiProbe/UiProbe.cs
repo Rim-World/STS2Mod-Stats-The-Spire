@@ -53,6 +53,21 @@ public static class UiProbe
             FilterPanel.Toggle();
             Safe.Info($"[UiProbe] filter visible={filter.Visible} children={filter.GetChildCount()}");
             filter.Visible = false;
+
+            var career = CareerStatsSection.Create("FOOL");
+            tree.Root.AddChild(career);
+            var dropdowns = career.FindChildren("*", "OptionButton", true, false);
+            int dropdownIndex = 0;
+            foreach (var node in dropdowns)
+            {
+                if (node is not OptionButton option) continue;
+                var items = new List<string>();
+                for (int i = 0; i < option.ItemCount; i++)
+                    items.Add($"{option.GetItemText(i)}={option.GetItemId(i)}");
+                Safe.Info($"[UiProbe] career dropdown[{dropdownIndex}]={string.Join("|", items)}");
+                dropdownIndex++;
+            }
+            Safe.Info($"[UiProbe] career fool section children={career.GetChildCount()}");
         });
     }
 }

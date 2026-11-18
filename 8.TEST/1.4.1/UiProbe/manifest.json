@@ -1,0 +1,11 @@
+{
+  "id": "ui_probe",
+  "name": "Stats the Spire UI Probe",
+  "author": "local-test",
+  "description": "Test-only UI construction probe.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": []
+}

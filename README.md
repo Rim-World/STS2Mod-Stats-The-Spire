@@ -22,17 +22,18 @@
 ## 快速构建
 
 ```bash
-dotnet build 9.SRC/sts2_statsthespire_local.csproj -c Debug -p:DefineConstants=STS2_GE_V105
+dotnet build 9.SRC/sts2_statsthespire_local.csproj -c Debug
 ```
 
 详细说明见 `9.SRC/README.md`。
 
 ## 当前状态
 
-- 源码已整理到 `9.SRC`，版本 1.4.0。
-- v0.113.1 构建通过；无头加载、AutoSlayer、生涯统计与 UI 探针通过。
-- 测试部署已清理；v0.111、人工键位与视觉验收未完成。
-- 构建产物在 `10.OUTPUT/1.4.0/`。
+- 源码已整理到 `9.SRC`，版本 1.4.1。
+- v0.113.1 构建通过；无头加载、AutoSlayer、生涯统计、愚者筛选与 UI 探针通过。
+- 同一 DLL 目标兼容 v0.111.1 与 v0.113.1；v0.111.1 实机验证未执行。
+- 测试部署已清理；人工键位与视觉验收未完成。
+- 构建产物在 `10.OUTPUT/1.4.1/`。
 
 ## 来源与授权
 

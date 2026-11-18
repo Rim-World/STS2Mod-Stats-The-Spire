@@ -24,9 +24,8 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
 
     <!--
-      Game version target:
-        Stable (v0.103.x):  dotnet build
-        Beta   (v0.105.x+): dotnet build -p:DefineConstants=STS2_GE_V105
+      One DLL supports v0.111.1 and v0.113.1. Version-specific game APIs are
+      selected at runtime; do not define per-version compilation symbols.
     -->
   </PropertyGroup>
 

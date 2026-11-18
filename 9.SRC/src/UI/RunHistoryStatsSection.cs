@@ -124,11 +124,15 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     private static string ResolveCharacterName(string characterId)
     {
         if (string.IsNullOrEmpty(characterId)) return "";
-        // When the mod is in English, use the L.Get fallback names
-        // ("Ironclad" etc.) instead of the game's Title (which follows
-        // the game's display language).
+        // When the mod is in English, prefer the English fallback name.
+        // If the key is missing (for example a new character), fall through
+        // to the game's localized Title instead of showing a raw key.
         if (Config.L.Current == Config.L.Lang.EN)
-            return Config.L.Get("char." + characterId);
+        {
+            var key = "char." + characterId;
+            var en = Config.L.Get(key);
+            if (en != key) return en;
+        }
         try
         {
             foreach (var c in MegaCrit.Sts2.Core.Models.ModelDb.AllCharacters)

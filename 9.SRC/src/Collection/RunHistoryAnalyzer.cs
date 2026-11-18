@@ -197,7 +197,8 @@ public sealed class RunHistoryAnalyzer
 
             if (characterFilter != null)
             {
-                bool matches = history.Players.Any(p => p.Character.Entry == characterFilter);
+                var local = GetLocalPlayer(history);
+                bool matches = local != null && local.Character.Entry == characterFilter;
                 if (!matches) continue;
             }
             if (minAscension > 0 && history.Ascension < minAscension) continue;
@@ -283,11 +284,19 @@ public sealed class RunHistoryAnalyzer
         if (filter == CareerRunModeFilter.Multiplayer) return multiplayer;
         if (multiplayer) return false;
 
+        // Match by name. v0.111 and v0.113 assign different numeric values
+        // to Custom/Dread, so casts to int are not portable.
+        string mode;
+        try { mode = run.GameMode.ToString(); }
+        catch { return false; }
+
         return filter switch
         {
-            CareerRunModeFilter.Standard => (int)run.GameMode == 1,
-            CareerRunModeFilter.Custom   => (int)run.GameMode == 3,
-            CareerRunModeFilter.Daily    => (int)run.GameMode == 2,
+            CareerRunModeFilter.Standard => mode == "Standard",
+            CareerRunModeFilter.Custom   => mode == "Custom",
+            CareerRunModeFilter.Daily    => mode == "Daily",
+            CareerRunModeFilter.Dread    => mode == "Dread",
+            CareerRunModeFilter.Blitz    => mode == "Blitz",
             _ => true,
         };
     }

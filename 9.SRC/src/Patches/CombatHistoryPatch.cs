@@ -20,11 +20,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
-#if STS2_GE_V105
 using CombatStateType = MegaCrit.Sts2.Core.Combat.ICombatState;
-#else
-using CombatStateType = MegaCrit.Sts2.Core.Combat.CombatState;
-#endif
 
 namespace CommunityStats.Patches;
 
@@ -138,11 +134,7 @@ public static class CombatHistoryPatch
             // rationale. Still pass through so encounter tracking / damage
             // dedup run normally; only the enemy-side damage ledger is
             // suppressed.
-#if STS2_GE_V105
             bool invincible = !isPlayerReceiver && receiver.HpDisplay.IsInfinite();
-#else
-            bool invincible = !isPlayerReceiver && receiver.ShowsInfiniteHp;
-#endif
 
             CombatTracker.Instance.OnDamageDealt(
                 result.TotalDamage,
@@ -1973,11 +1965,7 @@ public static class KillingBlowPatcher
             Safe.Info($"[KillingBlow] Capturing missed damage: {cardSourceId ?? "?"} → {results.TotalDamage} to {target}");
 
             // Invincible-phase guard — same reasoning as AfterDamageReceived.
-#if STS2_GE_V105
             bool invincible = receiver.HpDisplay.IsInfinite();
-#else
-            bool invincible = receiver.ShowsInfiniteHp;
-#endif
 
             CombatTracker.Instance.OnDamageDealt(
                 results.TotalDamage,
@@ -2888,31 +2876,88 @@ public static class TempStrengthRevertPatch
 // Records origin for cards generated via CardPileCmd.AddGeneratedCardsToCombat.
 // ═══════════════════════════════════════════════════════════
 
-[HarmonyPatch]
 public static class CardGenerationOriginPatch
 {
-    [HarmonyPatch(typeof(Hook), nameof(Hook.AfterCardGeneratedForCombat))]
-#if STS2_GE_V105
-    [HarmonyPostfix]
-    public static void AfterCardGenerated(CardModel card, Player? creator)
+    /// <summary>
+    /// Register the postfix that matches the running game's signature.
+    /// v0.111 passes a bool; v0.113 passes the creating Player. One DLL
+    /// handles both without compile-time version symbols.
+    /// </summary>
+    public static void Patch(Harmony harmony)
+    {
+        var method = AccessTools.DeclaredMethod(
+            typeof(Hook), "AfterCardGeneratedForCombat");
+        if (method == null)
+        {
+            Safe.Warn("[CardGenerationOriginPatch] hook not found");
+            return;
+        }
+
+        var parameters = method.GetParameters();
+        if (parameters.Length == 3
+            && parameters[1].ParameterType == typeof(CardModel)
+            && parameters[2].ParameterType == typeof(Player))
+        {
+            harmony.Patch(method, postfix: new HarmonyMethod(
+                typeof(CardGenerationOriginPatch),
+                nameof(AfterCardGeneratedWithState)));
+            Safe.Info("[CardGenerationOriginPatch] patched combat-state signature");
+            return;
+        }
+
+        if (parameters.Length == 2)
+        {
+            if (parameters[1].ParameterType == typeof(Player))
+            {
+                harmony.Patch(method, postfix: new HarmonyMethod(
+                    typeof(CardGenerationOriginPatch),
+                    nameof(AfterCardGeneratedWithCreator)));
+                Safe.Info("[CardGenerationOriginPatch] patched creator signature");
+                return;
+            }
+
+            if (parameters[1].ParameterType == typeof(bool))
+            {
+                harmony.Patch(method, postfix: new HarmonyMethod(
+                    typeof(CardGenerationOriginPatch),
+                    nameof(AfterCardGeneratedWithFlag)));
+                Safe.Info("[CardGenerationOriginPatch] patched bool signature");
+                return;
+            }
+        }
+
+        Safe.Warn($"[CardGenerationOriginPatch] unsupported signature: {method}");
+    }
+
+    public static void AfterCardGeneratedWithState(
+        MegaCrit.Sts2.Core.Combat.ICombatState __0,
+        CardModel __1,
+        Player? __2)
     {
         Safe.Run(() =>
         {
-            if (creator == null) return;
-            RecordCardOriginInternal(card);
+            if (__2 == null) return;
+            RecordCardOriginInternal(__1);
         });
     }
-#else
-    [HarmonyPostfix]
-    public static void AfterCardGenerated(CardModel card, bool addedByPlayer)
+
+    public static void AfterCardGeneratedWithCreator(CardModel __0, Player? __1)
     {
         Safe.Run(() =>
         {
-            if (!addedByPlayer) return;
-            RecordCardOriginInternal(card);
+            if (__1 == null) return;
+            RecordCardOriginInternal(__0);
         });
     }
-#endif
+
+    public static void AfterCardGeneratedWithFlag(CardModel __0, bool __1)
+    {
+        Safe.Run(() =>
+        {
+            if (!__1) return;
+            RecordCardOriginInternal(__0);
+        });
+    }
 
     private static void RecordCardOriginInternal(CardModel card)
     {

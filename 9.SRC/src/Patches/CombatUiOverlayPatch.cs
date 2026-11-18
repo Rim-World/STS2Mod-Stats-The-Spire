@@ -15,11 +15,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 
-#if STS2_GE_V105
 using CombatStateType = MegaCrit.Sts2.Core.Combat.ICombatState;
-#else
-using CombatStateType = MegaCrit.Sts2.Core.Combat.CombatState;
-#endif
 
 namespace CommunityStats.Patches;
 

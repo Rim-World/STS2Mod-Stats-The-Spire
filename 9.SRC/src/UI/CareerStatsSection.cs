@@ -43,6 +43,16 @@ public sealed partial class CareerStatsSection : VBoxContainer
     private int _recentRunsCount; // 0 = all runs
     private CareerRunModeFilter _modeFilter = CareerRunModeFilter.All;
     private CareerStatsData? _data;
+    private readonly List<CharacterOption> _characterOptions = new();
+
+    private sealed record CharacterOption(string Id, string Label, Texture2D? Icon);
+
+    // Preferred display order. Characters not present in the running game are
+    // skipped, so one DLL works on both v0.111 (no Fool) and v0.113 (Fool).
+    private static readonly string[] PreferredCharacterOrder =
+    {
+        "IRONCLAD", "SILENT", "DEFECT", "NECROBINDER", "REGENT", "FOOL",
+    };
 
     private CareerStatsSection() { }
 
@@ -271,27 +281,9 @@ public sealed partial class CareerStatsSection : VBoxContainer
         }
     }
 
-    // PRD §3.18.3 — independent character dropdown for CareerStats. Order
-    // mirrors the F9 dropdown but without "auto" (this view is character-
-    // agnostic by design and defaults to All Characters).
-    private static readonly string?[] _careerCharacters = new string?[]
-    {
-        null,           // All
-        "IRONCLAD",
-        "SILENT",
-        "DEFECT",
-        "NECROBINDER",
-        "REGENT",
-    };
-    private static readonly string[] _careerCharacterLocKeys = new[]
-    {
-        "settings.char_all",
-        "char.IRONCLAD",
-        "char.SILENT",
-        "char.DEFECT",
-        "char.NECROBINDER",
-        "char.REGENT",
-    };
+    // PRD §3.18.3 — independent character dropdown for CareerStats. The list
+    // is built at runtime from ModelDb.AllCharacters; it includes the Fool on
+    // v0.113 and omits it on v0.111.
 
     private Control BuildHeader()
     {
@@ -316,7 +308,8 @@ public sealed partial class CareerStatsSection : VBoxContainer
 
         var charDropdown = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         PopulateCharacterDropdown(charDropdown);
-        var currentIdx = Array.IndexOf(_careerCharacters, _characterFilter);
+        var currentIdx = _characterOptions.FindIndex(
+            o => string.Equals(o.Id, _characterFilter ?? "", StringComparison.Ordinal));
         charDropdown.Selected = currentIdx >= 0 ? currentIdx : 0;
         charDropdown.ItemSelected += i => OnCharacterDropdownChanged((int)i);
         grid.AddChild(charDropdown);
@@ -328,13 +321,10 @@ public sealed partial class CareerStatsSection : VBoxContainer
         grid.AddChild(modeLbl);
 
         var modeDropdown = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        modeDropdown.AddItem(L.Get("career.mode_all"), 0);
-        modeDropdown.AddItem(L.Get("career.mode_standard"), 1);
-        modeDropdown.AddItem(L.Get("career.mode_custom"), 2);
-        modeDropdown.AddItem(L.Get("career.mode_daily"), 3);
-        modeDropdown.AddItem(L.Get("career.mode_multiplayer"), 4);
-        modeDropdown.Selected = (int)_modeFilter;
-        modeDropdown.ItemSelected += i => OnModeChanged((CareerRunModeFilter)i);
+        PopulateModeDropdown(modeDropdown);
+        modeDropdown.Selected = FindModeIndex(modeDropdown, _modeFilter);
+        modeDropdown.ItemSelected += i =>
+            OnModeChanged((CareerRunModeFilter)modeDropdown.GetItemId((int)i));
         grid.AddChild(modeDropdown);
 
         // Row 3: min-ascension spin box.
@@ -404,40 +394,95 @@ public sealed partial class CareerStatsSection : VBoxContainer
     }
 
     /// <summary>
-    /// Add icon+name items for "全部角色" + the 5 characters. Uses
-    /// CharacterModel.IconTexture (the small top-panel character icon) and
-    /// CharacterModel.Title.GetFormattedText() for the localized name.
-    /// "全部角色" reuses RandomCharacter's icon (the same one that appears
-    /// on the character-select random button).
+    /// Build the character list from the running game's model database.
+    /// The Fool exists only in v0.113; v0.111 returns five characters. No
+    /// compile-time reference to the Fool type is used, so one DLL loads on
+    /// both versions.
     /// </summary>
-    private static void PopulateCharacterDropdown(OptionButton dropdown)
+    private void PopulateCharacterDropdown(OptionButton dropdown)
     {
-        AddCharIcon(dropdown, 0,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.RandomCharacter>(),
-            L.Get("settings.char_all"));
-        AddCharIcon(dropdown, 1,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.Ironclad>(),
-            TryGetCharTitle<MegaCrit.Sts2.Core.Models.Characters.Ironclad>("char.IRONCLAD"));
-        AddCharIcon(dropdown, 2,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.Silent>(),
-            TryGetCharTitle<MegaCrit.Sts2.Core.Models.Characters.Silent>("char.SILENT"));
-        AddCharIcon(dropdown, 3,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.Defect>(),
-            TryGetCharTitle<MegaCrit.Sts2.Core.Models.Characters.Defect>("char.DEFECT"));
-        AddCharIcon(dropdown, 4,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.Necrobinder>(),
-            TryGetCharTitle<MegaCrit.Sts2.Core.Models.Characters.Necrobinder>("char.NECROBINDER"));
-        AddCharIcon(dropdown, 5,
-            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.Regent>(),
-            TryGetCharTitle<MegaCrit.Sts2.Core.Models.Characters.Regent>("char.REGENT"));
+        _characterOptions.Clear();
+        _characterOptions.Add(new CharacterOption(
+            "",
+            L.Get("settings.char_all"),
+            TryGetCharIcon<MegaCrit.Sts2.Core.Models.Characters.RandomCharacter>()));
+
+        foreach (var model in GetPlayableCharacters())
+        {
+            string id;
+            try { id = model.Id.Entry; }
+            catch { continue; }
+            if (string.IsNullOrEmpty(id)) continue;
+            _characterOptions.Add(new CharacterOption(
+                id,
+                GetCharacterLabel(model),
+                TryGetCharIcon(model)));
+        }
+
+        for (int i = 0; i < _characterOptions.Count; i++)
+        {
+            var option = _characterOptions[i];
+            if (option.Icon != null)
+                dropdown.AddIconItem(option.Icon, option.Label, i);
+            else
+                dropdown.AddItem(option.Label, i);
+        }
     }
 
-    private static void AddCharIcon(OptionButton dropdown, int id, Texture2D? icon, string label)
+    private static List<MegaCrit.Sts2.Core.Models.CharacterModel> GetPlayableCharacters()
     {
-        if (icon != null)
-            dropdown.AddIconItem(icon, label, id);
-        else
-            dropdown.AddItem(label, id);
+        var ordered = new List<MegaCrit.Sts2.Core.Models.CharacterModel>();
+        try
+        {
+            var byId = new Dictionary<string, MegaCrit.Sts2.Core.Models.CharacterModel>(
+                StringComparer.Ordinal);
+            foreach (var model in MegaCrit.Sts2.Core.Models.ModelDb.AllCharacters)
+            {
+                if (model == null) continue;
+                string id;
+                try { id = model.Id.Entry; }
+                catch { continue; }
+                if (string.IsNullOrEmpty(id) || byId.ContainsKey(id)) continue;
+                try { if (!model.IsPlayable) continue; }
+                catch { }
+                byId[id] = model;
+            }
+
+            foreach (var id in PreferredCharacterOrder)
+            {
+                if (!byId.TryGetValue(id, out var model)) continue;
+                ordered.Add(model);
+                byId.Remove(id);
+            }
+
+            ordered.AddRange(byId.Values.OrderBy(
+                m => m.Id.Entry, StringComparer.Ordinal));
+        }
+        catch { /* model database not ready; show "All" only */ }
+        return ordered;
+    }
+
+    private static string GetCharacterLabel(MegaCrit.Sts2.Core.Models.CharacterModel model)
+    {
+        string id;
+        try { id = model.Id.Entry; }
+        catch { return ""; }
+        var key = "char." + id;
+
+        if (L.Current == L.Lang.EN)
+        {
+            var en = L.Get(key);
+            if (en != key) return en;
+        }
+
+        try
+        {
+            var title = model.Title.GetFormattedText();
+            if (!string.IsNullOrWhiteSpace(title)) return title;
+        }
+        catch { }
+
+        return L.Get(key);
     }
 
     private static Texture2D? TryGetCharIcon<T>() where T : MegaCrit.Sts2.Core.Models.CharacterModel
@@ -446,17 +491,61 @@ public sealed partial class CareerStatsSection : VBoxContainer
         catch { return null; }
     }
 
-    private static string TryGetCharTitle<T>(string fallbackKey) where T : MegaCrit.Sts2.Core.Models.CharacterModel
+    private static Texture2D? TryGetCharIcon(MegaCrit.Sts2.Core.Models.CharacterModel model)
     {
-        if (Config.L.Current == Config.L.Lang.EN)
-            return Config.L.Get(fallbackKey);
-        try
+        try { return model.IconTexture; }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Populate mode choices from the running game's GameMode enum.
+    /// v0.111 has Custom; v0.113 has Dread and Blitz. The names are read at
+    /// runtime, so no missing enum member is compiled into the DLL.
+    /// </summary>
+    private static void PopulateModeDropdown(OptionButton dropdown)
+    {
+        dropdown.AddItem(L.Get("career.mode_all"), (int)CareerRunModeFilter.All);
+        dropdown.AddItem(L.Get("career.mode_standard"), (int)CareerRunModeFilter.Standard);
+
+        foreach (var name in GetGameModeNames())
         {
-            var t = MegaCrit.Sts2.Core.Models.ModelDb.Character<T>().Title.GetFormattedText();
-            if (!string.IsNullOrEmpty(t)) return t!;
+            var filter = name switch
+            {
+                "Custom" => CareerRunModeFilter.Custom,
+                "Dread"  => CareerRunModeFilter.Dread,
+                "Blitz"  => CareerRunModeFilter.Blitz,
+                _ => (CareerRunModeFilter?)null,
+            };
+            if (filter == null) continue;
+            dropdown.AddItem(ModeLabel(filter.Value), (int)filter.Value);
         }
-        catch { }
-        return L.Get(fallbackKey);
+
+        dropdown.AddItem(L.Get("career.mode_daily"), (int)CareerRunModeFilter.Daily);
+        dropdown.AddItem(L.Get("career.mode_multiplayer"), (int)CareerRunModeFilter.Multiplayer);
+    }
+
+    private static IEnumerable<string> GetGameModeNames()
+    {
+        try { return Enum.GetNames<MegaCrit.Sts2.Core.Runs.GameMode>(); }
+        catch { return Array.Empty<string>(); }
+    }
+
+    private static string ModeLabel(CareerRunModeFilter filter) => filter switch
+    {
+        CareerRunModeFilter.Custom => L.Get("career.mode_custom"),
+        CareerRunModeFilter.Dread  => L.Get("career.mode_dread"),
+        CareerRunModeFilter.Blitz  => L.Get("career.mode_blitz"),
+        CareerRunModeFilter.Daily  => L.Get("career.mode_daily"),
+        _ => filter.ToString(),
+    };
+
+    private static int FindModeIndex(OptionButton dropdown, CareerRunModeFilter filter)
+    {
+        for (int i = 0; i < dropdown.ItemCount; i++)
+        {
+            if (dropdown.GetItemId(i) == (int)filter) return i;
+        }
+        return 0;
     }
 
     /// <summary>
@@ -511,8 +600,9 @@ public sealed partial class CareerStatsSection : VBoxContainer
 
     private void OnCharacterDropdownChanged(int idx)
     {
-        if (idx < 0 || idx >= _careerCharacters.Length) return;
-        var newFilter = _careerCharacters[idx];
+        if (idx < 0 || idx >= _characterOptions.Count) return;
+        var raw = _characterOptions[idx].Id;
+        var newFilter = string.IsNullOrEmpty(raw) ? null : raw;
         if (newFilter == _characterFilter) return;
         _characterFilter = newFilter;
         ReloadForCurrentFilter();

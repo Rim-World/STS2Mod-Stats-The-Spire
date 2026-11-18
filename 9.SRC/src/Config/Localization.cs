@@ -103,6 +103,7 @@ public static class L
         ["char.DEFECT"] = "Defect",
         ["char.NECROBINDER"] = "Necrobinder",
         ["char.REGENT"] = "Regent",
+        ["char.FOOL"] = "The Fool",
 
         // StatsLabel
         ["stats.pick"] = "Pick {0}% | Win {1}%",
@@ -259,6 +260,8 @@ public static class L
         ["career.mode_all"] = "All",
         ["career.mode_standard"] = "Standard / Random Seed",
         ["career.mode_custom"] = "Custom Mode",
+        ["career.mode_dread"] = "Dread",
+        ["career.mode_blitz"] = "Blitz",
         ["career.mode_daily"] = "Daily Challenge",
         ["career.mode_multiplayer"] = "Multiplayer",
         ["career.recent_runs"] = "Recent Runs",
@@ -425,6 +428,7 @@ public static class L
         ["char.DEFECT"] = "缺陷体",
         ["char.NECROBINDER"] = "亡灵契约师",
         ["char.REGENT"] = "储君",
+        ["char.FOOL"] = "愚者",
 
         // StatsLabel
         ["stats.pick"] = "选取 {0}% | 胜率 {1}%",
@@ -581,6 +585,8 @@ public static class L
         ["career.mode_all"] = "全部",
         ["career.mode_standard"] = "随机种子",
         ["career.mode_custom"] = "自定义模式",
+        ["career.mode_dread"] = "恐惧",
+        ["career.mode_blitz"] = "极速",
         ["career.mode_daily"] = "每日挑战",
         ["career.mode_multiplayer"] = "多人模式",
         ["career.recent_runs"] = "最近对局",

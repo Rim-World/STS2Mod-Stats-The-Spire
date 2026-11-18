@@ -52,12 +52,23 @@ public static class CareerProbe
             var multiplayer = await RunHistoryAnalyzer.Instance.LoadAllAsync(null, force: true, modeFilter: CareerRunModeFilter.Multiplayer);
             Safe.Info($"[CareerProbe] multiplayer total={multiplayer.TotalRuns} mode={multiplayer.ModeFilter}");
 
+            var fool = await RunHistoryAnalyzer.Instance.LoadAllAsync("FOOL", force: true);
+            Safe.Info($"[CareerProbe] fool total={fool.TotalRuns} wins={fool.Wins} mode={fool.ModeFilter} " +
+                      $"avgDeck={fool.AverageDeckSize:F1} avgRelics={fool.AverageRelicCount:F1}");
+
+            Safe.Info($"[CareerProbe] names strikeFool={NameLookup.Card("STRIKE_FOOL")} " +
+                      $"foolishShot={NameLookup.Card("FOOLISH_SHOT")} songBow={NameLookup.Relic("SONG_BOW")}");
+
             var tree = Engine.GetMainLoop() as SceneTree;
             if (tree != null)
             {
                 var section = CareerStatsSection.Create(null);
                 tree.Root.AddChild(section);
                 Safe.Info($"[CareerProbe] section children={section.GetChildCount()}");
+
+                var foolSection = CareerStatsSection.Create("FOOL");
+                tree.Root.AddChild(foolSection);
+                Safe.Info($"[CareerProbe] fool section children={foolSection.GetChildCount()}");
             }
         }
         catch (Exception ex)
