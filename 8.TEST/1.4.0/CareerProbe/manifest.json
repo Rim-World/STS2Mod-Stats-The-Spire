@@ -1,0 +1,11 @@
+{
+  "id": "career_probe",
+  "name": "Stats the Spire Career Probe",
+  "author": "local-test",
+  "description": "Test-only career stats probe.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": []
+}

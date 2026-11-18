@@ -1,0 +1,11 @@
+{
+  "id": "stats_autoslay_gate",
+  "name": "Stats the Spire AutoSlay Test Gate",
+  "author": "local-test",
+  "description": "Test-only: forces NGame.IsReleaseGame() false for --autoslay.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": []
+}
