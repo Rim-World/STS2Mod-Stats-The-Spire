@@ -448,27 +448,29 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         btn.AddThemeFontSizeOverride("font_size", LabelSize);
         h.AddChild(btn);
 
-        var seed = _data?.Seed ?? "";
-        btn.Pressed += () => OnReplayPressed(seed);
+        var identity = _data == null
+            ? new RunIdentity(0, "")
+            : new RunIdentity(_data.StartTime, _data.Seed);
+        btn.Pressed += () => OnReplayPressed(identity);
 
-        if (string.IsNullOrEmpty(seed))
+        if (!identity.IsValid)
         {
             btn.Disabled = true;
         }
         else
         {
-            var summary = ContributionPersistence.LoadRunSummary(seed);
+            var summary = ContributionPersistence.LoadRunSummary(identity);
             if (summary == null) btn.Disabled = true;
         }
 
         return panel;
     }
 
-    private static void OnReplayPressed(string seed)
+    private static void OnReplayPressed(RunIdentity identity)
     {
         Safe.Run(() =>
         {
-            var summary = ContributionPersistence.LoadRunSummary(seed);
+            var summary = ContributionPersistence.LoadRunSummary(identity);
             if (summary == null) return;
             // Round 9 round 51: close our popup overlay before opening the
             // contribution panel. ContributionPanel is parented to the scene

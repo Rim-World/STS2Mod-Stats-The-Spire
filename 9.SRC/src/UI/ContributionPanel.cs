@@ -431,9 +431,22 @@ public partial class ContributionPanel : PanelContainer
         panel.ApplyAvoidanceOffset();
     }
 
+    /// <summary>
+    /// Re-render visible text after a language change. The panel keeps its
+    /// current tab and data; only labels and chart headings are rebuilt.
+    /// </summary>
+    public static void RefreshText()
+    {
+        if (_instance == null || !GodotObject.IsInstanceValid(_instance)) return;
+        if (_instance._titleLabel != null)
+            _instance._titleLabel.Text = L.Get("contrib.title");
+        if (_instance.Visible)
+            _instance.RefreshLive();
+    }
+
     public static void Toggle()
     {
-        // Round 9 round 33: F8 hotkey ignores the toggle (which now only
+        // The configured hotkey ignores the toggle (which now only
         // controls post-combat auto-open).
         var panel = Instance;
         if (panel.Visible)

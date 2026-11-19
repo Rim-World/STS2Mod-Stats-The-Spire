@@ -14,13 +14,21 @@ namespace CommunityStats.Util;
 /// Serializes per-combat and per-run contribution data to disk so the
 /// Run History detail screen can load and replay them later.
 ///
-/// Layout:
-///   {DataDir}/contributions/{seed}_{floor}.json   — single combat
-///   {DataDir}/contributions/{seed}_summary.json   — full run roll-up
+/// New layout (1.5.0):
+///   {DataDir}/contributions/{StartTime}_{seed}/
+///     meta.json
+///     combat_{floor}_{sequence}.json
+///     summary.json
+///     live.json
+///     shop_purchases.json
+///     shop_offers.json
+///
+/// Legacy layout (1.4.4 and earlier) is read-only:
+///   {DataDir}/contributions/{seed}_{floor}.json
+///   {DataDir}/contributions/{seed}_summary.json
+///   {DataDir}/contributions/{seed}_live.json
 ///
 /// Files older than 90 days are pruned at mod init.
-///
-/// PRD-04 §3.12 (Run History "查看贡献" button), Phase 6 task 7.
 /// </summary>
 public static class ContributionPersistence
 {
@@ -32,26 +40,63 @@ public static class ContributionPersistence
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
     };
 
-    private static string? _activeSeed;
+    private static RunIdentity? _activeIdentity;
     private static int _activeFloor;
 
-    public static void SetActiveSeed(string seed) => _activeSeed = seed;
+    public static void SetActiveRun(RunIdentity identity)
+    {
+        if (identity != null && identity.IsValid)
+            _activeIdentity = identity;
+    }
+
+    /// <summary>
+    /// Compatibility entry point for legacy callers. New code must use
+    /// <see cref="SetActiveRun"/> so contributions get a per-run directory.
+    /// </summary>
+    public static void SetActiveSeed(string seed) => SetActiveRun(new RunIdentity(0, seed));
+
     public static void SetActiveFloor(int floor) => _activeFloor = floor;
 
     public static void ClearRunContext()
     {
-        _activeSeed = null;
+        _activeIdentity = null;
         _activeFloor = 0;
     }
 
-    // ── Public API ──────────────────────────────────────────
+    public static RunIdentity? GetActiveIdentity()
+    {
+        if (_activeIdentity is { IsValid: true }) return _activeIdentity;
+
+        try
+        {
+            var state = RunManager.Instance?.DebugOnlyGetState();
+            var seed = state?.Rng?.StringSeed;
+            if (string.IsNullOrEmpty(seed)) return null;
+
+            var identity = RunIdentity.FromManager(RunManager.Instance, seed);
+            if (identity.IsValid)
+            {
+                _activeIdentity = identity;
+                return identity;
+            }
+        }
+        catch (Exception ex)
+        {
+            Safe.Warn($"ContributionPersistence: GetActiveIdentity failed: {ex.Message}");
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Resolve the seed of the active run, or null if no run is active.
+    /// Kept for callers that only need the display seed.
     /// </summary>
     public static string? GetActiveSeed()
     {
-        if (!string.IsNullOrEmpty(_activeSeed)) return _activeSeed;
+        var identity = GetActiveIdentity();
+        if (identity is { IsValid: true }) return identity.Seed;
+
         try
         {
             var state = RunManager.Instance?.DebugOnlyGetState();
@@ -64,23 +109,27 @@ public static class ContributionPersistence
         }
     }
 
+    // ── Public API ──────────────────────────────────────────
+
     /// <summary>
     /// Persist a single combat snapshot. Called from CombatLifecyclePatch.AfterCombatEnded.
     /// </summary>
     public static void SaveCombat(int floor, IReadOnlyDictionary<string, ContributionAccum>? data)
     {
         if (data == null || data.Count == 0) return;
-        var seed = GetActiveSeed();
-        if (string.IsNullOrEmpty(seed)) return;
+        var identity = GetActiveIdentity();
+        if (identity == null || !identity.IsValid) return;
 
         int effectiveFloor = floor > 0 ? floor : _activeFloor;
         Safe.Run(() =>
         {
-            ModConfig.EnsureDirectories();
-            var path = CombatPath(seed, effectiveFloor);
+            RunStorage.EnsureDirectory(identity);
+            int sequence = RunStorage.NextCombatSequence(identity, effectiveFloor);
+            var path = RunStorage.CombatPath(identity, effectiveFloor, sequence);
             var dto = new ContributionDoc
             {
-                Seed = seed,
+                StartTime = identity.StartTime,
+                Seed = identity.Seed,
                 Floor = effectiveFloor,
                 Kind = "combat",
                 SavedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
@@ -93,17 +142,18 @@ public static class ContributionPersistence
     /// <summary>
     /// Persist the full-run aggregate. Called from RunLifecyclePatch / RunDataCollector.OnMetricsUpload.
     /// </summary>
-    public static void SaveRunSummary(string seed, IReadOnlyDictionary<string, ContributionAccum>? data)
+    public static void SaveRunSummary(RunIdentity identity, IReadOnlyDictionary<string, ContributionAccum>? data)
     {
-        if (data == null || data.Count == 0 || string.IsNullOrEmpty(seed)) return;
+        if (data == null || data.Count == 0 || identity == null || !identity.IsValid) return;
 
         Safe.Run(() =>
         {
-            ModConfig.EnsureDirectories();
-            var path = SummaryPath(seed);
+            RunStorage.EnsureDirectory(identity);
+            var path = RunStorage.SummaryPath(identity);
             var dto = new ContributionDoc
             {
-                Seed = seed,
+                StartTime = identity.StartTime,
+                Seed = identity.Seed,
                 Kind = "summary",
                 SavedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Sources = data.Values.Select(ToDto).ToList(),
@@ -113,21 +163,51 @@ public static class ContributionPersistence
     }
 
     /// <summary>
-    /// Load the run summary for the given seed (used by Run History "查看贡献").
-    /// Returns null when no file exists or it cannot be parsed.
-    ///
-    /// Manual feedback Q4: defeat/abandoned runs may not have a *_summary.json
-    /// (the metrics upload hook fires only on completion). If the canonical
-    /// summary file is missing we walk every per-combat snapshot saved for the
-    /// same seed and merge them on the fly so the player can still review the
-    /// contribution chart of any historical run that had at least one combat.
+    /// Load the run summary for historical replay. New per-run data is tried
+    /// first. If no new directory exists, the old seed-keyed files are read
+    /// as a legacy fallback. Legacy data is never rewritten.
+    /// </summary>
+    public static IReadOnlyDictionary<string, ContributionAccum>? LoadRunSummary(RunIdentity identity)
+    {
+        if (identity == null || !identity.IsValid) return null;
+
+        if (identity.HasStartTime)
+        {
+            var direct = TryLoadDoc(RunStorage.SummaryPath(identity));
+            if (direct != null && direct.Count > 0) return direct;
+
+            var assembled = AssembleFromCombats(identity);
+            if (assembled != null && assembled.Count > 0) return assembled;
+
+            if (RunStorage.HasNewDirectory(identity))
+                return null;
+        }
+
+        return LoadLegacyRunSummary(identity.Seed);
+    }
+
+    /// <summary>
+    /// Compatibility overload for callers that only have a seed. It can only
+    /// read the legacy flat layout.
     /// </summary>
     public static IReadOnlyDictionary<string, ContributionAccum>? LoadRunSummary(string seed)
+        => LoadRunSummary(new RunIdentity(0, seed));
+
+    private static IReadOnlyDictionary<string, ContributionAccum>? LoadLegacyRunSummary(string seed)
     {
         if (string.IsNullOrEmpty(seed)) return null;
-        var direct = TryLoadDoc(SummaryPath(seed));
-        if (direct != null && direct.Count > 0) return direct;
-        return AssembleFromCombats(seed);
+
+        var direct = TryLoadDoc(RunStorage.LegacySummaryPath(seed));
+        if (direct != null && direct.Count > 0)
+        {
+            Safe.Info($"[ContributionPersistence] using legacy summary for seed={seed}");
+            return direct;
+        }
+
+        var assembled = AssembleLegacyFromCombats(seed);
+        if (assembled != null && assembled.Count > 0)
+            Safe.Info($"[ContributionPersistence] using legacy combat merge for seed={seed}");
+        return assembled;
     }
 
     private static IReadOnlyDictionary<string, ContributionAccum>? TryLoadDoc(string path)
@@ -149,50 +229,64 @@ public static class ContributionPersistence
     }
 
     /// <summary>
-    /// Round 14 v5+ post-test fix: re-hydrate
-    /// <see cref="RunContributionAggregator._runTotals"/> from every per-combat
-    /// file on disk. Called at upload time so the payload always has the
-    /// authoritative per-combat record even when in-memory state was wiped
-    /// by a save+quit+Reset cycle that failed to replay live.json.
-    ///
-    /// Per-combat files are written at combat end (CombatLifecyclePatch) and
-    /// never touched until the full run is retired, so they are a reliable
-    /// disk-side source of truth.
+    /// Re-hydrate in-memory run totals from every per-combat file for one
+    /// concrete run. Called at upload time so the payload always has the
+    /// authoritative per-combat record even when in-memory state was wiped.
     /// </summary>
-    public static void AssembleAndHydrateRunTotals(string seed)
+    public static void AssembleAndHydrateRunTotals(RunIdentity identity)
     {
-        if (string.IsNullOrEmpty(seed)) return;
-        var merged = AssembleFromCombats(seed);
+        if (identity == null || !identity.IsValid) return;
+        var merged = AssembleFromCombats(identity);
         if (merged == null || merged.Count == 0) return;
         RunContributionAggregator.Instance.HydrateRunTotals(merged);
-        Safe.Info($"ContributionPersistence: hydrated run totals from {merged.Count} disk sources (seed={seed})");
+        Safe.Info($"ContributionPersistence: hydrated run totals from {merged.Count} disk sources ({identity})");
     }
 
     /// <summary>
-    /// Walk every {seed}_{floor}.json snapshot and merge into a single dictionary.
-    /// Used as a fallback when no _summary.json was written for the run.
+    /// Walk every combat file for one concrete run and merge into a single
+    /// dictionary. New layout scans only the run directory; legacy identity
+    /// scans the old flat seed pattern.
     /// </summary>
-    public static IReadOnlyDictionary<string, ContributionAccum>? AssembleFromCombats(string seed)
+    public static IReadOnlyDictionary<string, ContributionAccum>? AssembleFromCombats(RunIdentity identity)
+    {
+        if (identity == null || !identity.IsValid) return null;
+        if (!identity.HasStartTime) return AssembleLegacyFromCombats(identity.Seed);
+
+        var dir = RunStorage.DirectoryFor(identity);
+        if (!Directory.Exists(dir)) return null;
+
+        var merged = new Dictionary<string, ContributionAccum>();
+        int files = 0;
+        foreach (var path in Directory.EnumerateFiles(dir, "combat_*.json"))
+        {
+            var combat = TryLoadDoc(path);
+            if (combat == null) continue;
+            files++;
+            foreach (var (key, accum) in combat)
+            {
+                if (merged.TryGetValue(key, out var existing))
+                    existing.MergeFrom(accum);
+                else
+                    merged[key] = Clone(accum);
+            }
+        }
+        return files > 0 ? merged : null;
+    }
+
+    private static IReadOnlyDictionary<string, ContributionAccum>? AssembleLegacyFromCombats(string seed)
     {
         var dir = ModConfig.ContributionsDir;
-        if (!Directory.Exists(dir)) return null;
-        var sanitized = Sanitize(seed);
-        var pattern = sanitized + "_*.json";
+        if (!Directory.Exists(dir) || string.IsNullOrEmpty(seed)) return null;
+
+        var pattern = RunStorage.LegacyCombatPattern(seed);
         var merged = new Dictionary<string, ContributionAccum>();
         int files = 0;
         foreach (var path in Directory.EnumerateFiles(dir, pattern))
         {
-            // Skip the canonical summary file (already tried above and missing).
             var name = Path.GetFileNameWithoutExtension(path);
             if (name.EndsWith("_summary", StringComparison.Ordinal)) continue;
-            // Skip the live-state file (different schema: LiveContributionDoc).
             if (name.EndsWith("_live", StringComparison.Ordinal)) continue;
-            // Skip the shop-offerings side-channel file — it's a plain JSON
-            // array, not a ContributionDoc, and trying to parse it triggers
-            // a JsonException warning on every upload.
             if (name.EndsWith("_shop_offers", StringComparison.Ordinal)) continue;
-            // Skip the shop-purchase side-channel file — it is a plain JSON
-            // array of LocalShopPurchase, not a ContributionDoc.
             if (name.EndsWith("_shop_purchases", StringComparison.Ordinal)) continue;
 
             var combat = TryLoadDoc(path);
@@ -238,7 +332,7 @@ public static class ContributionPersistence
         return dst;
     }
 
-    // ── Live mid-run state (round 8 §3.6.1) ─────────────────
+    // ── Live mid-run state ──────────────────────────────────
 
     /// <summary>
     /// Persist the in-progress combat tracker state so a save+quit mid-run
@@ -248,16 +342,17 @@ public static class ContributionPersistence
     public static void SaveLiveState(LiveContributionSnapshot snapshot)
     {
         if (snapshot == null) return;
-        var seed = GetActiveSeed();
-        if (string.IsNullOrEmpty(seed)) return;
+        var identity = GetActiveIdentity();
+        if (identity == null || !identity.IsValid) return;
 
         Safe.Run(() =>
         {
-            ModConfig.EnsureDirectories();
-            var path = LivePath(seed);
+            RunStorage.EnsureDirectory(identity);
+            var path = RunStorage.LivePath(identity);
             var dto = new LiveContributionDoc
             {
-                Seed = seed,
+                StartTime = identity.StartTime,
+                Seed = identity.Seed,
                 EncounterId = snapshot.EncounterId,
                 EncounterType = snapshot.EncounterType,
                 Floor = snapshot.Floor,
@@ -276,13 +371,17 @@ public static class ContributionPersistence
     }
 
     /// <summary>
-    /// Load the live state for the given seed. Returns null when no live
-    /// snapshot exists or when the file fails to parse.
+    /// Load the live state for the given run. If the new run directory does
+    /// not exist, a legacy seed-keyed snapshot is read as a fallback.
     /// </summary>
-    public static LiveContributionSnapshot? LoadLiveState(string seed)
+    public static LiveContributionSnapshot? LoadLiveState(RunIdentity identity)
     {
-        if (string.IsNullOrEmpty(seed)) return null;
-        var path = LivePath(seed);
+        if (identity == null || !identity.IsValid) return null;
+
+        var path = RunStorage.LivePath(identity);
+        if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
+            path = RunStorage.LegacyLivePath(identity.Seed);
+
         if (!File.Exists(path)) return null;
         try
         {
@@ -309,25 +408,26 @@ public static class ContributionPersistence
         }
         catch (Exception ex)
         {
-            Safe.Warn($"ContributionPersistence: LoadLiveState failed for {seed}: {ex.Message}");
+            Safe.Warn($"ContributionPersistence: LoadLiveState failed for {identity}: {ex.Message}");
             return null;
         }
     }
 
     /// <summary>Delete the live snapshot for a finished run.</summary>
-    public static void DeleteLiveState(string seed)
+    public static void DeleteLiveState(RunIdentity identity)
     {
-        if (string.IsNullOrEmpty(seed)) return;
+        if (identity == null || !identity.IsValid) return;
         try
         {
-            var path = LivePath(seed);
+            var path = RunStorage.LivePath(identity);
             if (File.Exists(path)) File.Delete(path);
         }
         catch { }
     }
 
     /// <summary>
-    /// Delete contribution files older than 90 days. Called once at mod init.
+    /// Delete contribution files older than 90 days. New run directories are
+    /// removed as a unit; legacy flat files are removed by file timestamp.
     /// </summary>
     public static void PruneOldFiles()
     {
@@ -336,7 +436,9 @@ public static class ContributionPersistence
             var dir = ModConfig.ContributionsDir;
             if (!Directory.Exists(dir)) return;
             var cutoff = DateTime.UtcNow.AddDays(-RetentionDays);
-            int removed = 0;
+            int removedFiles = 0;
+            int removedDirs = 0;
+
             foreach (var path in Directory.EnumerateFiles(dir, "*.json"))
             {
                 try
@@ -344,7 +446,7 @@ public static class ContributionPersistence
                     if (File.GetLastWriteTimeUtc(path) < cutoff)
                     {
                         File.Delete(path);
-                        removed++;
+                        removedFiles++;
                     }
                 }
                 catch (Exception ex)
@@ -352,26 +454,26 @@ public static class ContributionPersistence
                     Safe.Warn($"ContributionPersistence: failed to prune {path}: {ex.Message}");
                 }
             }
-            if (removed > 0) Safe.Info($"Contribution prune removed {removed} expired files.");
+
+            foreach (var runDir in Directory.EnumerateDirectories(dir))
+            {
+                try
+                {
+                    if (Directory.GetLastWriteTimeUtc(runDir) < cutoff)
+                    {
+                        Directory.Delete(runDir, recursive: true);
+                        removedDirs++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Safe.Warn($"ContributionPersistence: failed to prune {runDir}: {ex.Message}");
+                }
+            }
+
+            if (removedFiles > 0 || removedDirs > 0)
+                Safe.Info($"Contribution prune removed {removedFiles} expired files and {removedDirs} run directories.");
         });
-    }
-
-    // ── Path helpers ────────────────────────────────────────
-
-    private static string CombatPath(string seed, int floor)
-        => Path.Combine(ModConfig.ContributionsDir, $"{Sanitize(seed)}_{floor}.json");
-
-    private static string SummaryPath(string seed)
-        => Path.Combine(ModConfig.ContributionsDir, $"{Sanitize(seed)}_summary.json");
-
-    private static string LivePath(string seed)
-        => Path.Combine(ModConfig.ContributionsDir, $"{Sanitize(seed)}_live.json");
-
-    private static string Sanitize(string seed)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = seed.Select(c => invalid.Contains(c) ? '_' : c).ToArray();
-        return new string(chars);
     }
 
     // ── DTO mapping ─────────────────────────────────────────
@@ -426,6 +528,7 @@ public static class ContributionPersistence
 
     private sealed class ContributionDoc
     {
+        public long StartTime { get; set; }
         public string Seed { get; set; } = "";
         public int? Floor { get; set; }
         public string Kind { get; set; } = "";
@@ -433,9 +536,10 @@ public static class ContributionPersistence
         public List<SourceDto> Sources { get; set; } = new();
     }
 
-    /// <summary>Live mid-run snapshot — `{seed}_live.json`. Round 8 §3.6.1.</summary>
+    /// <summary>Live mid-run snapshot — `live.json`. Round 8 §3.6.1.</summary>
     private sealed class LiveContributionDoc
     {
+        public long StartTime { get; set; }
         public string Seed { get; set; } = "";
         public string? EncounterId { get; set; }
         public string? EncounterType { get; set; }

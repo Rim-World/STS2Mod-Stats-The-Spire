@@ -5,7 +5,7 @@ namespace CommunityStats.Config;
 
 /// <summary>
 /// Per-feature toggle settings. Each sub-feature can be independently
-/// enabled/disabled via the F9 settings panel.
+/// enabled/disabled via the RitsuLib settings page.
 /// Disabled features skip their Harmony postfix entirely (zero overhead).
 /// </summary>
 public class FeatureToggles
@@ -35,7 +35,7 @@ public class FeatureToggles
     public bool CardDropOdds { get; set; } = true;
 
     /// <summary>
-    /// Labels for each toggle, used by FilterPanel UI.
+    /// Labels for each toggle, used by the RitsuLib settings page.
     /// Returns (propertyName, localizedLabel) pairs.
     /// </summary>
     public static IReadOnlyList<(string Key, string LabelKey)> ToggleDefinitions { get; } = new List<(string, string)>

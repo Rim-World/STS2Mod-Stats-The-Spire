@@ -209,6 +209,7 @@ public sealed class ElderRelicStats
 /// </summary>
 public sealed class SingleRunStatsData
 {
+    public long StartTime { get; init; }
     public string Seed { get; init; } = "";
     public string Character { get; init; } = "";
     public bool Win { get; init; }

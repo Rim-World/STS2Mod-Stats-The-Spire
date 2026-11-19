@@ -8,7 +8,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.4.4";
+    public const string ModVersion = "1.5.0";
 
     // User preferences
     public static string Language { get; set; } = "CN"; // "CN" | "EN"
@@ -26,6 +26,9 @@ public static class ModConfig
 
     // Intent state machine scale
     public static float IntentPanelScale { get; set; } = 0.8f;
+
+    // Contribution panel hotkey (stable F-key token; RitsuLib parses it)
+    public static string ContributionPanelHotkey { get; set; } = "F8";
 
     // "My Data" filter
     public static bool UseMyDataOnly { get; set; }
@@ -121,6 +124,14 @@ public static class ModConfig
             if (root.TryGetProperty("intent_panel_scale", out var scale))
                 IntentPanelScale = Math.Clamp(scale.GetSingle(), 0.5f, 1.25f);
 
+            if (root.TryGetProperty("contribution_panel_hotkey", out var hotkey))
+            {
+                var text = hotkey.GetString();
+                if (!string.IsNullOrWhiteSpace(text) &&
+                    STS2RitsuLib.RuntimeInput.RuntimeHotkeyService.TryNormalizeBinding(text, out var normalized))
+                    ContributionPanelHotkey = normalized;
+            }
+
             if (root.TryGetProperty("use_my_data_only", out var myData))
                 UseMyDataOnly = myData.GetBoolean();
         }
@@ -141,6 +152,7 @@ public static class ModConfig
                 ["feature_toggles"] = Toggles,
                 ["use_my_data_only"] = UseMyDataOnly,
                 ["intent_panel_scale"] = IntentPanelScale,
+                ["contribution_panel_hotkey"] = ContributionPanelHotkey,
             };
 
             if (PanelPositionX.HasValue && PanelPositionY.HasValue)

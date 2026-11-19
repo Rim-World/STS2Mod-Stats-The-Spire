@@ -12,7 +12,7 @@ Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统�
 - 怪物意图状态机悬停图。
 - 顶栏药水掉落与卡牌稀有度概率。
 - 问号房间遭遇概率与商店价格提示。
-- F7 设置面板，F8 贡献面板。
+- RitsuLib 设置页；贡献面板默认 F8，可重绑定。
 
 ## 构建
 
@@ -21,6 +21,7 @@ Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统�
 - .NET SDK 9.0
 - Slay the Spire 2 安装目录
 - 游戏自带 `data_sts2_windows_x86_64` 下的 `sts2.dll`、`GodotSharp.dll`、`0Harmony.dll`
+- NuGet 包 `STS2.RitsuLib 0.6.14`（`dotnet restore` 自动获取）
 
 ```bash
 dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\Steam\steamapps\common\Slay the Spire 2"
@@ -32,20 +33,23 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 
 ## 安装
 
-把以下文件放入游戏的 `mods/sts2_statsthespire_local/`：
+先把完整的 `STS2-RitsuLib` 文件夹放入游戏的 `mods/`。只复制根 DLL 不足以加载设置页。
+
+再把以下文件放入游戏的 `mods/sts2_statsthespire_local/`：
 
 - `manifest.json`
 - `sts2_statsthespire_local.dll`
 - `settings.cfg`
 - `README_ZH.md`、`README_EN.md`（可选）
 
-启动游戏后，Mod 自动加载。
+启动游戏后，游戏按 manifest 依赖顺序先加载 RitsuLib，再加载本 Mod。
 
 ## 数据目录
 
 `%AppData%/sts2_community_stats/`
 
-- `contributions/`：单场、本局汇总与中途快照。
+- `contributions/{StartTime}_{seed}/`：每局独立的单场、汇总、中途快照和商店数据。
+- `contributions/{seed}_*.json`：1.4.4 及更早的只读回退数据。
 - `cache/`：生涯统计缓存。
 - `mod_prefs.json`：用户设置。
 
@@ -53,8 +57,8 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 
 - 单一构建：同一个 `sts2_statsthespire_local.dll` 目标兼容 v0.111.1 与 v0.113.1。
 - 源码已通过两个版本的 `sts2.dll` 编译。
-- v0.113.1：构建与实机验证通过。
-- v0.111.1：实机验证未执行。
+- 1.4.4 已在 v0.113.1 与 v0.111.1 完成实机验证。
+- 1.5.0 的 RitsuLib 设置页、热键和同 seed 隔离已在 v0.113.1 验证；v0.111.1 运行时待验证。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

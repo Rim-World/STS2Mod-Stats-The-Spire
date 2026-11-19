@@ -29,6 +29,15 @@
     -->
   </PropertyGroup>
 
+  <!--
+    RitsuLib is a hard runtime dependency. The package supplies compile-time
+    facades; players install the complete STS2-RitsuLib mod folder. Do not
+    copy RitsuLib assemblies into this mod's output.
+  -->
+  <ItemGroup>
+    <PackageReference Include="STS2.RitsuLib" Version="0.6.14" PrivateAssets="all" />
+  </ItemGroup>
+
   <!-- STS2 game assemblies -->
   <ItemGroup>
     <Reference Include="sts2">

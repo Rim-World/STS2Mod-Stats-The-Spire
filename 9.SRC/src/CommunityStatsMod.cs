@@ -1,5 +1,6 @@
 using CommunityStats.Config;
 using CommunityStats.Patches;
+using CommunityStats.Settings;
 using CommunityStats.UI;
 using CommunityStats.Util;
 using Godot;
@@ -17,8 +18,6 @@ namespace CommunityStats;
 public static class CommunityStatsMod
 {
     private static Harmony? _harmony;
-    private static bool _f7Pressed;
-    private static bool _f8Pressed;
 
     public static void Initialize()
     {
@@ -29,6 +28,9 @@ public static class CommunityStatsMod
 
         // Sync language setting
         L.Current = ModConfig.Language == "EN" ? L.Lang.EN : L.Lang.CN;
+
+        // Register the RitsuLib settings page before the user can open it.
+        RitsuSettingsPage.Register();
 
         // Ensure data directories exist
         ModConfig.EnsureDirectories();
@@ -91,6 +93,7 @@ public static class CommunityStatsMod
         Config.L.LanguageChanged += () =>
         {
             Safe.Info("[LangChanged] triggering immediate UI re-render");
+            Safe.Run(ContributionPanel.RefreshText);
         };
 
         // Register hotkeys and attach UI panels to scene tree
@@ -101,7 +104,8 @@ public static class CommunityStatsMod
 
     private static void RegisterHotkeys()
     {
-        // Wait for scene tree, then use ProcessFrame signal for input polling.
+        // Wait for the scene tree, then register the RitsuLib runtime hotkey
+        // and attach the UI panels to the root.
         Safe.RunAsync(async () =>
         {
             while (Engine.GetMainLoop() is not SceneTree sceneTree || sceneTree.Root == null)
@@ -110,37 +114,14 @@ public static class CommunityStatsMod
             }
 
             var tree = (SceneTree)Engine.GetMainLoop();
-            tree.ProcessFrame += OnProcessFrame;
-
-            // Add UI panels to root
             var root = tree.Root;
             root.CallDeferred(Node.MethodName.AddChild, ContributionPanel.Instance);
-            root.CallDeferred(Node.MethodName.AddChild, FilterPanel.Instance);
 
             // Attach top-bar potion / card-drop indicators.
             CommunityStats.Patches.CombatUiOverlayPatch.Attach();
-        });
-    }
 
-    private static void OnProcessFrame()
-    {
-        Safe.Run(() =>
-        {
-            // F7 = Toggle settings panel
-            bool f7Now = Input.IsKeyPressed(Key.F7);
-            if (f7Now && !_f7Pressed)
-            {
-                FilterPanel.Toggle();
-            }
-            _f7Pressed = f7Now;
-
-            // F8 = Toggle contribution panel
-            bool f8Now = Input.IsKeyPressed(Key.F8);
-            if (f8Now && !_f8Pressed)
-            {
-                ContributionPanel.Toggle();
-            }
-            _f8Pressed = f8Now;
+            // RitsuLib owns hotkey routing and text-input suppression.
+            await HotkeyRegistration.InitializeAsync();
         });
     }
 }

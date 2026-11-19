@@ -1,7 +1,8 @@
 # Stats the Spire (本地版) — STS2 数据分析 Mod
 
-**版本**: 1.4.4
+**版本**: 1.5.0
 **适用**: Slay the Spire 2 v0.111.1 与 v0.113.1
+**依赖**: 必须安装完整的 `STS2-RitsuLib 0.6.14` 或更新兼容版本
 **类型**: 纯信息展示，不影响游戏平衡。无网络，完全离线。
 
 ---
@@ -164,17 +165,20 @@ Stats the Spire（本地版）是杀戮尖塔 2 的纯离线数据分析工具�
 
 | 快捷键 | 功能 |
 |--------|------|
-| **F7** | 打开/关闭设置面板 |
-| **F8** | 打开/关闭贡献统计面板 |
+| **F8** | 默认打开/关闭贡献统计面板；可在 RitsuLib 设置中重绑定 |
 
 ---
 
-## 设置面板 (F7)
+## 设置页 (RitsuLib)
+
+设置页由 RitsuLib 提供，可在主菜单、跑局暂停和战斗暂停打开。F7 自绘设置面板已删除。
 
 | 设置项 | 说明 |
 |--------|------|
 | **语言** | 中文 / English |
-| **功能开关** | 独立启用/禁用子功能：贡献面板、卡牌图书馆统计、遗物统计、问号房间概率、商店价格、意图状态机 |
+| **意图面板缩放** | 0.5× 到 1.25× |
+| **功能开关** | 独立启用/禁用 8 个子功能 |
+| **贡献面板快捷键** | 默认 F8；点击后录制新快捷键；文本输入框和开发者控制台会抑制热键 |
 
 ---
 
@@ -182,26 +186,43 @@ Stats the Spire（本地版）是杀戮尖塔 2 的纯离线数据分析工具�
 
 ```
 %AppData%/sts2_community_stats/
-├── contributions/   # 每场战斗和本局汇总的贡献数据
-└── mod_prefs.json   # Mod 设置
+├── contributions/
+│   └── {StartTime}_{seed}/            # 每局独立目录
+│       ├── meta.json
+│       ├── combat_{floor}_{sequence}.json
+│       ├── summary.json
+│       ├── live.json
+│       ├── shop_purchases.json
+│       └── shop_offers.json
+└── mod_prefs.json                     # Mod 设置
 ```
+
+1.4.4 及更早的 `{seed}_*.json` 文件会只读回退，不会自动移动或改名。v0.113.1 已用种子 61111 连续两局验证目录隔离。
 
 ---
 
 ## 安装
 
-1. 将 `sts2_statsthespire_local` 文件夹放入游戏目录的 `mods/` 文件夹下
-2. 启动游戏，Mod 自动加载
+1. 先安装完整的 `STS2-RitsuLib` 模组文件夹到 `mods/`。不能只复制根 DLL。
+2. 将 `sts2_statsthespire_local` 文件夹放入游戏目录的 `mods/` 文件夹。
+3. 启动游戏，Mod 会按 manifest 中的依赖顺序加载。
 
 ### 文件结构
 
 ```
 mods/sts2_statsthespire_local/
 ├── manifest.json                      # Mod 元数据
-├── config.json                        # Mod 配置
+├── settings.cfg                       # 内置配置
 ├── sts2_statsthespire_local.dll       # Mod 主程序
 ├── README_EN.md                       # 英文文档
 └── README_ZH.md                       # 本文档
+
+mods/STS2-RitsuLib/                    # 由玩家单独安装
+├── STS2-RitsuLib.dll
+├── shared/
+├── compat/
+├── assets.zip
+└── mod_manifest.json
 ```
 
 ---

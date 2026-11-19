@@ -1,0 +1,17 @@
+{
+  "id": "history_probe",
+  "name": "Stats the Spire History Probe",
+  "author": "local-test",
+  "description": "Test-only: checks same-seed history resolution and legacy fallback.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.0",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.5.0"
+    }
+  ]
+}

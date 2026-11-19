@@ -93,7 +93,7 @@ public static class IntentStateMachinePanel
         var displayName = TryName(monster, monsterId);
         var panel = InfoModPanel.Create(displayName, Config.L.Get("intent.subtitle"));
 
-        // Scale the whole panel from the F7 setting.
+        // Scale the whole panel from the RitsuLib settings page.
         var scale = Mathf.Clamp(Config.ModConfig.IntentPanelScale, 0.5f, 1.25f);
         panel.Scale = new Vector2(scale, scale);
 

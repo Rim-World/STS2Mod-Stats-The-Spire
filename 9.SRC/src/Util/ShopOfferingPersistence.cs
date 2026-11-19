@@ -2,13 +2,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using CommunityStats.Collection;
-using CommunityStats.Config;
 
 namespace CommunityStats.Util;
 
 /// <summary>
-/// Persist the in-memory shop-card-offerings list keyed by the active run seed.
-/// Survives save+quit+resume.
+/// Persist the in-memory shop-card-offerings list for one concrete run.
+/// Survives save+quit+resume and no longer mixes runs that share a seed.
 /// </summary>
 public static class ShopOfferingPersistence
 {
@@ -17,35 +16,28 @@ public static class ShopOfferingPersistence
         WriteIndented = false,
     };
 
-    private static string PathFor(string seed)
-        => Path.Combine(ModConfig.ContributionsDir, $"{Sanitize(seed)}_shop_offers.json");
-
-    private static string Sanitize(string seed)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var buf = new System.Text.StringBuilder(seed.Length);
-        foreach (var c in seed)
-            buf.Append(System.Array.IndexOf(invalid, c) >= 0 ? '_' : c);
-        return buf.ToString();
-    }
-
     public static void Save(List<LocalShopCardOffering> offerings)
     {
-        var seed = ContributionPersistence.GetActiveSeed();
-        if (string.IsNullOrEmpty(seed)) return;
+        var identity = ContributionPersistence.GetActiveIdentity();
+        if (identity == null || !identity.IsValid) return;
+
         Safe.Run(() =>
         {
-            ModConfig.EnsureDirectories();
-            var path = PathFor(seed!);
+            RunStorage.EnsureDirectory(identity);
+            var path = RunStorage.ShopOffersPath(identity);
             File.WriteAllText(path, JsonSerializer.Serialize(offerings, JsonOpts));
         });
     }
 
-    public static List<LocalShopCardOffering>? Load()
+    public static List<LocalShopCardOffering>? Load(RunIdentity? identity = null)
     {
-        var seed = ContributionPersistence.GetActiveSeed();
-        if (string.IsNullOrEmpty(seed)) return null;
-        var path = PathFor(seed!);
+        identity ??= ContributionPersistence.GetActiveIdentity();
+        if (identity == null || !identity.IsValid) return null;
+
+        var path = RunStorage.ShopOffersPath(identity);
+        if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
+            path = RunStorage.LegacyShopOffersPath(identity.Seed);
+
         if (!File.Exists(path)) return null;
         try
         {
@@ -59,12 +51,12 @@ public static class ShopOfferingPersistence
         }
     }
 
-    public static void Delete(string seed)
+    public static void Delete(RunIdentity identity)
     {
-        if (string.IsNullOrEmpty(seed)) return;
+        if (identity == null || !identity.IsValid) return;
         try
         {
-            var path = PathFor(seed);
+            var path = RunStorage.ShopOffersPath(identity);
             if (File.Exists(path)) File.Delete(path);
         }
         catch { }

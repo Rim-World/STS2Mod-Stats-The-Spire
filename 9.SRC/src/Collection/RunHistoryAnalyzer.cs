@@ -1154,6 +1154,7 @@ public sealed class RunHistoryAnalyzer
 
         return new SingleRunStatsData
         {
+            StartTime = run.StartTime,
             Seed = run.Seed,
             Character = run.Players.FirstOrDefault()?.Character.Entry ?? "",
             Win = run.Win,
@@ -1176,7 +1177,8 @@ public sealed class RunHistoryAnalyzer
     private static Dictionary<int, int>? BuildPerActShopCardBuys(RunHistory run)
     {
         if (string.IsNullOrEmpty(run.Seed) || run.MapPointHistory == null) return null;
-        var purchases = ShopPurchasePersistence.Load(run.Seed);
+        var identity = RunIdentity.FromHistory(run);
+        var purchases = ShopPurchasePersistence.Load(identity);
         if (purchases == null) return null;
 
         var result = new Dictionary<int, int>();

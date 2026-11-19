@@ -2,6 +2,41 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.5.0] - 2026-11-20
+
+### Added
+
+- RitsuLib settings page for language, intent-panel scale, 8 feature toggles, and the contribution-panel hotkey.
+- Rebindable contribution-panel runtime hotkey; default F8.
+- `RunIdentity` and `RunStorage`; per-run data directory `{StartTime}_{seed}`.
+- `meta.json`, sequenced combat files, and legacy read-only fallback.
+
+### Changed
+
+- Contribution, shop purchase, shop offer, live state, and history replay now use `StartTime + seed` instead of seed alone.
+- New runs create a per-run directory and do not load same-seed old data.
+- Saved runs load only their own RunKey; legacy seed files remain readable.
+- Plugin manifest now requires `STS2-RitsuLib` 0.6.14.
+- Package reference uses `STS2.RitsuLib` 0.6.14; RitsuLib assemblies are not copied into this mod.
+- Version bumped to 1.5.0.
+
+### Removed
+
+- `FilterPanel` and the F7 frame-polling panel.
+- F8 frame polling; RitsuLib handles hotkey routing and text-input suppression.
+
+### Verified
+
+- v0.113.1 build: 0 errors, 7 nullable warnings.
+- v0.111.1 assembly build: 0 errors, 7 nullable warnings.
+- v0.113.1 RitsuLib settings page: 1 page, 2 sections, 11 entries; main-menu open request succeeded.
+- v0.113.1 binding persistence: language, intent scale, and PotionOdds toggle wrote and restored; `mod_prefs.json` kept the new keys.
+- v0.113.1 hotkey: F8 registered; F9 rebind succeeded; F8 restored; invalid binding rejected; text/console suppression enabled.
+- v0.113.1 same-seed runs: 61111 produced StartTime 1795107016 and 1795107502, 27 combat files, 72 SourceDto entries, 14 purchases each; the second run did not load the first run.
+- v0.113.1 history: both 61111 histories resolved to their own RunKey; 51111 used the legacy summary with 75 sources.
+- v0.113.1 career: all 201/187, standard 199/185, multiplayer 2, Fool 15/13.
+- v0.111.1 runtime and physical key/visual checks: pending.
+
 ## [1.4.4] - 2026-11-19
 
 ### Fixed

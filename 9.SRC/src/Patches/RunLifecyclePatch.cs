@@ -3,7 +3,9 @@ using CommunityStats.Config;
 using CommunityStats.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Saves;
 
 namespace CommunityStats.Patches;
 
@@ -21,9 +23,9 @@ public static class RunLifecyclePatch
         Safe.Run(() =>
         {
             Safe.Info("[DIAG:RunLifecycle] SetUpNewSingleplayer Postfix fired");
-            RunDataCollector.OnRunStart();
-            RememberSeed(state);
-            TryHydrateLiveState(state?.Rng?.StringSeed);
+            var identity = RunIdentity.FromManager(__instance, state?.Rng?.StringSeed);
+            RunDataCollector.BeginNewRun(identity);
+            Safe.Info($"[RunLifecycle] new singleplayer run: {identity}");
             // PRD §3.9 / §3.17 round 9: top-bar indicators get built once
             // per run (lifetime mirrors NTopBar's). Defer one frame so
             // NRun.GlobalUi.TopBar is fully laid out by the time we attach.
@@ -43,28 +45,38 @@ public static class RunLifecyclePatch
     /// </summary>
     [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedSingleplayer))]
     [HarmonyPostfix]
-    public static void OnRunResumeSP(RunManager __instance, RunState state)
+    public static void OnRunResumeSP(RunManager __instance, RunState state, SerializableRun save)
     {
         Safe.Run(() =>
         {
             Safe.Info("[DIAG:RunLifecycle] SetUpSavedSingleplayer Postfix fired");
-            RunDataCollector.OnRunStart();
-            RememberSeed(state);
-            TryHydrateLiveState(state?.Rng?.StringSeed);
+            // SetUpSavedSingleplayer is async and sets _startTime only after
+            // its first await. The postfix runs before that, so read StartTime
+            // from the save argument instead of RunManager._startTime.
+            var identity = new RunIdentity(
+                save?.StartTime ?? 0,
+                save?.SerializableRng?.Seed ?? state?.Rng?.StringSeed ?? "");
+            RunDataCollector.ResumeRun(identity);
+            TryHydrateLiveState(identity);
+            Safe.Info($"[RunLifecycle] resumed singleplayer run: {identity}");
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
     }
 
     [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedMultiplayer))]
     [HarmonyPostfix]
-    public static void OnRunResumeMP(RunManager __instance, RunState state)
+    public static void OnRunResumeMP(RunManager __instance, RunState state, LoadRunLobby lobby)
     {
         Safe.Run(() =>
         {
             Safe.Info("[DIAG:RunLifecycle] SetUpSavedMultiplayer Postfix fired");
-            RunDataCollector.OnRunStart();
-            RememberSeed(state);
-            TryHydrateLiveState(state?.Rng?.StringSeed);
+            var save = lobby?.Run;
+            var identity = new RunIdentity(
+                save?.StartTime ?? 0,
+                save?.SerializableRng?.Seed ?? state?.Rng?.StringSeed ?? "");
+            RunDataCollector.ResumeRun(identity);
+            TryHydrateLiveState(identity);
+            Safe.Info($"[RunLifecycle] resumed multiplayer run: {identity}");
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
     }
@@ -75,34 +87,27 @@ public static class RunLifecyclePatch
     {
         Safe.Run(() =>
         {
-            RunDataCollector.OnRunStart();
-            RememberSeed(state);
-            TryHydrateLiveState(state?.Rng?.StringSeed);
+            var identity = RunIdentity.FromManager(__instance, state?.Rng?.StringSeed);
+            RunDataCollector.BeginNewRun(identity);
+            Safe.Info($"[RunLifecycle] new multiplayer run: {identity}");
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
     }
 
-    private static void RememberSeed(RunState? state)
-    {
-        var seed = state?.Rng?.StringSeed;
-        if (!string.IsNullOrEmpty(seed))
-            ContributionPersistence.SetActiveSeed(seed);
-    }
-
     /// <summary>
-    /// Round 8 §3.6.1: when a run starts (or resumes after save+quit),
-    /// check for a `_live.json` snapshot for that seed and rehydrate the
-    /// CombatTracker / RunContributionAggregator from it.
+    /// Round 8 §3.6.1: when a run resumes after save+quit, check for a
+    /// `live.json` snapshot in the same StartTime+seed directory and
+    /// rehydrate the CombatTracker / RunContributionAggregator from it.
     /// </summary>
-    private static void TryHydrateLiveState(string? seed)
+    private static void TryHydrateLiveState(RunIdentity identity)
     {
         try
         {
-            if (string.IsNullOrEmpty(seed)) return;
-            var snap = Util.ContributionPersistence.LoadLiveState(seed!);
+            if (!identity.IsValid) return;
+            var snap = Util.ContributionPersistence.LoadLiveState(identity);
             if (snap == null) return;
             CombatTracker.Instance.HydrateFromLiveSnapshot(snap);
-            Safe.Info($"[RunLifecycle] hydrated live state for seed={seed} (combatInProgress={snap.CombatInProgress}, runTotalEntries={snap.RunTotals?.Count ?? 0})");
+            Safe.Info($"[RunLifecycle] hydrated live state for {identity} (combatInProgress={snap.CombatInProgress}, runTotalEntries={snap.RunTotals?.Count ?? 0})");
         }
         catch (System.Exception ex)
         {

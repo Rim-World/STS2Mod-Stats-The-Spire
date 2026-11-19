@@ -1,7 +1,8 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.4.4
+**Version**: 1.5.0
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
+**Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Type**: Info display only, no gameplay impact. No network, fully offline.
 
 ---
@@ -165,18 +166,21 @@ In **Compendium → Card Library / Relic Collection**, each card or relic's deta
 ## Hotkeys
 
 | Hotkey | Function |
-|--------|------|
-| **F7** | Open/close settings panel |
-| **F8** | Open/close contribution stats panel |
+|--------|----------|
+| **F8** | Toggle the contribution panel by default; rebind it in the RitsuLib settings |
 
 ---
 
-## Settings Panel (F7)
+## Settings Page (RitsuLib)
+
+RitsuLib provides the settings page. Open it from the main menu, run pause, or combat pause. The F7 custom panel was removed.
 
 | Setting | Description |
-|--------|------|
+|--------|-------------|
 | **Language** | 中文 / English |
-| **Feature Toggles** | Enable/disable individual sub-features: Contribution Panel, Card Library Stats, Relic Stats, Unknown Room Odds, Shop Prices, Intent State Machine |
+| **Intent panel scale** | 0.5× to 1.25× |
+| **Feature Toggles** | Enable/disable 8 sub-features |
+| **Contribution panel hotkey** | Default F8; click to record a new shortcut; text input and the developer console suppress it |
 
 ---
 
@@ -184,26 +188,43 @@ In **Compendium → Card Library / Relic Collection**, each card or relic's deta
 
 ```
 %AppData%/sts2_community_stats/
-├── contributions/   # Per-combat and run summary contribution data
-└── mod_prefs.json   # Mod settings
+├── contributions/
+│   └── {StartTime}_{seed}/            # One directory per run
+│       ├── meta.json
+│       ├── combat_{floor}_{sequence}.json
+│       ├── summary.json
+│       ├── live.json
+│       ├── shop_purchases.json
+│       └── shop_offers.json
+└── mod_prefs.json                     # Mod settings
 ```
+
+Files from 1.4.4 and earlier named `{seed}_*.json` are read as a legacy fallback. They are not moved or renamed. Two consecutive seed-61111 runs were verified on v0.113.1.
 
 ---
 
 ## Installation
 
-1. Place the `sts2_statsthespire_local` folder into the game directory's `mods/` folder
-2. Launch the game — the mod loads automatically
+1. Install the complete `STS2-RitsuLib` mod folder under `mods/`. Copying only the root DLL is not enough.
+2. Place the `sts2_statsthespire_local` folder into the game directory's `mods/` folder.
+3. Launch the game. The manifest dependency loads RitsuLib first.
 
 ### File Structure
 
 ```
 mods/sts2_statsthespire_local/
 ├── manifest.json                      # Mod metadata
-├── config.json                        # Mod configuration
+├── settings.cfg                       # Shipped configuration
 ├── sts2_statsthespire_local.dll       # Mod main program
 ├── README_EN.md                       # This document
 └── README_ZH.md                       # Chinese documentation
+
+mods/STS2-RitsuLib/                    # Installed separately by the player
+├── STS2-RitsuLib.dll
+├── shared/
+├── compat/
+├── assets.zip
+└── mod_manifest.json
 ```
 
 ---
