@@ -1,0 +1,11 @@
+{
+  "id": "shop_file_probe",
+  "name": "Stats the Spire Shop File Probe",
+  "author": "local-test",
+  "description": "Test-only shop-purchase skip probe.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": []
+}

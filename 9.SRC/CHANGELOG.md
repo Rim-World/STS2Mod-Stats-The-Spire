@@ -2,6 +2,23 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.4.4] - 2026-11-19
+
+### Fixed
+
+- `ContributionPersistence.AssembleFromCombats` 现在跳过 `{seed}_shop_purchases.json`。该文件是 `LocalShopPurchase` 数组，不是 `ContributionDoc`；旧代码会因此捕获一次 `JsonException` 并记录警告。
+- 移除 `ContributionPersistence: load ..._shop_purchases.json failed` 日志噪声。
+
+### Changed
+
+- 版本号升级到 `1.4.4`。
+
+### Verified
+
+- v0.111.1：构建 0 错误、7 个可空警告。
+- v0.113.1：构建 0 错误、7 个可空警告。
+- 聚焦探针：1.4.3 产生 1 条警告；1.4.4 无警告；两版均返回 `sources=1`。
+
 ## [1.4.3] - 2026-11-19
 
 ### Fixed

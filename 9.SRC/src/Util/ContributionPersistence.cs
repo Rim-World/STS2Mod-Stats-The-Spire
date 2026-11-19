@@ -191,6 +191,9 @@ public static class ContributionPersistence
             // array, not a ContributionDoc, and trying to parse it triggers
             // a JsonException warning on every upload.
             if (name.EndsWith("_shop_offers", StringComparison.Ordinal)) continue;
+            // Skip the shop-purchase side-channel file — it is a plain JSON
+            // array of LocalShopPurchase, not a ContributionDoc.
+            if (name.EndsWith("_shop_purchases", StringComparison.Ordinal)) continue;
 
             var combat = TryLoadDoc(path);
             if (combat == null) continue;

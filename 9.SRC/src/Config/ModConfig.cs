@@ -8,7 +8,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.4.3";
+    public const string ModVersion = "1.4.4";
 
     // User preferences
     public static string Language { get; set; } = "CN"; // "CN" | "EN"
