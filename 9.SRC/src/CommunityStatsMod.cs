@@ -81,6 +81,7 @@ public static class CommunityStatsMod
         OrbPassivePatch.PatchOrbTurnEndTriggers(_harmony);
         OrbEvokePatch.PatchOrbEvokeMethods(_harmony);
         KillingBlowPatcher.PatchAll(_harmony);
+        RealDamageGuardPatch.Patch(_harmony);
         CardGenerationOriginPatch.Patch(_harmony);
 
         // Register ModManager.OnMetricsUpload hook for run contribution saving

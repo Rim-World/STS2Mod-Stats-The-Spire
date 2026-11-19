@@ -1,7 +1,7 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.4.0
-**For**: Slay the Spire 2 v0.113.1 (v0.111 not verified)
+**Version**: 1.4.3
+**For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Type**: Info display only, no gameplay impact. No network, fully offline.
 
 ---
@@ -223,4 +223,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.113.1. v0.111 requires a separate build and in-game verification and is not claimed as supported. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. v0.111.1 has passed in-game load, combat, and shop verification; v0.113.1 needs a 1.4.3 retest after switching back. Card/relic ID changes across game versions are handled automatically.

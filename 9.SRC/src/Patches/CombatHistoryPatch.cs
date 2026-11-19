@@ -1190,33 +1190,25 @@ public static class DamageModifierPatch
 /// those calls happen OUTSIDE CreatureCmd.Damage and must not produce
 /// contribution entries.
 /// </summary>
-[HarmonyPatch]
 public static class RealDamageGuardPatch
 {
     [ThreadStatic]
     public static bool IsInsideCreatureDamage;
 
-    // CreatureCmd.Damage has 10 overloads. We need the root overload
-    // (IEnumerable<Creature> targets) that actually calls Hook.ModifyDamage
-    // at line 141. Patching without parameter types would match an
-    // intermediate overload whose first await fires before the root
-    // overload even starts.
-    [HarmonyPatch(typeof(CreatureCmd), "Damage",
-        new Type[] {
-            typeof(PlayerChoiceContext),
-            typeof(IEnumerable<Creature>),
-            typeof(decimal),
-            typeof(ValueProp),
-            typeof(Creature),   // dealer (nullable)
-            typeof(CardModel),  // cardSource (nullable)
-            typeof(CardPlay),   // cardPlay (nullable)
-            typeof(ModifyDamageHookType),
-        })]
-    [HarmonyPrefix]
-    public static void BeforeDamage() => IsInsideCreatureDamage = true;
+    /// <summary>
+    /// v0.111 has a 7-parameter root overload; v0.113 added an 8th
+    /// ModifyDamageHookType parameter. Prefer the 8-parameter overload when
+    /// present, otherwise patch the 7-parameter overload. Attribute patching
+    /// cannot express this fallback: a missing 8-parameter target aborts the
+    /// whole class and leaves the guard inactive.
+    /// </summary>
+    public static void Patch(Harmony harmony)
+    {
+        var prefix = new HarmonyMethod(AccessTools.Method(typeof(RealDamageGuardPatch), nameof(BeforeDamage)));
+        var postfix = new HarmonyMethod(AccessTools.Method(typeof(RealDamageGuardPatch), nameof(AfterDamage)));
 
-    [HarmonyPatch(typeof(CreatureCmd), "Damage",
-        new Type[] {
+        var target = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
+        {
             typeof(PlayerChoiceContext),
             typeof(IEnumerable<Creature>),
             typeof(decimal),
@@ -1225,9 +1217,36 @@ public static class RealDamageGuardPatch
             typeof(CardModel),
             typeof(CardPlay),
             typeof(ModifyDamageHookType),
-        })]
-    [HarmonyPostfix]
-    public static void AfterDamage() => IsInsideCreatureDamage = false;
+        });
+
+        string signature = "8-param";
+        if (target == null)
+        {
+            signature = "7-param";
+            target = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
+            {
+                typeof(PlayerChoiceContext),
+                typeof(IEnumerable<Creature>),
+                typeof(decimal),
+                typeof(ValueProp),
+                typeof(Creature),
+                typeof(CardModel),
+                typeof(CardPlay),
+            });
+        }
+
+        if (target == null)
+        {
+            Safe.Warn("[RealDamageGuard] no matching CreatureCmd.Damage overload");
+            return;
+        }
+
+        harmony.Patch(target, prefix: prefix, postfix: postfix);
+        Safe.Info($"[RealDamageGuard] patched {signature} CreatureCmd.Damage");
+    }
+
+    private static void BeforeDamage() => IsInsideCreatureDamage = true;
+    private static void AfterDamage() => IsInsideCreatureDamage = false;
 }
 
 [HarmonyPatch]
