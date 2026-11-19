@@ -125,6 +125,19 @@
 | `ShopFileProbe/ShopFileProbe.csproj` | 2026-11-19 20:38 | 否 | 2 | 聚焦探针工程 | 是 |
 | `ShopFileProbe/ShopFileProbe.cs` | 2026-11-19 20:38 | 否 | 2 | 创建战斗与商店文件，调用 `AssembleFromCombats` | 是 |
 | `ShopFileProbe/manifest.json` | 2026-11-19 20:38 | 否 | 1 | 聚焦探针清单 | 是 |
+| `v113.1-autoslay-1.4.4.log` | 2026-11-19 20:58 | 否 | 143 | v0.113.1 首轮 41111 完整流程；贡献混入旧版本数据 | 是 |
+| `v113.1-autoslay-1.4.4-stdout.log` | 2026-11-19 20:58 | 否 | 1195 | 首轮游戏输出、警告与探针结果 | 是 |
+| `v113.1-autoslay-51111.log` | 2026-11-19 21:07 | 否 | 133 | v0.113.1 干净种子 51111 完整流程 | 是 |
+| `v113.1-autoslay-51111-stdout.log` | 2026-11-19 21:07 | 否 | 1152 | 干净流程游戏输出、警告与探针结果 | 是 |
+| `v113.1-careerprobequit-post51111-stdout.log` | 2026-11-19 21:08 | 否 | 849 | 通关后生涯计数与自动退出 | 是 |
+| `v113.1-build-1.4.4.log` | 2026-11-19 20:43 | 否 | 4 | 1.4.4 v0.113.1 构建 | 是 |
+| `v113.1-build-autoslaygate.log` | 2026-11-19 20:50 | 否 | 1 | AutoSlayGate 构建 | 是 |
+| `v113.1-build-careerprobe.log` | 2026-11-19 20:50 | 否 | 1 | CareerProbe 构建 | 是 |
+| `v113.1-build-uiprobe.log` | 2026-11-19 20:50 | 否 | 1 | UiProbe 构建 | 是 |
+| `v113.1-build-careerprobequit.log` | 2026-11-19 21:01 | 否 | 1 | CareerProbeQuit 构建 | 是 |
+| `CareerProbeQuit/CareerProbeQuit.csproj` | 2026-11-19 21:00 | 否 | 2 | 通关后生涯探针工程 | 是 |
+| `CareerProbeQuit/CareerProbeQuit.cs` | 2026-11-19 21:00 | 否 | 2 | 读取生涯后退出 | 是 |
+| `CareerProbeQuit/manifest.json` | 2026-11-19 21:00 | 否 | 1 | 通关后生涯探针清单 | 是 |
 
 ## 变更记录
 
@@ -137,3 +150,4 @@
 | 2026-11-19 08:24 | 登记 1.4.2 双版本编译与商店路径测试 |
 | 2026-11-19 20:10 | 登记 1.4.3 v0.111.1 构建、加载、完整流程与探针测试 |
 | 2026-11-19 20:45 | 登记 1.4.4 双版本构建与商店文件对照探针 |
+| 2026-11-19 21:09 | 登记 v0.113.1 两种子实机、通关后生涯探针与探针构建 |

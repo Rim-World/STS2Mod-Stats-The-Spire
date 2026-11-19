@@ -223,4 +223,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. v0.111.1 has passed in-game load, combat, and shop verification; v0.113.1 needs a 1.4.4 retest after switching back. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Both versions have passed in-game load, combat, shop, and full-run verification. Card/relic ID changes across game versions are handled automatically.

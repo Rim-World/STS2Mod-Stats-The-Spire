@@ -1,0 +1,11 @@
+{
+  "id": "career_probe_quit",
+  "name": "Stats the Spire Career Probe Quit",
+  "author": "local-test",
+  "description": "Test-only post-run career probe that quits after logging.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": []
+}
