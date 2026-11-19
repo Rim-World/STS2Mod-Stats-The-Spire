@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.5.0
+**Version**: 1.5.1
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -245,4 +245,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Both versions have passed in-game load, combat, shop, and full-run verification. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Version 1.5.1 passed a compatibility probe on v0.113.1 and an assembly build on v0.111.1. Version 1.5.0 passed in-game load, combat, shop, and full-run verification on both versions. Card/relic ID changes across game versions are handled automatically.

@@ -59,6 +59,7 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 - 源码已通过两个版本的 `sts2.dll` 编译。
 - 1.4.4 已在 v0.113.1 与 v0.111.1 完成实机验证。
 - 1.5.0 的 RitsuLib 设置页、热键、放弃/胜利收尾和同 seed 隔离已在 v0.111.1 与 v0.113.1 验证。
+- 1.5.1 补上 legacy 续局商店购买复制、设置损坏日志与 `min_game_version` 修正；源码通过两版程序集构建。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

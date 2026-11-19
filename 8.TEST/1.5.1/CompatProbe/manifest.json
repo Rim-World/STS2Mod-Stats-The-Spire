@@ -1,0 +1,16 @@
+{
+  "id": "compat_probe_151",
+  "name": "Stats the Spire 1.5.1 Compat Probe",
+  "author": "local-test",
+  "description": "Test-only: verifies legacy shop copy and corrupt-settings warnings.",
+  "version": "1.5.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.5.1"
+    }
+  ]
+}

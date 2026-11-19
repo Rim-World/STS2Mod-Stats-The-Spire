@@ -2,6 +2,29 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.5.1] - 2026-11-20
+
+### Fixed
+
+- Legacy shop purchases loaded from a 1.4.4-or-earlier save are now copied into the current `{StartTime}_{seed}/shop_purchases.json` at run finalization. The legacy file is not moved or deleted.
+- Corrupt `mod_prefs.json` and `settings.json` now log a `[StatsTheSpire][Config]` warning and fall back to defaults. Missing files and unknown keys do not warn.
+- `manifest.json` now requires game version `0.111.1` instead of the untested `0.111.0`.
+
+### Changed
+
+- The original 90-day cleanup remains active for both per-run directories and legacy flat files. SPEC 2.0 (`SP-057`) records this as intentional behavior.
+- Version bumped to 1.5.1.
+
+### Verified
+
+- v0.113.1 build: 0 errors, 7 nullable warnings.
+- v0.111.1 assembly build: 0 errors, 7 nullable warnings.
+- v0.113.1 compatibility probe: legacy shop load 2 entries; finalization produced a new `shop_purchases.json` with 2 entries; the legacy file remained; `legacy-copy PASS`.
+- Corrupt `mod_prefs.json`: one warning, default fallback.
+- Corrupt `settings.json`: one warning, filter fallback to `character_filter_mode=auto` and `min_ascension=null`.
+- Test settings restored: `mod_prefs.json` SHA-256 matched the backup; the test-created `settings.json` was removed.
+- Final artifact: 540,160 bytes; SHA-256 `ca9ee135b5260ae28abd08aabd50b8defaf8c4f0289e9e472e8c1a067ae18e19`.
+
 ## [1.5.0] - 2026-11-20
 
 ### Added

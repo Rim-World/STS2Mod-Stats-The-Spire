@@ -32,13 +32,25 @@ public static class ShopPurchasePersistence
     }
 
     public static List<LocalShopPurchase>? Load(RunIdentity? identity = null)
+        => LoadWithSource(identity, out _);
+
+    /// <summary>
+    /// Load purchases for one run and report whether the data came from the
+    /// legacy seed-keyed file. The source flag lets the run finalizer copy
+    /// legacy purchases into the current RunKey without moving the old file.
+    /// </summary>
+    public static List<LocalShopPurchase>? LoadWithSource(RunIdentity? identity, out bool fromLegacy)
     {
+        fromLegacy = false;
         identity ??= ContributionPersistence.GetActiveIdentity();
         if (identity == null || !identity.IsValid) return null;
 
         var path = RunStorage.ShopPurchasesPath(identity);
         if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
+        {
             path = RunStorage.LegacyShopPurchasesPath(identity.Seed);
+            fromLegacy = true;
+        }
 
         if (!File.Exists(path)) return null;
         try

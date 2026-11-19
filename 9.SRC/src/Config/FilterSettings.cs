@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MegaCrit.Sts2.Core.Logging;
 
 namespace CommunityStats.Config;
 
@@ -145,6 +146,12 @@ public class FilterSettings
             var json = File.ReadAllText(ModConfig.SettingsPath);
             return JsonSerializer.Deserialize<FilterSettings>(json) ?? new FilterSettings();
         }
-        catch { return new FilterSettings(); }
+        catch (Exception ex)
+        {
+            Log.Warn(
+                $"[StatsTheSpire][Config] {Path.GetFileName(ModConfig.SettingsPath)} 解析失败，" +
+                $"使用默认筛选设置: {ex.GetType().Name}: {ex.Message}");
+            return new FilterSettings();
+        }
     }
 }

@@ -20,6 +20,7 @@ public static class RunDataCollector
     private static readonly List<LocalShopCardOffering> _shopCardOfferings = new();
     private static RunIdentity? _activeIdentity;
     private static string? _finalizedRunKey;
+    private static bool _shopPurchasesFromLegacy;
 
     public static RunIdentity? ActiveIdentity => _activeIdentity ?? ContributionPersistence.GetActiveIdentity();
 
@@ -95,8 +96,12 @@ public static class RunDataCollector
         var savedOffers = ShopOfferingPersistence.Load(identity);
         if (savedOffers != null) _shopCardOfferings.AddRange(savedOffers);
 
-        var savedPurchases = ShopPurchasePersistence.Load(identity);
-        if (savedPurchases != null) _shopPurchases.AddRange(savedPurchases);
+        var savedPurchases = ShopPurchasePersistence.LoadWithSource(identity, out var purchasesFromLegacy);
+        if (savedPurchases != null)
+        {
+            _shopPurchases.AddRange(savedPurchases);
+            _shopPurchasesFromLegacy = purchasesFromLegacy;
+        }
 
         Safe.Info($"[RunDataCollector] ResumeRun {identity}: purchases={_shopPurchases.Count}, offers={_shopCardOfferings.Count}");
     }
@@ -114,6 +119,7 @@ public static class RunDataCollector
         ContributionPersistence.SetActiveRun(identity);
         ContributionPersistence.SetActiveFloor(0);
         _shopPurchases.Clear();
+        _shopPurchasesFromLegacy = false;
         _shopCardOfferings.Clear();
         RunContributionAggregator.Instance.Reset();
 
@@ -164,6 +170,14 @@ public static class RunDataCollector
                 RunContributionAggregator.Instance.MergeMaxFrom(diskTotals);
 
             ContributionPersistence.SaveRunSummary(identity, RunContributionAggregator.Instance.RunTotals);
+
+            // A run resumed from a 1.4.4-or-earlier save can have purchases
+            // only in the legacy seed file. Copy the in-memory list into this
+            // run's directory so history analysis can find it. The legacy
+            // file is never moved or deleted.
+            if (_shopPurchasesFromLegacy && _shopPurchases.Count > 0)
+                ShopPurchasePersistence.Save(_shopPurchases);
+
             ContributionPersistence.DeleteLiveState(identity);
             ShopOfferingPersistence.Delete(identity);
 
@@ -174,6 +188,7 @@ public static class RunDataCollector
             _finalizedRunKey = identity.RunKey;
             _activeIdentity = null;
             _shopPurchases.Clear();
+            _shopPurchasesFromLegacy = false;
             _shopCardOfferings.Clear();
         });
     }

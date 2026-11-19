@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MegaCrit.Sts2.Core.Logging;
 
 namespace CommunityStats.Config;
 
@@ -8,7 +9,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.5.0";
+    public const string ModVersion = "1.5.1";
 
     // User preferences
     public static string Language { get; set; } = "CN"; // "CN" | "EN"
@@ -82,6 +83,17 @@ public static class ModConfig
 
     private static void ApplyConfigFile(string path)
     {
+        bool warned = false;
+        void WarnOnce(string scope, Exception ex)
+        {
+            if (warned) return;
+            warned = true;
+            var suffix = string.IsNullOrEmpty(scope) ? "" : $"（{scope}）";
+            Log.Warn(
+                $"[StatsTheSpire][Config] {Path.GetFileName(path)} 解析失败{suffix}，" +
+                $"已读取项保留，未读取项使用默认值: {ex.GetType().Name}: {ex.Message}");
+        }
+
         try
         {
             if (!File.Exists(path)) return;
@@ -98,7 +110,11 @@ public static class ModConfig
                 {
                     Toggles = JsonSerializer.Deserialize<FeatureToggles>(toggles.GetRawText()) ?? new();
                 }
-                catch { Toggles = new(); }
+                catch (Exception ex)
+                {
+                    Toggles = new();
+                    WarnOnce("feature_toggles", ex);
+                }
             }
 
             if (root.TryGetProperty("panel_position", out var pos))
@@ -135,7 +151,10 @@ public static class ModConfig
             if (root.TryGetProperty("use_my_data_only", out var myData))
                 UseMyDataOnly = myData.GetBoolean();
         }
-        catch { /* ignore malformed config */ }
+        catch (Exception ex)
+        {
+            WarnOnce("", ex);
+        }
     }
 
     /// <summary>
