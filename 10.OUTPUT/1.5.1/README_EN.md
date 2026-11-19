@@ -245,4 +245,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Version 1.5.1 passed a compatibility probe on v0.113.1 and an assembly build on v0.111.1. Version 1.5.0 passed in-game load, combat, shop, and full-run verification on both versions. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Version 1.5.1 passed compatibility probes on both versions. A standard AutoSlayer run on v0.111.1 (seed 81111) completed 23 combats and finalized as abandoned at the 49-floor limit. Version 1.5.0 covers the v0.111.1 victory finalization path; 1.5.1 added no victory-specific branch. Card/relic ID changes across game versions are handled automatically.

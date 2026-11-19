@@ -20,6 +20,8 @@
 - v0.113.1 build: 0 errors, 7 nullable warnings.
 - v0.111.1 assembly build: 0 errors, 7 nullable warnings.
 - v0.113.1 compatibility probe: legacy shop load 2 entries; finalization produced a new `shop_purchases.json` with 2 entries; the legacy file remained; `legacy-copy PASS`.
+- v0.111.1 compatibility probe: main mod initialized; legacy shop load 2 entries; finalization copied 2 entries; the legacy file remained.
+- v0.111.1 standard AutoSlayer (seed 81111): 23 combat files, 62 summary sources, 14 purchases. AutoSlayer hit its 49-floor limit and finalized the run as abandoned; `live.json` and `shop_offers.json` were removed.
 - Corrupt `mod_prefs.json`: one warning, default fallback.
 - Corrupt `settings.json`: one warning, filter fallback to `character_filter_mode=auto` and `min_ascension=null`.
 - Test settings restored: `mod_prefs.json` SHA-256 matched the backup; the test-created `settings.json` was removed.
