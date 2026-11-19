@@ -52,8 +52,9 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 ## 兼容性
 
 - 单一构建：同一个 `sts2_statsthespire_local.dll` 目标兼容 v0.111.1 与 v0.113.1。
+- 源码已通过两个版本的 `sts2.dll` 编译。
 - v0.113.1：构建与实机验证通过。
-- v0.111.1：代码路径按运行时探测编写；实机验证未执行。
+- v0.111.1：实机验证未执行。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

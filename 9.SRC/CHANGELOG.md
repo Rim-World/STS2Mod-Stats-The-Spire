@@ -2,6 +2,17 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.4.2] - 2026-11-19
+
+### Fixed
+
+- 商店库存读取改为运行时探测：v0.111 使用 `MerchantRoom.GetLocalInventory`，v0.113 使用 `RunManager.MerchantSynchronizer`。
+- 源码同时通过 v0.111.1 与 v0.113.1 游戏程序集编译。
+
+### Changed
+
+- 版本号升级到 `1.4.2`。
+
 ## [1.4.1] - 2026-11-19
 
 ### Added
