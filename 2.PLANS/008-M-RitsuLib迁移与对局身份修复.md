@@ -1,6 +1,7 @@
 # RitsuLib 迁移与对局身份修复
 
 - 状态：已完成（自动验证；人工视觉验收待做）
+- 说明：第 0 至 4 阶段的复选框保留规划原文；实际完成情况见第 14 节。未验证项在第 7 节测试矩阵标注。
 - 层级：M
 - 创建时间：2026-11-19 21:57
 - 开始施工：2026-11-20 00:24
@@ -60,7 +61,7 @@ Mod 对游戏状态是只读的，但它会写入自己的本地缓存。当前�
 
 ### 3.3 RitsuLib 能力
 
-RitsuLib 0.6.13 的本地源码确认：
+规划时参考 RitsuLib 0.6.13 的本地源码；施工与发布使用 0.6.14：
 
 - `RitsuLibFramework.RegisterModSettings` 注册设置页。
 - `ModSettingsPageBuilder` 支持开关、滑块、选择项和键位绑定。
@@ -82,7 +83,7 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 ### 4.1 依赖策略
 
 1. `sts2_statsthespire_local.csproj` 增加 `PackageReference`，包名为 `STS2.RitsuLib`。
-2. 施工开始时确认最新稳定版。当前本地参考版本为 `0.6.13`；如果届时已有更新版本，使用更新版本。
+2. 施工开始时确认最新稳定版。规划时参考版本为 `0.6.13`；施工选定并发布 `0.6.14`。
 3. `PackageReference` 固定到施工时选定的精确版本，不使用 `*` 或浮动版本。每次发版前按更新流程升级。
 4. `manifest.json` 增加运行时依赖：
 
@@ -182,13 +183,15 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 
 预计 0.5 到 1 人日。
 
+状态：已完成（历史记录见第 14 节）。
+
 - [ ] 记录当前 Mod 1.4.4、游戏 v0.111.1/v0.113.1、Git 提交。
 - [ ] 复制 `%AppData%/sts2_community_stats/contributions/` 与 `mod_prefs.json` 到 `TMP/1.5.0/pre-migration-backup/`，只复制，不移动。
 - [ ] 盘点旧贡献文件的 seed、数量、大小和对应历史记录。
 - [ ] 新建 ADR-006，记录 RitsuLib 硬依赖、排除 BaseLib、排除 `RunSavedData`。
 - [ ] 在 PRD 增加 RQ-011（RitsuLib 设置与 F8）和 RQ-012（同种子对局隔离）。
 - [ ] 更新 SPEC：替换 SP-025、SP-026，增加 RunKey、历史定位、legacy 回退和禁止写入游戏存档的条款。
-- [ ] 确认 RitsuLib 最新稳定版与 NuGet 可用性。当前本地参考为 0.6.13；NuGet 缓存只有 0.5.15。若无法获取目标版本，停止施工并汇报，不把本地 DLL 当作正式依赖。
+- [x] 确认 RitsuLib 最新稳定版与 NuGet 可用性。施工选定 0.6.14；规划时本地参考为 0.6.13。
 
 验收：
 
@@ -199,6 +202,8 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 ### 阶段 1：RitsuLib 依赖与构建
 
 预计 1 到 2 人日。
+
+状态：已完成。`AC-008-04` 的“不装 BaseLib”未验证。
 
 - [ ] 在 `9.SRC/sts2_statsthespire_local.csproj` 增加 `PackageReference`。
 - [ ] 确保 RitsuLib 程序集不复制到输出目录；输出仍只有本 Mod 的 DLL。
@@ -212,11 +217,13 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 - `AC-008-01` 两次构建均为 0 错误。
 - `AC-008-02` 输出目录不包含 RitsuLib 程序集。
 - `AC-008-03` manifest 声明依赖，游戏日志显示 RitsuLib 先加载。
-- `AC-008-04` 不安装 BaseLib 也能启动。
+- `AC-008-04` 不安装 BaseLib 也能启动。未验证：测试环境始终加载 BaseLib；manifest 未声明 BaseLib 依赖。
 
 ### 阶段 2：RitsuLib 设置页
 
 预计 1.5 到 2.5 人日。
+
+状态：已完成（页面构造、绑定与主菜单入口）；暂停页视觉未验证。
 
 - [ ] 新增 `9.SRC/src/Settings/RitsuSettingsPage.cs`。
 - [ ] 调用 `RitsuLibFramework.RegisterModSettings` 注册页面。
@@ -246,6 +253,8 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 
 预计 0.5 到 1 人日。
 
+状态：已完成（注册、重绑定与抑制）；F8 物理按键与重启持久化未验证。
+
 - [ ] 在 `ModConfig` 增加 `ContributionPanelHotkey`，JSON 键为 `contribution_panel_hotkey`，默认 `F8`。
 - [ ] 在 `LoadOverrides` 读取该键；缺失或非法时使用 `F8`。
 - [ ] 在 `SaveSettings` 写入该键。
@@ -268,6 +277,8 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 ### 阶段 4：对局身份与数据隔离
 
 预计 2 到 3 人日。
+
+状态：已完成（v0.111.1 与 v0.113.1 自动验证）。
 
 - [ ] 新增 `RunIdentity`，保存 `StartTime`、`Seed`、`RunKey`。
 - [ ] 在四个 `RunManager.SetUp...` Postfix 中读取 `_startTime`。
@@ -302,10 +313,12 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 
 预计 2 到 3 人日。
 
+状态：已完成（自动验证与发布）；人工验收待做。
+
 - [x] 构建 v0.113.1 与 v0.111.1。
 - [x] 在 v0.113.1 完成一局 AutoSlayer 标准模式。
 - [x] 在 v0.113.1 完成同 seed 两局隔离测试。
-- [ ] 在 v0.111.1 完成加载、设置页、F8、同 seed 隔离冒烟测试。
+- [x] 在 v0.111.1 完成加载、设置页、收尾与同 seed 隔离冒烟测试。
 - [x] 运行生涯探针，确认历史数量和愚者入口不回归。
 - [x] 保存完整日志到 `8.TEST/1.5.0/`，在 `TEST.md` 登记。
 - [x] 保存测试过程文件到 `TMP/1.5.0/`，在 `TMP.md` 登记。
@@ -313,7 +326,7 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 - [x] 更新 `7.ChangeLog/001-版本日志.md`、`9.SRC/CHANGELOG.md`、双语 README。
 - [x] 更新 `10.OUTPUT/1.5.0/` 与 `OUTPUT.md`。
 - [x] 清理游戏 `mods/` 中的测试部署，关闭游戏进程。
-- [ ] 提交、打标签 `v1.5.0`、回填提交编号。
+- [x] 提交、打标签 `v1.5.0`、回填提交编号。
 
 验收：
 
@@ -342,6 +355,8 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 | T-13 | v0.113.1 | 检查游戏存档目录 | 无本 Mod 写入 |
 | T-14 | v0.111.1 | 加载、设置、F8、同 seed | 通过 |
 | T-15 | 双版本 | 输出与 manifest | 版本、依赖、DLL 一致 |
+
+T-01 的“不装 BaseLib”条件未执行；测试环境始终加载 BaseLib。T-03、T-04 的暂停页手工打开、T-05 的 F8 物理按键、T-06 的重启持久化未验证。
 
 测试原则：
 
@@ -450,7 +465,7 @@ RitsuLib 的 `RunSavedData` 会通过补丁写入游戏 run save。源码中的 
 
 ## 13. 待确认
 
-1. 施工开始时 RitsuLib 的最新稳定版号。当前参考为 0.6.13；本地 NuGet 缓存只有 0.5.15。
+1. 已确认：施工使用 RitsuLib `0.6.14`；规划时参考为 0.6.13。
 2. 设置页的真实点击与视觉验收是否需要人工完成。无头探针可以验证页面构造和绑定，但不能完全替代视觉检查。
 3. 旧数据是否需要在 1.5.0 中提供“单历史安全复制”工具。默认不做自动迁移。
 

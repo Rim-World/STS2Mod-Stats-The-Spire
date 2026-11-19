@@ -14,7 +14,7 @@
 ### Fixed
 
 - v0.111.1 did not fire the metrics-upload event for victory or defeat runs. All run endings now finalize through the `CreateRunHistoryEntry` postfix.
-- Duplicate finalization is blocked by `_finalizedRunKey`; v0.113.1 still uses its native event path.
+- Duplicate finalization is blocked by `_finalizedRunKey`; on v0.113.1 the postfix finalizes first and the later native event path is skipped.
 
 ### Changed
 
