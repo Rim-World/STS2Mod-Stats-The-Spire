@@ -19,6 +19,7 @@ public static class RunDataCollector
     private static readonly List<LocalShopPurchase> _shopPurchases = new();
     private static readonly List<LocalShopCardOffering> _shopCardOfferings = new();
     private static RunIdentity? _activeIdentity;
+    private static string? _finalizedRunKey;
 
     public static RunIdentity? ActiveIdentity => _activeIdentity ?? ContributionPersistence.GetActiveIdentity();
 
@@ -109,6 +110,7 @@ public static class RunDataCollector
         }
 
         _activeIdentity = identity;
+        _finalizedRunKey = null;
         ContributionPersistence.SetActiveRun(identity);
         ContributionPersistence.SetActiveFloor(0);
         _shopPurchases.Clear();
@@ -148,6 +150,12 @@ public static class RunDataCollector
                 return;
             }
 
+            if (string.Equals(_finalizedRunKey, identity.RunKey, StringComparison.Ordinal))
+            {
+                Safe.Info($"[RunDataCollector] OnMetricsUpload skipped duplicate finalization: {identity}");
+                return;
+            }
+
             ContributionPersistence.SetActiveRun(identity);
 
             // Merge disk data with in-memory totals for contribution persistence.
@@ -163,6 +171,7 @@ public static class RunDataCollector
             // open re-aggregates the latest data.
             RunHistoryAnalyzer.Instance.InvalidateAll();
             ContributionPersistence.ClearRunContext();
+            _finalizedRunKey = identity.RunKey;
             _activeIdentity = null;
             _shopPurchases.Clear();
             _shopCardOfferings.Clear();

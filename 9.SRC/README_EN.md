@@ -3,7 +3,8 @@
 **Version**: 1.5.0
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
-**Type**: Info display only, no gameplay impact. No network, fully offline.
+**Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
+**Type**: Info display only, no gameplay impact. This mod uses no network and is fully offline.
 
 ---
 

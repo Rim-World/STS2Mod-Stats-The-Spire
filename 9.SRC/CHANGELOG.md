@@ -11,6 +11,11 @@
 - `RunIdentity` and `RunStorage`; per-run data directory `{StartTime}_{seed}`.
 - `meta.json`, sequenced combat files, and legacy read-only fallback.
 
+### Fixed
+
+- v0.111.1 did not fire the metrics-upload event for victory or defeat runs. All run endings now finalize through the `CreateRunHistoryEntry` postfix.
+- Duplicate finalization is blocked by `_finalizedRunKey`; v0.113.1 still uses its native event path.
+
 ### Changed
 
 - Contribution, shop purchase, shop offer, live state, and history replay now use `StartTime + seed` instead of seed alone.
@@ -35,7 +40,14 @@
 - v0.113.1 same-seed runs: 61111 produced StartTime 1795107016 and 1795107502, 27 combat files, 72 SourceDto entries, 14 purchases each; the second run did not load the first run.
 - v0.113.1 history: both 61111 histories resolved to their own RunKey; 51111 used the legacy summary with 75 sources.
 - v0.113.1 career: all 201/187, standard 199/185, multiplayer 2, Fool 15/13.
-- v0.111.1 runtime and physical key/visual checks: pending.
+- v0.111.1 RitsuLib: compatibility branch 0.111.0 loaded; settings page built with 2 sections and 11 entries; language, scale, and toggle bindings wrote back; F9 and F8 rebinds succeeded; invalid binding rejected.
+- v0.111.1 finalization: first victory run exposed a missing `OnMetricsUpload` event. All run endings now finalize through the `CreateRunHistoryEntry` postfix, with duplicate-finalization protection.
+- v0.111.1 abandoned run 71112: 26 combats, 73 summary sources, 10 purchases; `live.json` and `shop_offers.json` removed.
+- v0.111.1 victory run 71111: 27 combats, 66 summary sources, 11 purchases; `live.json` and `shop_offers.json` removed.
+- v0.111.1 same-seed runs: two `71111` RunKeys produced separate directories; the older incomplete directory did not enter the new summary.
+- v0.113.1 final DLL: seed 71113 victory, 12 combats, 60 summary sources; `live.json` and `shop_offers.json` removed; duplicate finalization was intercepted.
+- Final artifact: 539,136 bytes; SHA-256 `849001d91dd68219f3073e1188ee740a2839d7c484685a074fdbeb1204ccc431`.
+- Physical key and visual checks: pending.
 
 ## [1.4.4] - 2026-11-19
 

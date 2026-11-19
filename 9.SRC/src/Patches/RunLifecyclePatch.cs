@@ -146,12 +146,12 @@ public static class RunLifecyclePatch
         {
             Safe.Info($"[RunLifecycle] CreateRunHistoryEntry postfix: victory={victory}, abandoned={isAbandoned}");
 
-            // Abandoned runs are skipped by OnMetricsUpload, so upload here.
-            if (isAbandoned)
-            {
-                Safe.Info("[RunLifecycle] Abandoned run — uploading via CreateRunHistoryEntry");
-                Collection.RunDataCollector.OnMetricsUpload(run, false, 0);
-            }
+            // CreateRunHistoryEntry runs for every run-end path. On v0.111.1
+            // ModManager.OnMetricsUpload may not fire at all, so finalize here
+            // for victory, defeat, and abandoned runs. RunDataCollector
+            // ignores duplicate finalization on v0.113.1.
+            Safe.Info($"[RunLifecycle] finalizing run via CreateRunHistoryEntry (abandoned={isAbandoned})");
+            Collection.RunDataCollector.OnMetricsUpload(run, victory, 0);
 
             // Drop cached snapshot + bundles, then kick off a forced reload
             // so the next time the player opens the card library / relic
