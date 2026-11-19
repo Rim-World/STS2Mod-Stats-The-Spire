@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.4.1
+**Version**: 1.4.2
 **For**: Slay the Spire 2 Early Access v0.111.1 and v0.113.1
 **Type**: Info display only, no gameplay impact. No network, fully offline.
 
@@ -223,4 +223,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-One `sts2_statsthespire_local.dll` supports v0.111.1 and v0.113.1. Card/relic ID changes across game versions are handled automatically. v0.113.1 is verified in-game; v0.111.1 in-game verification is not done.
+One `sts2_statsthespire_local.dll` supports v0.111.1 and v0.113.1. The source compiles against both game assemblies. v0.113.1 is verified in-game; v0.111.1 in-game verification is not done.

@@ -37,7 +37,7 @@ public static class ShopPatch
     {
         Safe.Run(() =>
         {
-            var inventory = RunManager.Instance.MerchantSynchronizer.GetLocalInventory();
+            var inventory = GetLocalInventory(__instance);
             if (inventory == null) return;
 
             var floor = RunDataCollector.CurrentFloor;
@@ -132,6 +132,34 @@ public static class ShopPatch
             RunDataCollector.RecordShopPurchase(potionId!, "potion", cost, RunDataCollector.CurrentFloor);
             Safe.Info($"[ShopPurchase] potion={potionId} cost={cost} floor={RunDataCollector.CurrentFloor}");
         });
+    }
+
+    /// <summary>
+    /// v0.111 exposes GetLocalInventory on MerchantRoom. v0.113 moved it to
+    /// RunManager.MerchantSynchronizer. Probe both so one DLL builds and runs
+    /// on both versions.
+    /// </summary>
+    private static MerchantInventory? GetLocalInventory(MerchantRoom room)
+    {
+        try
+        {
+            var direct = room.GetType().GetMethod("GetLocalInventory", Type.EmptyTypes);
+            if (direct != null)
+                return direct.Invoke(room, null) as MerchantInventory;
+        }
+        catch { }
+
+        try
+        {
+            var run = RunManager.Instance;
+            if (run == null) return null;
+            var syncProp = run.GetType().GetProperty("MerchantSynchronizer");
+            var sync = syncProp?.GetValue(run);
+            if (sync == null) return null;
+            var method = sync.GetType().GetMethod("GetLocalInventory", Type.EmptyTypes);
+            return method?.Invoke(sync, null) as MerchantInventory;
+        }
+        catch { return null; }
     }
 
 }
