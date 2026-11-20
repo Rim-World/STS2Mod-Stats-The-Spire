@@ -99,6 +99,17 @@ public static class CombatLifecyclePatch
     }
 
     /// <summary>
+    /// Defeat requests loss from LoseCombat; the death screen can render
+    /// before CombatRoom.OnCombatEnded, so hide the hover panel here as well.
+    /// </summary>
+    [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.LoseCombat))]
+    [HarmonyPostfix]
+    public static void AfterLoseCombat()
+    {
+        Safe.Run(IntentHoverPatch.ForceHideAll);
+    }
+
+    /// <summary>
     /// Auto-close the contribution panel when the player clicks the Proceed button
     /// after collecting rewards. ProceedFromTerminalRewardsScreen is the async method
     /// called by NRewardsScreen.OnProceedButtonPressed — a Prefix runs synchronously

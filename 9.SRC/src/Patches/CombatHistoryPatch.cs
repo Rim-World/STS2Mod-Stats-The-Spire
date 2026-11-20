@@ -213,16 +213,6 @@ public static class CombatHistoryPatch
         });
     }
 
-    [HarmonyPatch(typeof(CombatHistory), nameof(CombatHistory.PowerReceived))]
-    [HarmonyPostfix]
-    public static void AfterPowerReceived(CombatStateType combatState,
-        PowerModel power, decimal amount, Creature? applier)
-    {
-        // Power source recording is handled by PowerHookContextPatcher, which
-        // has the actual owner/applier context. This hook intentionally does
-        // nothing to avoid duplicate source entries.
-    }
-
     [HarmonyPatch(typeof(CombatHistory), nameof(CombatHistory.CardDrawn))]
     [HarmonyPostfix]
     public static void AfterCardDrawn(CombatStateType combatState, CardModel card, bool fromHandDraw)
@@ -2450,6 +2440,40 @@ public static class MaxHpGainPatch
 
 // NEW-3 heal suppression is handled directly in AfterHeal (HealingPatch) above,
 // using ContributionMap.CheckAndClearGainMaxHpFlag().
+
+// ═══════════════════════════════════════════════════════════
+// PaleBlueDot source capture
+// PaleBlueDotPower.AfterCardPlayed waits 0.5 s before applying
+// DrawCardsNextTurnPower. The generic power-context patch cannot be used
+// here because it also installs a pending card-draw source; PaleBlueDot
+// applies a power, not a draw. This narrow prefix sets only the power
+// source; AsyncLocal keeps it alive across the await.
+// ═══════════════════════════════════════════════════════════
+
+[HarmonyPatch]
+public static class PaleBlueDotPowerContextPatch
+{
+    [HarmonyPatch(typeof(PaleBlueDotPower), nameof(PaleBlueDotPower.AfterCardPlayed))]
+    [HarmonyPrefix]
+    public static void BeforeAfterCardPlayed(PaleBlueDotPower __instance)
+    {
+        Safe.Run(() =>
+        {
+            // DisplayAmount is 0 once five card plays have happened. Only
+            // then can this hook apply DrawCardsNextTurnPower, so a marker
+            // set on earlier plays cannot misattribute a later draw.
+            if (__instance.DisplayAmount > 0) return;
+
+            var powerId = __instance.Id.Entry;
+            if (string.IsNullOrEmpty(powerId)) return;
+            var source = ContributionMap.Instance.GetPowerSource(powerId);
+            CombatTracker.Instance.SetPendingPowerSource(
+                "DRAW_CARDS_NEXT_TURN_POWER",
+                source?.SourceId ?? "PALEBLUE_DOT",
+                source?.SourceType ?? "card");
+        });
+    }
+}
 
 // ═══════════════════════════════════════════════════════════
 // ModifyHandDraw extra draw tracking (PaleBlueDot, Tyranny)

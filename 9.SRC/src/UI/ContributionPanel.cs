@@ -406,6 +406,10 @@ public partial class ContributionPanel : PanelContainer
         if (!ModConfig.Toggles.ContributionPanel) return;
 
         var panel = Instance;
+        // A combat result always replaces run-history replay data. Without
+        // this, the 本局汇总 tab keeps the old replay while the combat tab
+        // shows the new fight.
+        _replayRunData = null;
         RefreshTabs(combatData);
         panel.UpdateDps();
         panel.Visible = true;
@@ -450,7 +454,7 @@ public partial class ContributionPanel : PanelContainer
         // controls post-combat auto-open).
         var panel = Instance;
         if (panel.Visible)
-            panel.Visible = false;
+            Hide();
         else
         {
             RefreshTabs(SelectCombatTabData());

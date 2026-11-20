@@ -448,7 +448,15 @@ public sealed class RunHistoryAnalyzer
             int actIndex = Math.Max(1, run.MapPointHistory?.Count ?? 1);
             string cause;
             DeathSource src;
-            if (run.KilledByEncounter != ModelId.none)
+            if (run.WasAbandoned)
+            {
+                // A player-initiated abandon is not a combat death. Without
+                // this check the legacy fallback below labels the last
+                // combat as the killer.
+                cause = "ABANDONED";
+                src = DeathSource.Abandoned;
+            }
+            else if (run.KilledByEncounter != ModelId.none)
             {
                 cause = run.KilledByEncounter.Entry;
                 src = DeathSource.Combat;
@@ -513,6 +521,7 @@ public sealed class RunHistoryAnalyzer
         foreach (var run in runs)
         {
             if (run.MapPointHistory == null) continue;
+            var perActBuys = BuildPerActShopCardBuys(run);
             for (int i = 0; i < run.MapPointHistory.Count; i++)
             {
                 int actIdx = i + 1; // 1-based
@@ -539,14 +548,17 @@ public sealed class RunHistoryAnalyzer
                         gained   += ps.CardsGained?.Count ?? 0;
                         removed  += ps.CardsRemoved?.Count ?? 0;
                         upgraded += ps.UpgradedCards?.Count ?? 0;
-                        // BoughtRelics list contains relics; bought cards are tracked
-                        // separately (via BoughtColorless + shop card purchases routed
-                        // through CardsGained on the shop floor). Use BoughtColorless
-                        // as a proxy for cards bought from shop until we have a richer
-                        // signal.
-                        bought   += ps.BoughtColorless?.Count ?? 0;
+                        // Sidecar records colored and colorless buys. Only
+                        // fall back to BoughtColorless for legacy runs with
+                        // no sidecar, otherwise colored buys are missed and
+                        // colorless buys are double-counted.
+                        if (perActBuys == null)
+                            bought += ps.BoughtColorless?.Count ?? 0;
                     }
                 }
+
+                if (perActBuys != null)
+                    bought = perActBuys.GetValueOrDefault(actIdx, 0);
 
                 var prev = totals.GetValueOrDefault(actIdx);
                 totals[actIdx] = (

@@ -15,5 +15,10 @@
 # 测试部署副本
 /8.TEST/**/deploy/
 
+# 测试日志与标准输出不入库（可能包含本机路径和账号痕迹）
+/8.TEST/**/*.log
+/8.TEST/**/*.stdout
+/8.TEST/**/*.stderr
+
 # 本地开发工具
 /TOOLS/**/cache/

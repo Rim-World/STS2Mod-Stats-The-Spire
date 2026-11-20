@@ -15,7 +15,12 @@ namespace CommunityStats.Patches;
 public static class VoidFormEnergyCostPatch
 {
     [HarmonyPrepare]
-    public static bool Prepare() => TargetMethod() != null;
+    public static bool Prepare()
+    {
+        if (TargetMethod() != null) return true;
+        Safe.Warn("[CompatPatch] VoidFormPower.TryModifyEnergyCostInCombatLate not found; Void Form cost attribution disabled.");
+        return false;
+    }
 
     [HarmonyTargetMethod]
     public static MethodBase? TargetMethod()

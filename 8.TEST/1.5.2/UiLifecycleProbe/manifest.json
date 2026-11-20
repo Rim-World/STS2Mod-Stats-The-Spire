@@ -1,0 +1,11 @@
+{
+  "id": "sts2_ui_lifecycle_probe_152",
+  "name": "StatsTheSpire UI Lifecycle Probe 1.5.2",
+  "author": "test",
+  "description": "Test-only UI lifecycle probe.",
+  "version": "1.5.2",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1"
+}

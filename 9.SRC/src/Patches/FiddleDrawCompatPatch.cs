@@ -15,7 +15,12 @@ namespace CommunityStats.Patches;
 public static class FiddleDrawCompatPatch
 {
     [HarmonyPrepare]
-    public static bool Prepare() => TargetMethod() != null;
+    public static bool Prepare()
+    {
+        if (TargetMethod() != null) return true;
+        Safe.Warn("[CompatPatch] Fiddle.ModifyHandDraw/ModifyHandDrawLate not found; Fiddle draw attribution disabled.");
+        return false;
+    }
 
     [HarmonyTargetMethod]
     public static MethodBase? TargetMethod()

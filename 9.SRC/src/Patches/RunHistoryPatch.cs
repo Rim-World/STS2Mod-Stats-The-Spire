@@ -37,8 +37,20 @@ public static class RunHistoryPatch
         // away without closing, the dim layer was still blocking input on
         // the next visit. SelectPlayer fires on every screen entry and on
         // player switches, so freeing here is the right cleanup point.
-        Safe.Run(CloseOpenPopup);
+        Safe.Run(() => CloseOpenPopup());
         Safe.Run(() => InjectButton(__instance));
+    }
+
+    /// <summary>
+    /// The popup is parented to the scene root, so it survives the run-history
+    /// screen being hidden. Close it when the submenu leaves, otherwise the
+    /// full-screen dim layer blocks the main menu on the next visit.
+    /// </summary>
+    [HarmonyPatch(typeof(NRunHistory), "OnSubmenuHidden")]
+    [HarmonyPostfix]
+    public static void AfterSubmenuHidden()
+    {
+        Safe.Run(() => CloseOpenPopup());
     }
 
     // Round 9 round 51 (rev 4): removed the _ExitTree postfix — NRunHistory
@@ -144,11 +156,11 @@ public static class RunHistoryPatch
     /// contribution panel (so the contribution panel pops onto a clean
     /// background instead of fighting for z-order with us).
     /// </summary>
-    public static void CloseOpenPopup()
+    public static bool CloseOpenPopup()
     {
         var tree = (Godot.Engine.GetMainLoop() as SceneTree);
         var root = tree?.Root;
-        if (root == null) return;
+        if (root == null) return false;
         int freed = 0;
         for (int i = root.GetChildCount() - 1; i >= 0; i--)
         {
@@ -164,6 +176,7 @@ public static class RunHistoryPatch
             }
         }
         if (freed > 0) Safe.Info($"[RunHistoryPatch] CloseOpenPopup freed {freed} overlay(s)");
+        return freed > 0;
     }
 
     private static void OpenPopup(RunHistory history)
@@ -283,15 +296,16 @@ public static class RunHistoryPatch
         section.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
         scroll.AddChild(section);
 
-        // Esc key handling: process input on the overlay itself.
-        overlay.GuiInput += ev =>
+        // Esc must close only this popup, not pop the run-history screen.
+        // A focusless Control with GuiInput cannot receive keys, so use a
+        // raw-input node and consume the event there.
+        var escHandler = new EscapeCloseControl
         {
-            if (ev is InputEventKey k && k.Pressed && k.Keycode == Key.Escape)
-            {
-                CloseOpenPopup();
-                overlay.AcceptEvent();
-            }
+            Name = "EscCloseHandler",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
+        escHandler.EscapePressed = () => CloseOpenPopup();
+        overlay.AddChild(escHandler);
 
         root.AddChild(overlay);
     }

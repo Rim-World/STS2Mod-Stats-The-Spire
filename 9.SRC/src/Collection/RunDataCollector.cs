@@ -63,13 +63,6 @@ public static class RunDataCollector
         ShopOfferingPersistence.Save(_shopCardOfferings);
     }
 
-    // ── Deprecated recording methods (no-ops, kept for ABI compat) ──
-
-    public static void RecordCardReward(List<(string cardId, int upgradeLevel)> offeredCards, string? pickedCardId, int floor) { }
-    public static void RecordEventChoice(string eventId, int optionIndex, int totalOptions) { }
-    public static void RecordCardRemoval(string cardId, string source, int floor) { }
-    public static void RecordCardUpgrade(string cardId, string source) { }
-
     // ── Run lifecycle ───────────────────────────────────────
 
     /// <summary>

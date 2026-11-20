@@ -190,6 +190,7 @@ public sealed class CombatTracker
         }
         catch (Exception ex)
         {
+            _liveSaveDirty = true;
             Godot.GD.Print($"[StatsTheSpire] SaveLiveState error: {ex.Message}");
         }
 
@@ -308,6 +309,7 @@ public sealed class CombatTracker
             Util.ContributionPersistence.SaveLiveState(snap);
         }
         catch { }
+        _liveSaveDirty = true;
     }
 
     // ── Damage dedup (for KillingBlowPatcher) ────────────────

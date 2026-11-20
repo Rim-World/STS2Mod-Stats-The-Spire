@@ -1,9 +1,11 @@
 using CommunityStats.Collection;
 using CommunityStats.Config;
+using CommunityStats.UI;
 using CommunityStats.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes.Screens.PauseMenu;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 
@@ -25,6 +27,7 @@ public static class RunLifecyclePatch
             Safe.Info("[DIAG:RunLifecycle] SetUpNewSingleplayer Postfix fired");
             var identity = RunIdentity.FromManager(__instance, state?.Rng?.StringSeed);
             RunDataCollector.BeginNewRun(identity);
+            HidePanelForRunTransition();
             Safe.Info($"[RunLifecycle] new singleplayer run: {identity}");
             // PRD §3.9 / §3.17 round 9: top-bar indicators get built once
             // per run (lifetime mirrors NTopBar's). Defer one frame so
@@ -56,6 +59,7 @@ public static class RunLifecyclePatch
             var identity = new RunIdentity(
                 save?.StartTime ?? 0,
                 save?.SerializableRng?.Seed ?? state?.Rng?.StringSeed ?? "");
+            HidePanelForRunTransition();
             RunDataCollector.ResumeRun(identity);
             TryHydrateLiveState(identity);
             Safe.Info($"[RunLifecycle] resumed singleplayer run: {identity}");
@@ -74,6 +78,7 @@ public static class RunLifecyclePatch
             var identity = new RunIdentity(
                 save?.StartTime ?? 0,
                 save?.SerializableRng?.Seed ?? state?.Rng?.StringSeed ?? "");
+            HidePanelForRunTransition();
             RunDataCollector.ResumeRun(identity);
             TryHydrateLiveState(identity);
             Safe.Info($"[RunLifecycle] resumed multiplayer run: {identity}");
@@ -89,6 +94,7 @@ public static class RunLifecyclePatch
         {
             var identity = RunIdentity.FromManager(__instance, state?.Rng?.StringSeed);
             RunDataCollector.BeginNewRun(identity);
+            HidePanelForRunTransition();
             Safe.Info($"[RunLifecycle] new multiplayer run: {identity}");
             CommunityStats.Patches.CombatUiOverlayPatch.OnRunStarted();
         });
@@ -113,6 +119,41 @@ public static class RunLifecyclePatch
         {
             Safe.Warn($"TryHydrateLiveState failed: {ex.Message}");
         }
+    }
+
+    private static void HidePanelForRunTransition()
+    {
+        Safe.Run(() =>
+        {
+            ContributionPanel.Hide();
+            IntentHoverPatch.ForceHideAll();
+        });
+    }
+
+    /// <summary>
+    /// Abandon kills the player and returns to the menu; the popup/panel are
+    /// root-parented, so hide them before the run-history screen changes.
+    /// </summary>
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.Abandon))]
+    [HarmonyPostfix]
+    public static void AfterAbandon()
+    {
+        HidePanelForRunTransition();
+    }
+
+    /// <summary>
+    /// Save and Quit leaves the run alive. Flush the live snapshot first,
+    /// then hide root-level panels so they cannot cover the main menu.
+    /// </summary>
+    [HarmonyPatch(typeof(NPauseMenu), "CloseToMenu")]
+    [HarmonyPrefix]
+    public static void BeforeCloseToMenu()
+    {
+        Safe.Run(() =>
+        {
+            CombatTracker.Instance.FlushLiveState();
+            HidePanelForRunTransition();
+        });
     }
 
     /// <summary>
@@ -145,6 +186,7 @@ public static class RunLifecyclePatch
         Safe.Run(() =>
         {
             Safe.Info($"[RunLifecycle] CreateRunHistoryEntry postfix: victory={victory}, abandoned={isAbandoned}");
+            HidePanelForRunTransition();
 
             // CreateRunHistoryEntry runs for every run-end path. On v0.111.1
             // ModManager.OnMetricsUpload may not fire at all, so finalize here

@@ -440,7 +440,8 @@ public static class CombatUiOverlayPatch
         {
             var state = me.RunState;
             return Hook.ShouldForcePotionReward(state, me, RoomType.Monster)
-                || Hook.ShouldForcePotionReward(state, me, RoomType.Elite);
+                || Hook.ShouldForcePotionReward(state, me, RoomType.Elite)
+                || Hook.ShouldForcePotionReward(state, me, RoomType.Boss);
         }
         catch { return false; }
     }

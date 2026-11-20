@@ -1,16 +1,13 @@
-using CommunityStats.Collection;
 using CommunityStats.UI;
 using CommunityStats.Util;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 
 namespace CommunityStats.Patches;
 
 /// <summary>
-/// Patches card reward screen to record card picks.
-/// Community stat labels removed (local edition).
+/// Hides the contribution panel while the card reward screen is open.
+/// The old SelectCard hook only fed a no-op record method and was removed.
 /// </summary>
 [HarmonyPatch]
 public static class CardRewardScreenPatch
@@ -20,27 +17,5 @@ public static class CardRewardScreenPatch
     public static void AfterOverlayOpened()
     {
         Safe.Run(() => ContributionPanel.HideIfVisible());
-    }
-
-    [HarmonyPatch(typeof(NCardRewardSelectionScreen), "SelectCard")]
-    [HarmonyPostfix]
-    public static void AfterSelectCard(NCardRewardSelectionScreen __instance,
-        NCardHolder cardHolder)
-    {
-        Safe.Run(() =>
-        {
-            var options = Traverse.Create(__instance).Field("_options").GetValue<IReadOnlyList<CardCreationResult>>();
-            if (options == null) return;
-
-            var pickedCard = cardHolder?.CardModel;
-            var pickedId = pickedCard?.Id.Entry;
-
-            var offeredCards = options.Select(o => (
-                cardId: o.Card?.Id.Entry ?? "unknown",
-                upgradeLevel: o.Card?.CurrentUpgradeLevel ?? 0
-            )).ToList();
-
-            RunDataCollector.RecordCardReward(offeredCards, pickedId, RunDataCollector.CurrentFloor);
-        });
     }
 }

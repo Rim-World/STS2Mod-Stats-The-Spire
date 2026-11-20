@@ -1,0 +1,11 @@
+{
+  "id": "sts2_palebluedot_probe_152",
+  "name": "StatsTheSpire PaleBlueDot Probe 1.5.2",
+  "author": "test",
+  "description": "Test-only PaleBlueDot attribution probe.",
+  "version": "1.5.2",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1"
+}

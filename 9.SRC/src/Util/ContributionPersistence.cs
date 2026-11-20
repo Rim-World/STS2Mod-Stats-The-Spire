@@ -304,22 +304,27 @@ public static class ContributionPersistence
     }
 
     /// <summary>
-    /// Deserialize a list of SourceDto into a dictionary, merging duplicate
-    /// SourceId entries (same-named cards from different origins have identical
-    /// SourceId but different OriginSourceId — ToDictionary would throw).
+    /// Deserialize a list of SourceDto into a dictionary. The in-memory key
+    /// is sourceId + originId (the same composite used by CombatTracker),
+    /// so a deck-native card and a generated copy with the same SourceId do
+    /// not merge into one inflated entry.
     /// </summary>
     private static Dictionary<string, ContributionAccum> ToDictionaryMerge(List<SourceDto> sources)
     {
         var result = new Dictionary<string, ContributionAccum>();
         foreach (var s in sources)
         {
-            if (result.TryGetValue(s.SourceId, out var existing))
+            var key = MakeSourceKey(s.SourceId, s.OriginSourceId);
+            if (result.TryGetValue(key, out var existing))
                 existing.MergeFrom(FromDto(s));
             else
-                result[s.SourceId] = FromDto(s);
+                result[key] = FromDto(s);
         }
         return result;
     }
+
+    private static string MakeSourceKey(string sourceId, string? originSourceId)
+        => string.IsNullOrEmpty(originSourceId) ? sourceId : sourceId + "\u0001" + originSourceId;
 
     private static ContributionAccum Clone(ContributionAccum src)
     {
