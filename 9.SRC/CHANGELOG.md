@@ -6,6 +6,8 @@
 
 ### Fixed
 
+- Map hover panels (shop prices and unknown-room odds) are now removed when the map screen closes, is cleaned up, is reopened, or replaces its map. The old panels were parented to `NMapPoint`, which is not unfocused by `NMapScreen.Close`, so they survived a close/reopen.
+- Top-bar odds indicators now skip `MoveChild` when the host HBox was rebuilt and a child no longer belongs to it. This removes the repeated `Child is not a child of this node` errors from `PinToLeftOfMap`.
 - Card drop odds now read the live `CardRarityOdds` values (A7+ Scarcity), apply negative offsets to both rare and uncommon thresholds, use single-card wording, show one Boss-reward row, hide in Blitz, and honor Big Game Hunter.
 - Potion odds keep the raw pity value for elite calculation, show White Beast Statue as 100%, remove cumulative rows, refresh after reward generation, and hide in Blitz.
 - Shop prices add the Shop-rarity relic row, use the local player, round base random prices before truncating discounts/removal, refresh an open panel after card removal, and hide in Blitz.
@@ -19,6 +21,7 @@
 - v0.111.1 A10 AutoSlayer seeds 71112 and 41111: exit 0; targeted probe values pass for card, potion, shop, ancient, intent, and boss-act displays.
 - v0.113.1 standard seed 71112: victory at floor 49; values match A10 expectations.
 - v0.113.1 Blitz seed 71113: victory at floor 24; top-bar card/potion indicators are hidden.
+- v0.113.1 isolated probe: a map hover panel is hidden and queued for deletion after `NMapScreen.Close`; `[MapFixProbe] PASS`; no `Child is not a child of this node` errors.
 
 ## [1.5.1] - 2026-11-20
 

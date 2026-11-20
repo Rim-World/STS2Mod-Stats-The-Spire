@@ -1,0 +1,16 @@
+{
+  "id": "mapfix_probe",
+  "name": "Stats the Spire Map Fix Probe",
+  "author": "local-test",
+  "description": "Test-only: verifies map hover panels are removed on map close.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.5.1"
+    }
+  ]
+}

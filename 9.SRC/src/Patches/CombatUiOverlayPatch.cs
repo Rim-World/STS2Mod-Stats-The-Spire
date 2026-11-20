@@ -201,19 +201,31 @@ public static class CombatUiOverlayPatch
         _pinning = true;
         try
         {
+            // The top bar can rebuild between rooms while the ChildOrderChanged
+            // signal is still connected. Moving a node that now belongs to the
+            // old HBox raises "Child is not a child of this node" every frame.
+            if (!IsChildOf(hostHbox, mapBtn)) return;
+            if (!IsChildOf(hostHbox, _potion) || !IsChildOf(hostHbox, _cardDrop)) return;
+
             int mapIdx = mapBtn.GetIndex();
             if (mapIdx <= 0) return;
             var spacerB = hostHbox.GetNodeOrNull<Control>("StatsTheSpireSpacerB");
             var spacerA = hostHbox.GetNodeOrNull<Control>("StatsTheSpireSpacerA");
             // Order matters: MoveChild shifts the other children, so insert
             // back-to-front relative to the final visual order.
-            if (spacerB != null) hostHbox.MoveChild(spacerB, mapIdx);
-            if (_cardDrop != null) hostHbox.MoveChild(_cardDrop, mapIdx);
-            if (spacerA != null) hostHbox.MoveChild(spacerA, mapIdx);
-            if (_potion != null) hostHbox.MoveChild(_potion, mapIdx);
+            if (IsChildOf(hostHbox, spacerB)) hostHbox.MoveChild(spacerB, mapIdx);
+            hostHbox.MoveChild(_cardDrop!, mapIdx);
+            if (IsChildOf(hostHbox, spacerA)) hostHbox.MoveChild(spacerA, mapIdx);
+            hostHbox.MoveChild(_potion!, mapIdx);
         }
         catch { }
         finally { _pinning = false; }
+    }
+
+    private static bool IsChildOf(Node parent, Godot.GodotObject? child)
+    {
+        if (child == null || !Godot.GodotObject.IsInstanceValid(child)) return false;
+        return child is Node node && node.GetParent() == parent;
     }
 
     private static void HookChildOrderSignal(Node hostHbox)

@@ -203,6 +203,11 @@
 | `v113.1-blitz-indicator-probe-stdout.log` | 2026-11-21 02:13 | 否 | 499 | Blitz 顶部指示器可见性；TopBar 节点 `potionVisible=False cardVisible=False`；超时终止 | 是 |
 | `v113.1-build-rq014probe3.log` | 2026-11-21 02:04 | 否 | 1 | 增加 attach 诊断后重建 | 是 |
 | `v113.1-build-rq014probe4.log` | 2026-11-21 02:07 | 否 | 1 | 修正探针节点查找后重建 | 是 |
+| `MapFixProbe/MapFixProbe.cs` | 2026-11-21 03:50 | 否 | 4 | 地图悬停面板清理探针 | 是 |
+| `MapFixProbe/MapFixProbe.csproj` | 2026-11-21 03:50 | 否 | 1 | 地图悬停面板清理探针工程 | 是 |
+| `MapFixProbe/manifest.json` | 2026-11-21 03:50 | 否 | 1 | 地图探针清单；依赖主 Mod 1.5.1 | 是 |
+| `mapfix-probe-stdout.log.stdout` | 2026-11-21 03:51 | 否 | 316 | v0.113.1 无头探针完整输出；`[MapFixProbe] PASS` | 是 |
+| `mapfix-probe-stdout.log` | 2026-11-21 03:51 | 否 | 2 | 同一探针的游戏日志 | 是 |
 
 ## 变更记录
 
@@ -228,3 +233,4 @@
 | 2026-11-21 00:20 | 审阅后补测缓存 schema 与涅奥回退；最终构建 final6/final5 |
 | 2026-11-21 02:00 | 登记 v0.113.1 双模式实机、构建与顶部指示器短探针 |
 | 2026-11-21 02:14 | 修正探针节点查找；标准模式指标可见、Blitz 隐藏已实测 |
+| 2026-11-21 03:52 | 新增地图悬停清理探针；`MapFixProbe PASS`，无 `Child is not a child` 错误 |

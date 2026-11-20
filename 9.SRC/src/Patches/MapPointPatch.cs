@@ -26,6 +26,12 @@ public static class MapPointPatch
     // can rebuild the removal price instead of leaving the stale value.
     private static readonly ConditionalWeakTable<NMapPoint, InfoModPanel> _shopPanels = new();
 
+    // Every panel created by this patch, including unknown-room panels.
+    // NMapScreen.Close hides the map screen but does not unfocus its map
+    // points, so panels parented to NMapPoint survive a close/reopen unless
+    // this registry is cleared explicitly.
+    private static readonly ConditionalWeakTable<NMapPoint, InfoModPanel> _panels = new();
+
     [HarmonyPatch(typeof(NMapPoint), "OnFocus")]
     [HarmonyPostfix]
     public static void AfterOnFocus(NMapPoint __instance)
@@ -72,6 +78,8 @@ public static class MapPointPatch
         panel.ZIndex = 200;
         panel.GlobalPosition = mapPoint.GlobalPosition + new Vector2(40f, 0f);
         mapPoint.SetMeta(HoverPanelMeta, true);
+        _panels.Remove(mapPoint);
+        _panels.AddOrUpdate(mapPoint, panel);
         if (point.PointType == MapPointType.Shop)
             _shopPanels.AddOrUpdate(mapPoint, panel);
     }
@@ -129,24 +137,91 @@ public static class MapPointPatch
                 fresh.GlobalPosition = position;
                 _shopPanels.Remove(map);
                 _shopPanels.AddOrUpdate(map, fresh);
+                _panels.Remove(map);
+                _panels.AddOrUpdate(map, fresh);
             }
         });
     }
 
     private static void HideHoverPanel(NMapPoint mapPoint)
     {
-        if (!mapPoint.HasMeta(HoverPanelMeta)) return;
-
-        foreach (var child in mapPoint.GetChildren())
+        try
         {
-            if (child is InfoModPanel)
+            if (_panels.TryGetValue(mapPoint, out var registered))
             {
-                child.QueueFree();
-                break;
+                _panels.Remove(mapPoint);
+                if (Godot.GodotObject.IsInstanceValid(registered))
+                {
+                    registered.Visible = false;
+                    registered.QueueFree();
+                }
             }
+
+            foreach (var child in mapPoint.GetChildren())
+            {
+                if (child is not InfoModPanel panel) continue;
+                if (!Godot.GodotObject.IsInstanceValid(panel)) continue;
+                panel.Visible = false;
+                panel.QueueFree();
+            }
+
+            _shopPanels.Remove(mapPoint);
+            if (mapPoint.HasMeta(HoverPanelMeta))
+                mapPoint.RemoveMeta(HoverPanelMeta);
         }
-        _shopPanels.Remove(mapPoint);
-        mapPoint.RemoveMeta(HoverPanelMeta);
+        catch { }
     }
 
+    /// <summary>
+    /// Deletes every hover panel owned by this patch. NMapScreen only hides
+    /// itself on close; it does not call OnUnfocus for map points, so panels
+    /// parented to NMapPoint would otherwise survive until the next map
+    /// rebuild. Called on close, cleanup, reopen, and map replacement.
+    /// </summary>
+    public static void HideAllHoverPanels()
+    {
+        Safe.Run(() =>
+        {
+            var entries = new List<NMapPoint>();
+            foreach (var kv in _panels)
+                entries.Add(kv.Key);
+
+            foreach (var mapPoint in entries)
+            {
+                if (!Godot.GodotObject.IsInstanceValid(mapPoint)) continue;
+                HideHoverPanel(mapPoint);
+            }
+
+            _panels.Clear();
+            _shopPanels.Clear();
+        });
+    }
+
+    [HarmonyPatch(typeof(NMapScreen), nameof(NMapScreen.Close))]
+    [HarmonyPostfix]
+    public static void AfterMapScreenClose()
+    {
+        HideAllHoverPanels();
+    }
+
+    [HarmonyPatch(typeof(NMapScreen), nameof(NMapScreen.CleanUp))]
+    [HarmonyPostfix]
+    public static void AfterMapScreenCleanUp()
+    {
+        HideAllHoverPanels();
+    }
+
+    [HarmonyPatch(typeof(NMapScreen), nameof(NMapScreen.Open))]
+    [HarmonyPrefix]
+    public static void BeforeMapScreenOpen()
+    {
+        HideAllHoverPanels();
+    }
+
+    [HarmonyPatch(typeof(NMapScreen), nameof(NMapScreen.SetMap))]
+    [HarmonyPrefix]
+    public static void BeforeMapScreenSetMap()
+    {
+        HideAllHoverPanels();
+    }
 }

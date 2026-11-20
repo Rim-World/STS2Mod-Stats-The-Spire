@@ -210,6 +210,8 @@ Files from 1.4.4 and earlier named `{seed}_*.json` are read as a legacy fallback
 2. Place the `sts2_statsthespire_local` folder into the game directory's `mods/` folder.
 3. Launch the game. The manifest dependency loads RitsuLib first.
 
+> **Keep one copy only.** The local build and the old Workshop build share the ID `sts2_statsthespire_local`. Unsubscribe from or disable the Workshop copy first. Unchecking the local copy does not disable the Workshop copy.
+
 ### File Structure
 
 ```
