@@ -1,5 +1,7 @@
 using CommunityStats.Config;
+using CommunityStats.Util;
 using Godot;
+using MegaCrit.Sts2.Core.Odds;
 
 namespace CommunityStats.UI;
 
@@ -19,11 +21,8 @@ public partial class CardDropOddsIndicator : Control
     private InfoModPanel? _hoverPanel;
     private float _currentOffset;
 
-    // STS2 base rates (non-ascension Scarcity values, regular/elite encounters)
-    private const float RegularRareBase = 0.03f;
-    private const float RegularUncommonBase = 0.37f;
-    private const float EliteRareBase = 0.10f;
-    private const float EliteUncommonBase = 0.40f;
+    // STS2 base rates come from CardRarityOdds, because the Scarcity
+    // ascension (A7+) changes both regular and elite values.
 
     public static CardDropOddsIndicator Create()
     {
@@ -111,25 +110,61 @@ public partial class CardDropOddsIndicator : Control
     private void ShowHoverPanel()
     {
         if (_hoverPanel != null) return;
+        if (RunContextInfo.IsBlitz()) return;
 
+        var state = RunContextInfo.CurrentState;
         _hoverPanel = InfoModPanel.Create(L.Get("carddrop.title"), L.Get("carddrop.subtitle"));
         _hoverPanel.AddSeparator();
 
-        // Header row (rarity | regular | elite)
-        var regularRare = Mathf.Clamp(RegularRareBase + _currentOffset, 0f, 1f);
-        var regularUncommon = Mathf.Clamp(RegularUncommonBase, 0f, 1f);
-        var regularCommon = Mathf.Clamp(1f - regularRare - regularUncommon, 0f, 1f);
-        var eliteRare = Mathf.Clamp(EliteRareBase + _currentOffset, 0f, 1f);
-        var eliteUncommon = Mathf.Clamp(EliteUncommonBase, 0f, 1f);
-        var eliteCommon = Mathf.Clamp(1f - eliteRare - eliteUncommon, 0f, 1f);
+        // Boss rewards always use the fixed boss table: rare only.
+        if (RunContextInfo.IsBossRoom(state))
+        {
+            _hoverPanel.AddRow(
+                string.Format(L.Get("carddrop.boss_row"), L.Get("carddrop.rare")),
+                "100.0%", GoldColor, GoldColor);
+            AttachHoverPanel();
+            return;
+        }
+
+        // The game's roll uses:
+        //   rareThreshold     = baseRare + offset
+        //   uncommonThreshold = baseUncommon + rareThreshold
+        // So a negative offset also lowers the uncommon share, instead of
+        // moving that mass into uncommon.
+        float regularRareBase = CardRarityOdds.RegularRareOdds;
+        float regularUncommonBase = CardRarityOdds.regularUncommonOdds;
+        float eliteRareBase = CardRarityOdds.EliteRareOdds;
+        float eliteUncommonBase = CardRarityOdds.eliteUncommonOdds;
+
+        var regular = ResolveRates(regularRareBase, regularUncommonBase, _currentOffset);
+        var elite = ResolveRates(eliteRareBase, eliteUncommonBase, _currentOffset);
+
+        // Big Game Hunter replaces every elite card reward with rare-only.
+        if (RunContextInfo.HasBigGameHunter(state))
+            elite = (0f, 0f, 1f);
 
         AddHeaderRow();
-        AddTableRow(L.Get("carddrop.rare"), regularRare, eliteRare, GoldColor);
-        AddTableRow(L.Get("carddrop.uncommon"), regularUncommon, eliteUncommon, AquaColor);
-        AddTableRow(L.Get("carddrop.common"), regularCommon, eliteCommon, CreamColor);
+        AddTableRow(L.Get("carddrop.rare"), regular.Rare, elite.Rare, GoldColor);
+        AddTableRow(L.Get("carddrop.uncommon"), regular.Uncommon, elite.Uncommon, AquaColor);
+        AddTableRow(L.Get("carddrop.common"), regular.Common, elite.Common, CreamColor);
 
-        AddChild(_hoverPanel);
-        _hoverPanel.ZIndex = 500;
+        AttachHoverPanel();
+    }
+
+    private static (float Common, float Uncommon, float Rare) ResolveRates(
+        float baseRare, float baseUncommon, float offset)
+    {
+        float rareThreshold = baseRare + offset;
+        float rare = Mathf.Clamp(rareThreshold, 0f, 1f);
+        float uncommon = Mathf.Clamp(baseUncommon + Mathf.Min(0f, rareThreshold), 0f, 1f);
+        float common = Mathf.Clamp(1f - rare - uncommon, 0f, 1f);
+        return (common, uncommon, rare);
+    }
+
+    private void AttachHoverPanel()
+    {
+        AddChild(_hoverPanel!);
+        _hoverPanel!.ZIndex = 500;
         _hoverPanel.GlobalPosition = GlobalPosition + new Vector2(0, Size.Y + 4f);
     }
 

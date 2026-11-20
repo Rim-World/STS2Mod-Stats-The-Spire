@@ -384,11 +384,8 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
                     foreach (var choice in ps.AncientChoices)
                     {
                         if (!choice.WasChosen) continue;
-                        var key = choice.Title?.LocEntryKey;
-                        if (string.IsNullOrEmpty(key)) continue;
-                        // Strip trailing ".title" → relic id.
-                        int dot = key!.LastIndexOf('.');
-                        var relicId = dot > 0 ? key.Substring(0, dot) : key;
+                        var relicId = AncientId.Normalize(choice.Title?.LocEntryKey);
+                        if (string.IsNullOrEmpty(relicId)) continue;
                         result.Add(new AncientPick(displayAct, elderId, relicId));
                     }
                 }

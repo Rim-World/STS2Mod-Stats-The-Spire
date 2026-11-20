@@ -1,0 +1,16 @@
+{
+  "id": "rq014_probe",
+  "name": "Stats the Spire RQ-014 Probe",
+  "author": "local-test",
+  "description": "Test-only probe for card/potion/shop/ancient/intent display values.",
+  "version": "0.0.1",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.5.1"
+    }
+  ]
+}

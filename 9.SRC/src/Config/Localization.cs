@@ -136,24 +136,25 @@ public static class L
         ["potion.title"] = "Potion Drop (Next Combat)",
         ["settings.filter_section"] = "Ascension / Win Rate Filters",
         ["settings.close_to_apply"] = "Changes apply when you close this panel.",
-        ["potion.subtitle"] = "Cumulative odds over N combats",
-        ["potion.within"] = "Within {0} combats",
+        ["potion.subtitle"] = "Current drop odds",
         ["potion.elite"] = "Elite combat drop",
 
         // Card drop odds (§3.17)
         ["carddrop.title"] = "Card Drops (Next Combat)",
-        ["carddrop.subtitle"] = "Probability of at least one per rarity",
+        ["carddrop.subtitle"] = "Single-card rarity odds",
         ["carddrop.rare"] = "Rare",
         ["carddrop.uncommon"] = "Uncommon",
         ["carddrop.common"] = "Common",
         ["carddrop.col_regular"] = "Regular",
         ["carddrop.col_elite"] = "Elite",
+        ["carddrop.boss_row"] = "Boss reward: {0}",
 
         // Shop prices (§3.16)
         ["shop.title"] = "Shop Prices",
         ["shop.subtitle"] = "Merchant price table",
         ["shop.removal"] = "Remove a card: {0}",
         ["shop.relics"] = "Relics",
+        ["shop.relic_shop"] = "Shop",
         ["shop.cards"] = "Cards",
         ["shop.potions"] = "Potions",
         ["shop.col_common"] = "Common",
@@ -254,6 +255,8 @@ public static class L
         ["intent.unavailable"] = "State machine data unavailable",
         ["intent.conditional"] = "conditional",
         ["intent.initial"] = "Initial",
+        ["intent.chomper_clamp_first"] = "Clamp first",
+        ["intent.chomper_screech_first"] = "Screech first",
         ["intent.no_metadata"] = "(no intent metadata)",
 
         // Career stats (§3.11)
@@ -334,6 +337,7 @@ public static class L
         ["ancient.positive_pool"] = "Positive Pool",
         ["ancient.curse_pool"] = "Curse Pool",
         ["ancient.act_only_n"] = "(Act {0} only)",
+        ["ancient.act_only_multi"] = "(Acts {0} only)",
         ["ancient.shared_act"] = "Shared",
         ["card_lib.mine"] = "Mine",
         ["card_lib.community"] = "Community",
@@ -465,24 +469,25 @@ public static class L
         ["potion.title"] = "药水掉落（下一场）",
         ["settings.filter_section"] = "进阶 / 胜率 筛选",
         ["settings.close_to_apply"] = "关闭此面板时自动应用更改。",
-        ["potion.subtitle"] = "多场累计掉落概率",
-        ["potion.within"] = "{0} 场内",
+        ["potion.subtitle"] = "当前掉落概率",
         ["potion.elite"] = "精英战掉落",
 
         // Card drop odds (§3.17)
         ["carddrop.title"] = "卡牌掉落(下一场)",
-        ["carddrop.subtitle"] = "各稀有度至少出现一张的概率",
+        ["carddrop.subtitle"] = "单张卡牌各稀有度出率",
         ["carddrop.rare"] = "稀有",
         ["carddrop.uncommon"] = "罕见",
         ["carddrop.common"] = "普通",
         ["carddrop.col_regular"] = "普通战斗",
         ["carddrop.col_elite"] = "精英战斗",
+        ["carddrop.boss_row"] = "Boss奖励：{0}",
 
         // Shop prices (§3.16)
         ["shop.title"] = "商店价格",
         ["shop.subtitle"] = "商店价格表",
         ["shop.removal"] = "删牌费用: {0}",
         ["shop.relics"] = "遗物",
+        ["shop.relic_shop"] = "商店",
         ["shop.cards"] = "卡牌",
         ["shop.potions"] = "药水",
         ["shop.col_common"] = "普通",
@@ -583,6 +588,8 @@ public static class L
         ["intent.unavailable"] = "状态机数据不可用",
         ["intent.conditional"] = "条件",
         ["intent.initial"] = "初始",
+        ["intent.chomper_clamp_first"] = "先猛夹",
+        ["intent.chomper_screech_first"] = "先尖叫",
         ["intent.no_metadata"] = "(无意图元数据)",
 
         // Career stats (§3.11)
@@ -663,6 +670,7 @@ public static class L
         ["ancient.positive_pool"] = "正面遗物池",
         ["ancient.curse_pool"] = "诅咒遗物池",
         ["ancient.act_only_n"] = "（只在第{0}幕出现）",
+        ["ancient.act_only_multi"] = "（只在第{0}幕出现）",
         ["ancient.shared_act"] = "共享",
         ["card_lib.mine"] = "我的",
         ["card_lib.community"] = "社区",

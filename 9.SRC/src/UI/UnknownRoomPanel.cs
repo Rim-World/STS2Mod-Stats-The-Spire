@@ -39,7 +39,21 @@ public static class UnknownRoomPanel
         panel.AddSeparator();
 
         // Build the eligible room set (default = all four non-event types + Event).
-        var eligible = ResolveEligibleRoomTypes(runState);
+        var eligible = new HashSet<RoomType>(ResolveEligibleRoomTypes(runState));
+        bool relicModified = !eligible.Contains(RoomType.Monster)
+            || !eligible.Contains(RoomType.Treasure)
+            || !eligible.Contains(RoomType.Shop);
+
+        // The game's map-point blacklist includes Shop when the previous
+        // room was a shop. Apply that rule explicitly; do not use
+        // RunManager.BuildRoomTypeBlacklist because its all-children-shop
+        // branch is not a guarantee while Wing Boots is active (U2).
+        try
+        {
+            if (runState?.CurrentMapPointHistoryEntry?.HasRoomOfType(RoomType.Shop) == true)
+                eligible.Remove(RoomType.Shop);
+        }
+        catch { }
 
         // Compute the live probability map, zeroing out blacklisted entries
         // and folding their share into Event.
@@ -57,9 +71,8 @@ public static class UnknownRoomPanel
         AddRow(panel, L.Get("room.treasure"), treasure,  TreasureColor);
         AddRow(panel, L.Get("room.shop"),     shop,      ShopColor);
 
-        // Surface a footer note when relic-driven blacklists collapsed the set.
-        if (!eligible.Contains(RoomType.Monster) || !eligible.Contains(RoomType.Treasure)
-            || !eligible.Contains(RoomType.Shop))
+        // Surface a footer note only when relic-driven blacklists changed the set.
+        if (relicModified)
         {
             panel.AddSeparator();
             panel.AddLabel(L.Get("unknown.relic_modified"), GrayColor);

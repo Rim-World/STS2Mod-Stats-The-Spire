@@ -122,6 +122,13 @@ public static class ShopPatch
         });
     }
 
+    [HarmonyPatch(typeof(NMerchantCardRemoval), nameof(NMerchantCardRemoval.OnCardRemovalUsed))]
+    [HarmonyPostfix]
+    public static void AfterCardRemovalUsed()
+    {
+        Safe.Run(MapPointPatch.RefreshOpenShopPanels);
+    }
+
     private static void RecordPotionPurchase(MerchantPotionEntry entry)
     {
         Safe.Run(() =>

@@ -31,10 +31,9 @@ public static class AncientPoolMap
         public string DisplayKey { get; init; } = ""; // L key for "选项一池"/"Pool 1"
         public List<string> RelicIds { get; init; } = new();
         /// <summary>Optional per-relic act gate. Keys are relic IDs that only
-        /// appear in a specific act (e.g. Darv's Ectoplasm/Sozu only in Act 2,
-        /// PhilosophersStone/VelvetChoker only in Act 3). UI appends a
-        /// "(only in Act N)" suffix when rendering these relics.</summary>
-        public Dictionary<string, int>? ActGate { get; init; }
+        /// appear in the listed acts. UI appends a "(only in Act N)" suffix
+        /// when rendering these relics.</summary>
+        public Dictionary<string, int[]>? ActGate { get; init; }
     }
 
     public sealed class ElderInfo
@@ -45,6 +44,25 @@ public static class AncientPoolMap
     }
 
     private static readonly Lazy<Dictionary<string, ElderInfo>> _elders = new(Build);
+
+    // Neow's 0.113 code names do not contain "Bundle"/"Empower" anymore.
+    // Classify by relic id, not by reflected property name.
+    private static readonly HashSet<string> NeowCurseIds = new()
+    {
+        "CURSED_PEARL", "LARGE_CAPSULE", "LEAFY_POULTICE", "PRECARIOUS_SHEARS",
+        "SILVER_CRUCIBLE", "SILKEN_TRESS",
+        "DOWSING_ROD", "HEFTY_TABLET", "NEOWS_BONES", "NEOWS_SACRIFICE",
+    };
+
+    private static readonly HashSet<string> NeowPositiveIds = new()
+    {
+        "ARCANE_SCROLL", "BOOMING_CONCH", "POMANDER", "GOLDEN_PEARL",
+        "LEAD_PAPERWEIGHT", "NEW_LEAF", "NEOWS_TORMENT", "PRECISE_SCISSORS",
+        "LOST_COFFER", "MASSIVE_SCROLL", "NUTRITIOUS_OYSTER",
+        "STONE_HUMIDIFIER", "LAVA_ROCK", "SMALL_CAPSULE",
+        "KALEIDOSCOPE", "FISHING_ROD", "SCROLL_BOXES",
+        "PHIAL_HOLSTER", "WINGED_BOOTS", "NEOWS_TALISMAN",
+    };
 
     public static ElderInfo? Get(string elderId) =>
         _elders.Value.TryGetValue(elderId, out var info) ? info : null;
@@ -147,7 +165,9 @@ public static class AncientPoolMap
                         "LOST_COFFER",
                         "MASSIVE_SCROLL", "NUTRITIOUS_OYSTER", "STONE_HUMIDIFIER",
                         "LAVA_ROCK", "SMALL_CAPSULE",
-                        "KALEIDOSCOPE", "FISHING_ROD", "SILKEN_TRESS",
+                        "KALEIDOSCOPE", "FISHING_ROD", "SCROLL_BOXES",
+                        // v0.113 additions and the Neow-only relics.
+                        "PHIAL_HOLSTER", "WINGED_BOOTS", "NEOWS_TALISMAN",
                     },
                 },
                 // Curse: 4 base options + ScrollBoxes (Bundle, conditional) +
@@ -158,7 +178,8 @@ public static class AncientPoolMap
                     RelicIds = new()
                     {
                         "CURSED_PEARL", "LARGE_CAPSULE", "LEAFY_POULTICE", "PRECARIOUS_SHEARS",
-                        "SCROLL_BOXES", "SILVER_CRUCIBLE",
+                        "SILVER_CRUCIBLE", "SILKEN_TRESS",
+                        "DOWSING_ROD", "HEFTY_TABLET", "NEOWS_BONES", "NEOWS_SACRIFICE",
                     },
                 },
             },
@@ -185,8 +206,8 @@ public static class AncientPoolMap
             Pools = new()
             {
                 new Pool { DisplayKey = "ancient.pool_1", RelicIds = new() { "NUTRITIOUS_SOUP", "VERY_HOT_COCOA", "YUMMY_COOKIE" } },
-                new Pool { DisplayKey = "ancient.pool_2", RelicIds = new() { "BIIIG_HUG", "STORYBOOK", "SEAL_OF_GOLD", "TOASTY_MITTENS" } },
-                new Pool { DisplayKey = "ancient.pool_3", RelicIds = new() { "GOLDEN_COMPASS", "PUMPKIN_CANDLE", "TOY_BOX" } },
+                new Pool { DisplayKey = "ancient.pool_2", RelicIds = new() { "BIIIG_HUG", "STORYBOOK", "TOASTY_MITTENS" } },
+                new Pool { DisplayKey = "ancient.pool_3", RelicIds = new() { "GOLDEN_COMPASS", "PUMPKIN_CANDLE", "SEAL_OF_GOLD", "TOY_BOX" } },
             },
         };
 
@@ -203,8 +224,8 @@ public static class AncientPoolMap
                 // DISCOVERY_TOTEM_* IDs were placeholders that never resolved.
                 // See _decompiled/.../Models.Events/Orobas.cs for the canonical
                 // option layout.
-                new Pool { DisplayKey = "ancient.pool_1", RelicIds = new() { "ELECTRIC_SHRYMP", "GLASS_EYE", "SAND_CASTLE", "PRISMATIC_GEM", "SEA_GLASS" } },
-                new Pool { DisplayKey = "ancient.pool_2", RelicIds = new() { "ALCHEMICAL_COFFER", "DRIFTWOOD", "RADIANT_PEARL" } },
+                new Pool { DisplayKey = "ancient.pool_1", RelicIds = new() { "ELECTRIC_SHRYMP", "GLASS_EYE", "PRISMATIC_GEM", "SEA_GLASS" } },
+                new Pool { DisplayKey = "ancient.pool_2", RelicIds = new() { "ALCHEMICAL_COFFER", "DRIFTWOOD", "RADIANT_PEARL", "SAND_CASTLE" } },
                 new Pool { DisplayKey = "ancient.pool_3", RelicIds = new() { "TOUCH_OF_OROBAS", "ARCHAIC_TOOTH" } },
             },
         };
@@ -284,12 +305,12 @@ public static class AncientPoolMap
                         "RUNIC_PYRAMID", "SNECKO_EYE", "ECTOPLASM", "SOZU",
                         "PHILOSOPHERS_STONE", "VELVET_CHOKER", "DUSTY_TOME",
                     },
-                    ActGate = new Dictionary<string, int>
+                    ActGate = new Dictionary<string, int[]>
                     {
-                        ["ECTOPLASM"]          = 2,
-                        ["SOZU"]               = 2,
-                        ["PHILOSOPHERS_STONE"] = 3,
-                        ["VELVET_CHOKER"]      = 3,
+                        ["ECTOPLASM"]          = new[] { 2 },
+                        ["SOZU"]               = new[] { 2 },
+                        ["PHILOSOPHERS_STONE"] = new[] { 2, 3 },
+                        ["VELVET_CHOKER"]      = new[] { 2, 3 },
                     },
                 },
             },
@@ -342,7 +363,7 @@ public static class AncientPoolMap
 
                 if (options == null) continue;
 
-                bool curseLike = prop.Name.Contains("Curse", StringComparison.OrdinalIgnoreCase)
+                bool nameHintsCurse = prop.Name.Contains("Curse", StringComparison.OrdinalIgnoreCase)
                     || prop.Name.Contains("Bundle", StringComparison.OrdinalIgnoreCase)
                     || prop.Name.Contains("Empower", StringComparison.OrdinalIgnoreCase);
 
@@ -351,13 +372,16 @@ public static class AncientPoolMap
                     var relicId = option?.Relic?.Id.Entry;
                     if (string.IsNullOrEmpty(relicId)) continue;
 
+                    bool curseLike = NeowCurseIds.Contains(relicId)
+                        || (!NeowPositiveIds.Contains(relicId) && nameHintsCurse);
                     if (curseLike)
                     {
                         pool0.Remove(relicId);
                         pool1.Add(relicId);
                     }
-                    else if (!pool1.Contains(relicId))
+                    else
                     {
+                        pool1.Remove(relicId);
                         pool0.Add(relicId);
                     }
                     all.Add(relicId);
@@ -367,8 +391,17 @@ public static class AncientPoolMap
             foreach (var option in neow.AllPossibleOptions)
             {
                 var relicId = option?.Relic?.Id.Entry;
-                if (!string.IsNullOrEmpty(relicId) && all.Add(relicId))
+                if (string.IsNullOrEmpty(relicId) || !all.Add(relicId)) continue;
+                if (NeowCurseIds.Contains(relicId))
+                {
+                    pool0.Remove(relicId);
+                    pool1.Add(relicId);
+                }
+                else
+                {
+                    pool1.Remove(relicId);
                     pool0.Add(relicId);
+                }
             }
 
             neowInfo.Pools[0].RelicIds.Clear();

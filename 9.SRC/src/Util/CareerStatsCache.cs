@@ -22,6 +22,10 @@ public static class CareerStatsCache
     private const string FilePrefix = "career_";
     private const string FileSuffix = ".json";
 
+    // Bump when the DTO contents change in a user-visible way. v2 adds
+    // AncientId normalization and the corrected Ancient pool aggregation.
+    private const int CurrentSchemaVersion = 2;
+
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = false,
@@ -37,6 +41,15 @@ public static class CareerStatsCache
             var json = File.ReadAllText(path);
             var dto = JsonSerializer.Deserialize<CareerStatsDto>(json, JsonOpts);
             if (dto == null) return null;
+
+            // v2 invalidates snapshots written before AncientId normalization
+            // and the corrected Ancient pool aggregation.
+            if (dto.SchemaVersion < CurrentSchemaVersion)
+            {
+                Safe.Info($"CareerStatsCache.Load: stale schema {dto.SchemaVersion} < {CurrentSchemaVersion} — discarding");
+                return null;
+            }
+
             // Round 9 round 49: reject snapshots written by an older schema
             // (no MaxWinStreak). If the player has any wins but the field is
             // 0, the cache predates the field — force a rebuild rather than
@@ -108,6 +121,7 @@ public static class CareerStatsCache
 
     private static CareerStatsDto ToDto(CareerStatsData d) => new()
     {
+        SchemaVersion = CurrentSchemaVersion,
         CharacterFilter = d.CharacterFilter,
         ModeFilter = d.ModeFilter,
         AverageRunTimeSeconds = d.AverageRunTimeSeconds,
@@ -266,6 +280,7 @@ public static class CareerStatsCache
 
     private sealed class CareerStatsDto
     {
+        [JsonPropertyName("sv")]     public int SchemaVersion { get; set; }
         [JsonPropertyName("char")]   public string? CharacterFilter { get; set; }
         [JsonPropertyName("mode")]   public CareerRunModeFilter ModeFilter { get; set; }
         [JsonPropertyName("rt")]     public float AverageRunTimeSeconds { get; set; }

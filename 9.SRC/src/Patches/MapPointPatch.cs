@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using CommunityStats.Config;
 using CommunityStats.UI;
 using CommunityStats.Util;
@@ -19,6 +21,10 @@ public static class MapPointPatch
     // ── Hover panels (unknown room odds + shop prices) ─
 
     private const string HoverPanelMeta = "sts_hover_info_panel";
+
+    // Kept so a card removal made while the map hover panel is still open
+    // can rebuild the removal price instead of leaving the stale value.
+    private static readonly ConditionalWeakTable<NMapPoint, InfoModPanel> _shopPanels = new();
 
     [HarmonyPatch(typeof(NMapPoint), "OnFocus")]
     [HarmonyPostfix]
@@ -53,8 +59,11 @@ public static class MapPointPatch
             && mapPoint.State != MapPointState.Traveled
             && ModConfig.Toggles.ShopPrices)
         {
-            var player = RunManager.Instance?.DebugOnlyGetState()?.Players?.FirstOrDefault();
-            panel = ShopPricePanel.Create(player, GetShopRemovalsUsed());
+            var runState = RunManager.Instance?.DebugOnlyGetState();
+            if (RunContextInfo.IsBlitz(runState)) return;
+
+            var player = RunContextInfo.GetLocalPlayer(runState);
+            panel = ShopPricePanel.Create(player, GetShopRemovalsUsed(runState));
         }
 
         if (panel == null) return;
@@ -63,6 +72,8 @@ public static class MapPointPatch
         panel.ZIndex = 200;
         panel.GlobalPosition = mapPoint.GlobalPosition + new Vector2(40f, 0f);
         mapPoint.SetMeta(HoverPanelMeta, true);
+        if (point.PointType == MapPointType.Shop)
+            _shopPanels.AddOrUpdate(mapPoint, panel);
     }
 
     private static InfoModPanel? BuildUnknownPanel()
@@ -73,16 +84,53 @@ public static class MapPointPatch
         return UnknownRoomPanel.Create(odds, runState);
     }
 
-    private static int GetShopRemovalsUsed()
+    private static int GetShopRemovalsUsed(IRunState? runState)
     {
         try
         {
-            var runState = RunManager.Instance?.DebugOnlyGetState();
-            var me = runState?.Players?.FirstOrDefault();
+            var me = RunContextInfo.GetLocalPlayer(runState);
             if (me == null) return 0;
             return me.ExtraFields.CardShopRemovalsUsed;
         }
         catch { return 0; }
+    }
+
+    /// <summary>
+    /// Rebuild every shop hover panel after card-removal usage changes the
+    /// next removal price. The map panel can stay open while the shop UI is
+    /// active, so a rebuild keeps S4 honest without a polling timer.
+    /// </summary>
+    public static void RefreshOpenShopPanels()
+    {
+        Safe.Run(() =>
+        {
+            var state = RunManager.Instance?.DebugOnlyGetState();
+            if (RunContextInfo.IsBlitz(state)) return;
+
+            var player = RunContextInfo.GetLocalPlayer(state);
+            int removals = GetShopRemovalsUsed(state);
+            var entries = new List<(NMapPoint Map, InfoModPanel Panel)>();
+            foreach (var kv in _shopPanels)
+                entries.Add((kv.Key, kv.Value));
+
+            foreach (var (map, old) in entries)
+            {
+                if (!Godot.GodotObject.IsInstanceValid(map)
+                    || !Godot.GodotObject.IsInstanceValid(old))
+                    continue;
+                if (old.GetParent() != map) continue;
+
+                var fresh = ShopPricePanel.Create(player, removals);
+                var position = old.GlobalPosition;
+                map.RemoveChild(old);
+                old.QueueFree();
+                map.AddChild(fresh);
+                fresh.ZIndex = 200;
+                fresh.GlobalPosition = position;
+                _shopPanels.Remove(map);
+                _shopPanels.AddOrUpdate(map, fresh);
+            }
+        });
     }
 
     private static void HideHoverPanel(NMapPoint mapPoint)
@@ -97,6 +145,7 @@ public static class MapPointPatch
                 break;
             }
         }
+        _shopPanels.Remove(mapPoint);
         mapPoint.RemoveMeta(HoverPanelMeta);
     }
 

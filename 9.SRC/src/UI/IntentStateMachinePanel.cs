@@ -3,6 +3,7 @@ using System.Linq;
 using CommunityStats.Util;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Models.Monsters;
 
 namespace CommunityStats.UI;
 
@@ -90,6 +91,17 @@ public static class IntentStateMachinePanel
         catch { monsterId = "?"; }
 
         var entry = MonsterIntentMetadata.Get(monsterId, monster);
+
+        // Wriggler's SPAWNED_MOVE follows INIT_MOVE. The static state graph
+        // cannot represent both slot-dependent successors at once, so use
+        // this concrete creature's slot: 2/4 go to WRIGGLE, 1/3 to BITE.
+        if (monsterId == "WRIGGLER")
+        {
+            var spawned = entry?.States.FirstOrDefault(s => s.Id == "SPAWNED_MOVE");
+            if (spawned != null)
+                spawned.FollowUpStateId = ResolveWrigglerFollowUp(owner.SlotName);
+        }
+
         var displayName = TryName(monster, monsterId);
         var panel = InfoModPanel.Create(displayName, Config.L.Get("intent.subtitle"));
 
@@ -165,6 +177,16 @@ public static class IntentStateMachinePanel
                 initialLabels[stateId] = label;
         }
 
+        // Chomper's first move is a runtime encounter variant, not a slot:
+        // one Chomper starts with CLAMP, the other with SCREECH.
+        if (monster is Chomper chomper)
+        {
+            initialLabels[chomper.ScreamFirst ? "SCREECH_MOVE" : "CLAMP_MOVE"] =
+                chomper.ScreamFirst
+                    ? Config.L.Get("intent.chomper_screech_first")
+                    : Config.L.Get("intent.chomper_clamp_first");
+        }
+
         // Phase 1: layout-start is Conditional (and not Fabricator)
         if (cellById.TryGetValue(startId, out var startCell)
             && startCell.State.Kind == MonsterIntentMetadata.StateKind.ConditionalBranch
@@ -178,7 +200,8 @@ public static class IntentStateMachinePanel
             {
                 var b = startCell.State.Branches[i];
                 if (string.IsNullOrEmpty(b.TargetStateId)) continue;
-                var hint = MonsterConditionHints.Get(monsterId, i) ?? $"条件{i + 1}";
+                var hint = MonsterConditionHints.Get(monsterId, i, startCell.State.Branches.Count)
+                    ?? $"条件{i + 1}";
                 if (!byTarget.TryGetValue(b.TargetStateId, out var list))
                 {
                     list = new List<string>();
@@ -1366,7 +1389,7 @@ public static class IntentStateMachinePanel
             string label;
             if (conditional)
             {
-                label = MonsterConditionHints.Get(monsterId, i) ?? "条件";
+                label = MonsterConditionHints.Get(monsterId, i, branches.Count) ?? "条件";
             }
             else
             {
@@ -1423,7 +1446,12 @@ public static class IntentStateMachinePanel
         {
             if (info.IntentInstance != null)
             {
-                var tex = IntentIconCache.GetIcon(info.IntentInstance, info.Damage ?? 0);
+                // Attack icon tiers use the whole hit: 5×5 must select the
+                // same tier as a 25-damage single hit.
+                int damageHint = info.Damage.HasValue
+                    ? info.Damage.Value * Mathf.Max(1, info.Repeats)
+                    : 0;
+                var tex = IntentIconCache.GetIcon(info.IntentInstance, damageHint);
                 if (tex != null && Godot.GodotObject.IsInstanceValid(tex))
                 {
                     var rect = new TextureRect
@@ -1447,6 +1475,17 @@ public static class IntentStateMachinePanel
         fallback.HorizontalAlignment = HorizontalAlignment.Center;
         fallback.VerticalAlignment = VerticalAlignment.Center;
         return fallback;
+    }
+
+    /// <summary>
+    /// Infested Wriggler slots 2/4 follow their spawn move with WRIGGLE;
+    /// slots 1/3 follow it with NASTY_BITE.
+    /// </summary>
+    internal static string ResolveWrigglerFollowUp(string? slotName)
+    {
+        return slotName is "wriggler2" or "wriggler4"
+            ? "WRIGGLE_MOVE"
+            : "NASTY_BITE_MOVE";
     }
 
     private static string? BuildIntentNumber(MonsterIntentMetadata.IntentInfo info)

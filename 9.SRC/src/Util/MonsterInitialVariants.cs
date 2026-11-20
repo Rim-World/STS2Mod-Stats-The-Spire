@@ -18,11 +18,6 @@ public static class MonsterInitialVariants
             ["JAB_MOVE"] = ("前排/后排初始", "Front/Back initial"),
             ["WHIRLWIND_MOVE"] = ("中间初始", "Middle initial"),
         },
-        ["CHOMPER"] = new()
-        {
-            ["CLAMP_MOVE"] = ("1号位初始", "Pos 1 initial"),
-            ["SCREECH_MOVE"] = ("2号位初始", "Pos 2 initial"),
-        },
         ["WRIGGLER"] = new()
         {
             ["SPAWNED_MOVE"] = ("击晕状态初始", "Stunned initial"),

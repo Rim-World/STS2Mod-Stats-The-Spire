@@ -31,6 +31,8 @@ public static class NameLookup
     public static string Ancient(string elderId)
     {
         if (string.IsNullOrEmpty(elderId)) return "";
+        var anc = TryLookup("ancients", elderId, ".title");
+        if (anc != null) return anc;
         var ev = TryLookup("events", elderId, ".title");
         if (ev != null) return ev;
         var enc = TryLookup("encounters", elderId, ".title");
@@ -41,12 +43,12 @@ public static class NameLookup
             return elderId switch
             {
                 "NEOW"      => "涅奥",
-                "PAEL"      => "帕埃尔",
-                "TEZCATARA" => "泰兹卡塔拉",
-                "OROBAS"    => "奥洛巴斯",
+                "PAEL"      => "佩尔",
+                "TEZCATARA" => "特兹卡塔拉",
+                "OROBAS"    => "欧洛巴斯",
                 "VAKUU"     => "瓦库",
                 "TANX"      => "坦克斯",
-                "NONUPEIPE" => "诺努皮佩",
+                "NONUPEIPE" => "诺奴佩普",
                 "DARV"      => "达弗",
                 _ => elderId,
             };
@@ -73,6 +75,8 @@ public static class NameLookup
         if (string.IsNullOrEmpty(id)) return "";
         if (id == "ABANDONED") return L.Get("career.cause_abandoned");
 
+        var anc = TryLookup("ancients", id, ".title");
+        if (anc != null) return anc;
         var enc = TryLookup("encounters", id, ".title");
         if (enc != null) return enc;
         var ev = TryLookup("events", id, ".title");

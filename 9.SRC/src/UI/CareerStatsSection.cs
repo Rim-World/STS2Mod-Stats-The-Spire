@@ -1167,8 +1167,13 @@ public sealed partial class CareerStatsSection : VBoxContainer
         }
 
         var displayName = Util.NameLookup.Relic(relicId);
-        if (pool.ActGate != null && pool.ActGate.TryGetValue(relicId, out var gateAct))
-            displayName += " " + string.Format(L.Get("ancient.act_only_n"), gateAct);
+        if (pool.ActGate != null && pool.ActGate.TryGetValue(relicId, out var gateActs)
+            && gateActs.Length > 0)
+        {
+            var acts = string.Join(L.Current == L.Lang.EN ? ", " : "、", gateActs.OrderBy(a => a));
+            var key = gateActs.Length == 1 ? "ancient.act_only_n" : "ancient.act_only_multi";
+            displayName += " " + string.Format(L.Get(key), acts);
+        }
         var name = MakeLabel(displayName, Cream, LabelSize);
         name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
@@ -1341,42 +1346,40 @@ public sealed partial class CareerStatsSection : VBoxContainer
     }
 
     /// <summary>
-    /// Round 9 round 49: ActModel order in code is Overgrowth(0)/Hive(1)/
-    /// Glory(2)/Underdocks(3), but Underdocks is actually an alternate Act 1
-    /// (暗港), not Act 4. This struct exposes a sort key + display label so
-    /// the boss dropdown groups Overgrowth and Underdocks together as "第1幕".
+    /// Display label for an act. Use ActModel.Index (0=first act, 1=second,
+    /// 2=third) instead of the list position: v0.113 lists Underdocks before
+    /// Hive, so list positions do not match stage numbers.
     /// </summary>
     private readonly record struct BossActInfo(int SortKey, string Label);
 
-    private static BossActInfo BossActInfoForActIndex(int actIdx0)
+    private static BossActInfo BossActInfoForAct(MegaCrit.Sts2.Core.Models.ActModel act)
     {
-        // actIdx0 is the 0-based index into ModelDb.Acts.
-        // Sort keys interleave Overgrowth/Underdocks before Hive/Glory.
-        return actIdx0 switch
-        {
-            0 => new BossActInfo(10, string.Format(L.Get("career.act_n"), 1) + L.Get("career.act_overgrowth")),
-            3 => new BossActInfo(15, string.Format(L.Get("career.act_n"), 1) + L.Get("career.act_underdocks")),
-            1 => new BossActInfo(20, string.Format(L.Get("career.act_n"), 2)),
-            2 => new BossActInfo(30, string.Format(L.Get("career.act_n"), 3)),
-            _ => new BossActInfo(99, ""),
-        };
+        int stage = act.Index + 1;
+        string id = act.Id.Entry;
+        string label = string.Format(L.Get("career.act_n"), stage);
+
+        if (id == "OVERGROWTH") label += L.Get("career.act_overgrowth");
+        else if (id == "UNDERDOCKS") label += L.Get("career.act_underdocks");
+
+        int sortKey = stage * 10 + (id == "UNDERDOCKS" ? 5 : 0);
+        return new BossActInfo(sortKey, label);
     }
 
     /// <summary>
-    /// Locate the lowest act (by code index) that contains this boss encounter,
-    /// then map to the display info. Falls back to (0, "") on miss.
+    /// Locate the act that contains this boss encounter and map to the
+    /// display info. Falls back to (0, "") on miss.
     /// </summary>
     private static BossActInfo BossActFor(string encounterId)
     {
         try
         {
             var acts = MegaCrit.Sts2.Core.Models.ModelDb.Acts.ToList();
-            for (int i = 0; i < acts.Count; i++)
+            foreach (var act in acts)
             {
-                foreach (var enc in acts[i].AllEncounters)
+                foreach (var enc in act.AllEncounters)
                 {
                     if (enc.Id.Entry == encounterId)
-                        return BossActInfoForActIndex(i);
+                        return BossActInfoForAct(act);
                 }
             }
         }

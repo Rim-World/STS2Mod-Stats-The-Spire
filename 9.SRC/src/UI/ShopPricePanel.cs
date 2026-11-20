@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using CommunityStats.Config;
+using CommunityStats.Util;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Merchant;
@@ -45,7 +46,7 @@ public static class ShopPricePanel
         panel.AddSeparator();
 
         // Compute the multiplier from the player's active discount relics.
-        float multiplier = ComputeDiscountMultiplier(player);
+        decimal multiplier = ComputeDiscountMultiplier(player);
         AppendDiscountSummary(panel, player, multiplier);
 
         int removalCost = ComputeRemovalCost(player, cardRemovalsUsed, multiplier);
@@ -71,6 +72,17 @@ public static class ShopPricePanel
         AddCategoryRow(grid, L.Get("shop.relics"), GoldColor, multiplier,
             new[] { 175, 225, 275 }, 0.15f, playerGold);
 
+        // Shop-rarity relics: 200, ±15%. Keep the three normal rarity
+        // columns and append one extra row; the price occupies the first
+        // value cell, with the remaining rarity cells left blank.
+        int shopLow = DiscountedRangeLow(200, 0.15f, multiplier);
+        var shopRelic = FormatRange(200, 0.15f, multiplier);
+        var shopColor = (playerGold >= 0 && playerGold < shopLow) ? DimColor : GoldColor;
+        AddCell(grid, L.Get("shop.relic_shop"), GoldColor, LabelSize);
+        AddCell(grid, shopRelic, shopColor, ValueSize);
+        AddCell(grid, "", GrayColor, ValueSize);
+        AddCell(grid, "", GrayColor, ValueSize);
+
         // Cards: 50 / 75 / 150, ±5%
         AddCategoryRow(grid, L.Get("shop.cards"), BlueColor, multiplier,
             new[] { 50, 75, 150 }, 0.05f, playerGold);
@@ -90,25 +102,25 @@ public static class ShopPricePanel
     /// MembershipCard yields ×0.5, TheCourier yields ×0.8 — both stack.
     /// Returns 1.0 when the player has neither (or when player is null).
     /// </summary>
-    private static float ComputeDiscountMultiplier(Player? player)
+    private static decimal ComputeDiscountMultiplier(Player? player)
     {
-        if (player == null) return 1f;
+        if (player == null) return 1m;
         try
         {
-            float m = 1f;
+            decimal m = 1m;
             foreach (var relic in player.Relics)
             {
-                if (relic is MembershipCard) m *= 0.5f;
-                else if (relic is TheCourier) m *= 0.8f;
+                if (relic is MembershipCard) m *= 0.5m;
+                else if (relic is TheCourier) m *= 0.8m;
             }
             return m;
         }
-        catch { return 1f; }
+        catch { return 1m; }
     }
 
-    private static void AppendDiscountSummary(InfoModPanel panel, Player? player, float multiplier)
+    private static void AppendDiscountSummary(InfoModPanel panel, Player? player, decimal multiplier)
     {
-        if (player == null || multiplier >= 0.999f) return;
+        if (player == null || multiplier >= 0.999m) return;
         try
         {
             var names = player.Relics
@@ -122,17 +134,40 @@ public static class ShopPricePanel
     }
 
     private static void AddCategoryRow(GridContainer grid, string label, Color labelColor,
-        float multiplier, int[] basePrices, float jitter, int playerGold)
+        decimal multiplier, int[] basePrices, float jitter, int playerGold)
     {
         AddCell(grid, label, labelColor, LabelSize);
         for (int i = 0; i < basePrices.Length; i++)
         {
-            int low  = (int)Math.Round(basePrices[i] * (1f - jitter) * multiplier);
-            int high = (int)Math.Round(basePrices[i] * (1f + jitter) * multiplier);
+            int low = DiscountedRangeLow(basePrices[i], jitter, multiplier);
             // Gray out when the player can't even afford the cheapest variant.
             var cellColor = (playerGold >= 0 && playerGold < low) ? DimColor : labelColor;
-            AddCell(grid, low == high ? low.ToString() : $"{low}-{high}", cellColor, ValueSize);
+            AddCell(grid, FormatRange(basePrices[i], jitter, multiplier), cellColor, ValueSize);
         }
+    }
+
+    /// <summary>
+    /// The game rounds the base random merchant cost first, then applies
+    /// relic discounts as decimal values and casts the result to int
+    /// (truncation). Keep the same order.
+    /// </summary>
+    private static int DiscountedRangeLow(int basePrice, float jitter, decimal multiplier)
+    {
+        int raw = (int)Math.Round(basePrice * (1f - jitter));
+        return (int)(raw * multiplier);
+    }
+
+    private static int DiscountedRangeHigh(int basePrice, float jitter, decimal multiplier)
+    {
+        int raw = (int)Math.Round(basePrice * (1f + jitter));
+        return (int)(raw * multiplier);
+    }
+
+    private static string FormatRange(int basePrice, float jitter, decimal multiplier)
+    {
+        int low = DiscountedRangeLow(basePrice, jitter, multiplier);
+        int high = DiscountedRangeHigh(basePrice, jitter, multiplier);
+        return low == high ? low.ToString() : $"{low}-{high}";
     }
 
     /// <summary>
@@ -154,7 +189,7 @@ public static class ShopPricePanel
     /// reflects Inflation (A15+) vs non-Inflation pricing.  Discount is then
     /// applied once — we never call the Cost getter, which would also apply
     /// ModifyMerchantPrice hooks and double-count the relic discount.</summary>
-    private static int ComputeRemovalCost(Player? player, int cardRemovalsUsed, float multiplier)
+    private static int ComputeRemovalCost(Player? player, int cardRemovalsUsed, decimal multiplier)
     {
         _ = player;
         int baseCost = Traverse.Create(typeof(MerchantCardRemovalEntry))
@@ -162,7 +197,7 @@ public static class ShopPricePanel
         int priceIncrease = Traverse.Create(typeof(MerchantCardRemovalEntry))
             .Property("PriceIncrease").GetValue<int>();
         int rawCost = baseCost + priceIncrease * Math.Max(0, cardRemovalsUsed);
-        return (int)Math.Round(rawCost * multiplier);
+        return (int)(rawCost * multiplier);
     }
 
     private static int TryGetGold(Player? player)

@@ -6,8 +6,10 @@ using CommunityStats.Util;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -102,7 +104,7 @@ public static class CombatUiOverlayPatch
         if (EnsureAttachedToTopBar())
         {
             var runState = RunManager.Instance?.DebugOnlyGetState();
-            var player = runState?.Players?.FirstOrDefault();
+            var player = RunContextInfo.GetLocalPlayer(runState);
             if (player != null) RefreshValuesFromPlayer(player);
             ShowAll();
             return;
@@ -313,7 +315,7 @@ public static class CombatUiOverlayPatch
             EnsureAttachedToTopBar();
             ShowAll();
             var runState = RunManager.Instance?.DebugOnlyGetState();
-            var player = runState?.Players?.FirstOrDefault();
+            var player = RunContextInfo.GetLocalPlayer(runState);
             if (player != null) RefreshValuesFromPlayer(player);
         });
     }
@@ -328,6 +330,21 @@ public static class CombatUiOverlayPatch
             if (state == null) return;
             var me = ResolveLocalPlayer(state);
             if (me != null) RefreshValuesFromPlayer(me);
+        });
+    }
+
+    /// <summary>
+    /// P5: card and potion rewards roll inside RewardsCmd.GenerateForRoomEnd.
+    /// Refresh after that call so the reward screen shows the new pity values.
+    /// </summary>
+    [HarmonyPatch(typeof(RewardsCmd), nameof(RewardsCmd.GenerateForRoomEnd))]
+    [HarmonyPostfix]
+    public static void AfterGenerateForRoomEnd(Player player)
+    {
+        Safe.Run(() =>
+        {
+            if (LocalContext.NetId.HasValue && !LocalContext.IsMe(player)) return;
+            RefreshValuesFromPlayer(player);
         });
     }
 
@@ -359,8 +376,8 @@ public static class CombatUiOverlayPatch
 
     private static void ShowAll()
     {
-        if (IsAlive(ref _potion)) _potion!.Visible = ModConfig.Toggles.PotionOdds;
-        if (IsAlive(ref _cardDrop)) _cardDrop!.Visible = ModConfig.Toggles.CardDropOdds;
+        if (IsAlive(ref _potion)) _potion!.Visible = ShouldShowPotion();
+        if (IsAlive(ref _cardDrop)) _cardDrop!.Visible = ShouldShowCardDrop();
     }
 
     /// <summary>Re-apply the feature toggles to the two top-bar indicators.</summary>
@@ -368,10 +385,20 @@ public static class CombatUiOverlayPatch
     {
         Safe.Run(() =>
         {
-            if (IsAlive(ref _potion)) _potion!.Visible = ModConfig.Toggles.PotionOdds;
-            if (IsAlive(ref _cardDrop)) _cardDrop!.Visible = ModConfig.Toggles.CardDropOdds;
+            if (IsAlive(ref _potion)) _potion!.Visible = ShouldShowPotion();
+            if (IsAlive(ref _cardDrop)) _cardDrop!.Visible = ShouldShowCardDrop();
+
+            var state = CombatManager.Instance?.DebugOnlyGetState();
+            var me = state == null ? null : ResolveLocalPlayer(state);
+            if (me != null) RefreshValuesFromPlayer(me);
         });
     }
+
+    private static bool ShouldShowPotion()
+        => ModConfig.Toggles.PotionOdds && !RunContextInfo.IsBlitz();
+
+    private static bool ShouldShowCardDrop()
+        => ModConfig.Toggles.CardDropOdds && !RunContextInfo.IsBlitz();
 
     private static void RefreshValuesFromPlayer(Player me)
     {
@@ -380,7 +407,7 @@ public static class CombatUiOverlayPatch
             try
             {
                 var v = me.PlayerOdds?.PotionReward?.CurrentValue ?? 0.4f;
-                _potion.UpdateOdds((float)v);
+                _potion.UpdateOdds((float)v, IsPotionForced(me));
             }
             catch { }
         }
@@ -393,6 +420,17 @@ public static class CombatUiOverlayPatch
             }
             catch { }
         }
+    }
+
+    private static bool IsPotionForced(Player me)
+    {
+        try
+        {
+            var state = me.RunState;
+            return Hook.ShouldForcePotionReward(state, me, RoomType.Monster)
+                || Hook.ShouldForcePotionReward(state, me, RoomType.Elite);
+        }
+        catch { return false; }
     }
 
     private static Player? ResolveLocalPlayer(CombatStateType state)

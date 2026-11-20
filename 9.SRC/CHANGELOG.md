@@ -2,6 +2,22 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [Unreleased]
+
+### Fixed
+
+- Card drop odds now read the live `CardRarityOdds` values (A7+ Scarcity), apply negative offsets to both rare and uncommon thresholds, use single-card wording, show one Boss-reward row, hide in Blitz, and honor Big Game Hunter.
+- Potion odds keep the raw pity value for elite calculation, show White Beast Statue as 100%, remove cumulative rows, refresh after reward generation, and hide in Blitz.
+- Shop prices add the Shop-rarity relic row, use the local player, round base random prices before truncating discounts/removal, refresh an open panel after card removal, and hide in Blitz.
+- Unknown-room odds remove Shop after a previous Shop room and assign the freed share to Event.
+- Intent graphs use total damage for attack icon tiers, resolve Wriggler SPAWNED by slot, label lone Nibbit correctly, use Chomper's runtime variant, show literal `<` in English, and keep the Exoskeleton 4th slot.
+- Ancient relic pools fix Seal of Gold, Sand Castle, Neow pools, and Darv act gates; Sea Glass character suffixes are normalized; Ancient names use the official Chinese titles; Boss act labels use `ActModel.Index`.
+
+### Verified
+
+- v0.111.1 and v0.113.1 assembly builds: 0 errors, 7 existing nullable warnings.
+- v0.111.1 A10 AutoSlayer seeds 71112 and 41111: exit 0; targeted probe values pass for card, potion, shop, ancient, intent, and boss-act displays.
+
 ## [1.5.1] - 2026-11-20
 
 ### Fixed

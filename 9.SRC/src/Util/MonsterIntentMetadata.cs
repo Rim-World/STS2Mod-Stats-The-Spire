@@ -520,23 +520,6 @@ public static class MonsterIntentMetadata
     /// </summary>
     private static void ApplyMonsterSpecificOverrides(List<StateInfo> states, string monsterId)
     {
-        if (monsterId == "WRIGGLER")
-        {
-            // Rewrite SPAWNED.FollowUp from INIT_MOVE to BITE so INIT_MOVE
-            // becomes dead code and gets hidden, leaving SPAWNED → BITE
-            // direct + BITE↔WRIGGLE cycle. The "1/3号位" / "2/4号位" branch
-            // semantics are surfaced via MonsterInitialVariants labels on
-            // BITE and WRIGGLE.
-            StateInfo? spawned = null, bite = null;
-            foreach (var s in states)
-            {
-                if (s.Id == "SPAWNED_MOVE") spawned = s;
-                else if (s.Id == "NASTY_BITE_MOVE") bite = s;
-            }
-            if (spawned != null && bite != null)
-                spawned.FollowUpStateId = bite.Id;
-        }
-
         if (monsterId == "QUEEN")
         {
             StateInfo? box1 = null;     // YOURE_MINE_NOW_BRANCH (canonical)

@@ -602,9 +602,7 @@ public sealed class RunHistoryAnalyzer
                         // Each AncientChoices entry is one option offered in this ancient encounter.
                         foreach (var choice in ps.AncientChoices)
                         {
-                            string key;
-                            try { key = choice.TextKey; }
-                            catch { continue; }
+                            string key = ExtractRelicId(choice);
                             if (string.IsNullOrEmpty(key)) continue;
 
                             var prev = bucket.GetValueOrDefault(key);
@@ -774,11 +772,10 @@ public sealed class RunHistoryAnalyzer
     {
         try
         {
-            var key = choice.Title?.LocEntryKey;
-            if (string.IsNullOrEmpty(key)) return "";
-            // "RELIC_ID.title" → "RELIC_ID". Anything else: return as-is.
-            int dot = key!.LastIndexOf('.');
-            return dot > 0 ? key.Substring(0, dot) : key;
+            // "RELIC_ID.title" → "RELIC_ID".
+            // Sea Glass uses "SEA_GLASS.SILENT.title"; strip the character
+            // suffix so it matches the pool table's "SEA_GLASS".
+            return AncientId.Normalize(choice.Title?.LocEntryKey);
         }
         catch { return ""; }
     }
@@ -1116,7 +1113,8 @@ public sealed class RunHistoryAnalyzer
                             foreach (var c in ps.AncientChoices)
                             {
                                 if (!c.WasChosen) continue;
-                                try { ancients.Add(c.TextKey); } catch { }
+                                var id = AncientId.Normalize(c.Title?.LocEntryKey);
+                                if (!string.IsNullOrEmpty(id)) ancients.Add(id);
                             }
                         }
                     }
