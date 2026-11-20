@@ -214,7 +214,9 @@
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
 |---|---|---|---|---|---|
 | `build-v111-check2.log` | 2026-11-21 07:02 | 否 | 4 | v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.111.1 Release 构建；0 错误 | 是 |
 | `build-v113-check3.log` | 2026-11-21 07:02 | 否 | 4 | v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.113.1 Release 构建；0 错误 | 是 |
 | `build-regression-probe4.log` | 2026-11-21 07:17 | 否 | 1 | 持久化回归探针构建 | 是 |
 | `build-palebluedot-probe3.log` | 2026-11-21 07:13 | 否 | 1 | PaleBlueDot 探针构建 | 是 |
 | `build-ui-lifecycle-probe2.log` | 2026-11-21 07:14 | 否 | 1 | UI 生命周期探针构建 | 是 |
