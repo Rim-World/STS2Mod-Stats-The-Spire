@@ -17,6 +17,8 @@
 
 - v0.111.1 and v0.113.1 assembly builds: 0 errors, 7 existing nullable warnings.
 - v0.111.1 A10 AutoSlayer seeds 71112 and 41111: exit 0; targeted probe values pass for card, potion, shop, ancient, intent, and boss-act displays.
+- v0.113.1 standard seed 71112: victory at floor 49; values match A10 expectations.
+- v0.113.1 Blitz seed 71113: victory at floor 24; top-bar card/potion indicators are hidden.
 
 ## [1.5.1] - 2026-11-20
 

@@ -245,4 +245,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Version 1.5.1 passed compatibility probes on both versions. The RQ-014 development build passed A10 AutoSlayer on v0.111.1 with seeds 71112 and 41111, covering card, potion, shop, ancient, and intent displays. v0.113.1 was built from its reference assembly but not run this round. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. The RQ-014 development build passed AutoSlayer on v0.111.1 (seeds 71112/41111) and on v0.113.1 (standard 71112, Blitz 71113), covering card, potion, shop, ancient, and intent displays. Card/relic ID changes across game versions are handled automatically.

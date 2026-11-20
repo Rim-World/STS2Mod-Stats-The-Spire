@@ -21,6 +21,7 @@ public static class Rq014Probe
     private static string _lastEncounter = "";
     private static readonly HashSet<MegaCrit.Sts2.Core.Entities.Creatures.Creature> _probedCreatures = new();
     private static bool _bossCardProbed;
+    private static bool _visibilityProbed;
 
     public static void Initialize()
     {
@@ -184,6 +185,13 @@ public static class Rq014Probe
             {
                 _lastEncounter = encounter;
                 _probedCreatures.Clear();
+                _visibilityProbed = false;
+            }
+
+            if (!_visibilityProbed)
+            {
+                _visibilityProbed = true;
+                Callable.From(() => ProbeVisibility(tree, state.RunState)).CallDeferred();
             }
 
             if (!_bossCardProbed && RunContextInfo.IsBossRoom(state.RunState))
@@ -201,11 +209,55 @@ public static class Rq014Probe
         });
     }
 
+    private static void ProbeVisibility(SceneTree tree, MegaCrit.Sts2.Core.Runs.IRunState state)
+    {
+        Safe.Run(() =>
+        {
+            string attachInfo = "n/a";
+            try
+            {
+                var t = typeof(CommunityStats.Patches.CombatUiOverlayPatch);
+                var ensure = t.GetMethod("EnsureAttachedToTopBar", BindingFlags.Static | BindingFlags.NonPublic);
+                bool attached = ensure != null && (bool)(ensure.Invoke(null, null) ?? false);
+                var potionField = t.GetField("_potion", BindingFlags.Static | BindingFlags.NonPublic);
+                var cardField = t.GetField("_cardDrop", BindingFlags.Static | BindingFlags.NonPublic);
+                var posField = t.GetField("_positioned", BindingFlags.Static | BindingFlags.NonPublic);
+                attachInfo = $"attached={attached} potionField={potionField?.GetValue(null) != null} cardField={cardField?.GetValue(null) != null} positioned={posField?.GetValue(null)}";
+            }
+            catch (Exception ex) { attachInfo = "error=" + ex.Message; }
+
+            bool blitz = RunContextInfo.IsBlitz(state);
+            bool potion = false, card = false;
+            int potionCount = 0, cardCount = 0;
+            string potionParent = "", cardParent = "";
+            foreach (var node in tree.Root.FindChildren("*StatsTheSpirePotionOdds*", "Control", true, false))
+            {
+                if (node is not PotionOddsIndicator p) continue;
+                potionCount++;
+                potion = p.Visible;
+                potionParent = p.GetParent()?.Name ?? "";
+            }
+            foreach (var node in tree.Root.FindChildren("*StatsTheSpireCardDropOdds*", "Control", true, false))
+            {
+                if (node is not CardDropOddsIndicator c) continue;
+                cardCount++;
+                card = c.Visible;
+                cardParent = c.GetParent()?.Name ?? "";
+            }
+            bool topBar = MegaCrit.Sts2.Core.Nodes.NRun.Instance?.GlobalUi?.TopBar != null;
+            bool mapButton = MegaCrit.Sts2.Core.Nodes.NRun.Instance?.GlobalUi?.TopBar?.Map != null;
+            Safe.Info(
+                $"[RQ014Probe] indicators blitz={blitz} potionVisible={potion} cardVisible={card} " +
+                $"potionCount={potionCount} cardCount={cardCount} parents={potionParent}|{cardParent} " +
+                $"topBar={topBar} mapButton={mapButton} toggles={CommunityStats.Config.ModConfig.Toggles.PotionOdds}/{CommunityStats.Config.ModConfig.Toggles.CardDropOdds} {attachInfo}");
+        });
+    }
+
     private static void ProbeBossCard(SceneTree tree)
     {
         Safe.Run(() =>
         {
-            foreach (var node in tree.Root.FindChildren("*", "StatsTheSpireCardDropOdds", true, false))
+            foreach (var node in tree.Root.FindChildren("*StatsTheSpireCardDropOdds*", "Control", true, false))
             {
                 if (node is not CardDropOddsIndicator card) continue;
                 Invoke(card, "ShowHoverPanel");
