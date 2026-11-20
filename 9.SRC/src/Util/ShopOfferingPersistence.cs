@@ -25,7 +25,7 @@ public static class ShopOfferingPersistence
         {
             RunStorage.EnsureDirectory(identity);
             var path = RunStorage.ShopOffersPath(identity);
-            File.WriteAllText(path, JsonSerializer.Serialize(offerings, JsonOpts));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(offerings, JsonOpts));
         });
     }
 
@@ -47,6 +47,7 @@ public static class ShopOfferingPersistence
         catch (System.Exception ex)
         {
             Safe.Warn($"ShopOfferingPersistence: load failed: {ex.Message}");
+            AtomicFile.Quarantine(path, ex);
             return null;
         }
     }

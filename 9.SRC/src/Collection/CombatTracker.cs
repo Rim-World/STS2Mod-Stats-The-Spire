@@ -42,6 +42,10 @@ public sealed class CombatTracker
     private static readonly AsyncLocal<string?> _activePowerIdAL = new();
     private static readonly AsyncLocal<string?> _pendingDrawSourceIdAL = new();
     private static readonly AsyncLocal<string?> _pendingDrawSourceTypeAL = new();
+    // One-shot override for a power application whose normal active context
+    // cannot survive an async wait. PaleBlueDot sets this before its delayed
+    // DrawCardsNextTurnPower apply; OnPowerApplied consumes it.
+    private static readonly AsyncLocal<(string PowerId, string SourceId, string SourceType, long ExpiresAtMs)?> _pendingPowerSourceAL = new();
     // P2-3: N-count pending draw (CentennialPuzzle draws N cards from a single hook).
     // Wrapped in a box so we can decrement across async boundaries without needing
     // to re-Set the AsyncLocal value (which would not flow back to the caller anyway).
@@ -165,6 +169,14 @@ public sealed class CombatTracker
     private Dictionary<string, ContributionAccum>? _lastCombatData;
     private string _lastEncounterId = "";
 
+    // Live-state save throttling. A card play can trigger several tracker
+    // events; each one used to serialize the entire run snapshot. Keep one
+    // dirty flag and one 1 s timer instead, and force a flush at combat end.
+    private const double LiveSaveDebounceSeconds = 1.0;
+    private bool _liveSaveDirty;
+    private bool _liveSavePending;
+    private bool _liveCombatInProgress;
+
     public IReadOnlyDictionary<string, ContributionAccum>? LastCombatData => _lastCombatData;
     public string LastEncounterId => _lastEncounterId;
     public string? CurrentEncounterId => string.IsNullOrEmpty(_encounterId) ? null : _encounterId;
@@ -180,12 +192,53 @@ public sealed class CombatTracker
     /// </summary>
     public void NotifyCombatDataUpdated()
     {
-        // Live persistence first so the disk file is always up-to-date for
-        // save+quit recovery (PRD §3.6.1).
+        // Coalesce live persistence. The actual snapshot is built at flush
+        // time, so the file always contains the newest state and one busy
+        // card-play sequence does not write dozens of JSON files.
+        _liveCombatInProgress = true;
+        _liveSaveDirty = true;
+        ScheduleLiveSave();
+
+        try { CombatDataUpdated?.Invoke(); }
+        catch (Exception ex) { Godot.GD.Print($"[StatsTheSpire] CombatDataUpdated error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Queue one live-state write after a short debounce. Only one timer is
+    /// active at a time; the timer reads the latest state when it fires.
+    /// </summary>
+    private void ScheduleLiveSave()
+    {
+        if (_liveSavePending) return;
+        var tree = Godot.Engine.GetMainLoop() as Godot.SceneTree;
+        if (tree == null)
+        {
+            FlushLiveState();
+            return;
+        }
+
+        _liveSavePending = true;
+        var timer = tree.CreateTimer(LiveSaveDebounceSeconds, true, false, false);
+        timer.Timeout += () =>
+        {
+            _liveSavePending = false;
+            if (_liveSaveDirty) FlushLiveState(_liveCombatInProgress);
+        };
+    }
+
+    /// <summary>
+    /// Force the pending live snapshot to disk. Called at combat end, before
+    /// save+quit, and by tests that need deterministic persistence.
+    /// </summary>
+    public void FlushLiveState() => FlushLiveState(_liveCombatInProgress);
+
+    private void FlushLiveState(bool combatInProgress)
+    {
+        if (!_liveSaveDirty) return;
+        _liveSaveDirty = false;
         try
         {
-            var snap = BuildLiveSnapshot(combatInProgress: true);
-            Godot.GD.Print($"[StatsTheSpire] SaveLiveState: combatInProgress=true, runTotalEntries={snap.RunTotals?.Count ?? 0}, encounters={snap.Encounters?.Count ?? 0}, currentCombatEntries={snap.CurrentCombat?.Count ?? 0}");
+            var snap = BuildLiveSnapshot(combatInProgress);
             Util.ContributionPersistence.SaveLiveState(snap);
         }
         catch (Exception ex)
@@ -193,9 +246,6 @@ public sealed class CombatTracker
             _liveSaveDirty = true;
             Godot.GD.Print($"[StatsTheSpire] SaveLiveState error: {ex.Message}");
         }
-
-        try { CombatDataUpdated?.Invoke(); }
-        catch (Exception ex) { Godot.GD.Print($"[StatsTheSpire] CombatDataUpdated error: {ex.Message}"); }
     }
 
     /// <summary>
@@ -235,6 +285,7 @@ public sealed class CombatTracker
         _turnCount = snap.TurnCount;
         _totalDamageDealt = snap.TotalDamageDealt;
         _damageTakenByPlayer = snap.DamageTakenByPlayer;
+        _liveCombatInProgress = snap.CombatInProgress;
 
         if (snap.CombatInProgress && snap.CurrentCombat != null)
         {
@@ -282,6 +333,9 @@ public sealed class CombatTracker
         _pendingUpgradeSourceOrigin = null;
         _processedDamageResults.Clear();
         _forgeLog.Clear();
+        _liveSaveDirty = false;
+        _liveCombatInProgress = true;
+        ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
     }
 
@@ -298,18 +352,11 @@ public sealed class CombatTracker
             _currentCombat);
 
         _currentCombat.Clear();
+        ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
-
-        // Round 8 §3.6.1: persist the post-combat live snapshot so a
-        // save+quit between combats keeps the run-totals tab populated.
-        try
-        {
-            var snap = BuildLiveSnapshot(combatInProgress: false);
-            Godot.GD.Print($"[StatsTheSpire] SaveLiveState post-combat: combatInProgress=false, runTotalEntries={snap.RunTotals?.Count ?? 0}, encounters={snap.Encounters?.Count ?? 0}");
-            Util.ContributionPersistence.SaveLiveState(snap);
-        }
-        catch { }
+        _liveCombatInProgress = false;
         _liveSaveDirty = true;
+        FlushLiveState(combatInProgress: false);
     }
 
     // ── Damage dedup (for KillingBlowPatcher) ────────────────
@@ -444,6 +491,8 @@ public sealed class CombatTracker
         _pendingUpgradeSourceOrigin = null;
         _processedDamageResults.Clear();
         _forgeLog.Clear();
+        _liveSaveDirty = false;
+        ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
     }
 
@@ -994,6 +1043,35 @@ public sealed class CombatTracker
             ContributionMap.Instance.RecordPowerSource(powerId, _activeCardId, "card");
     }
 
+    /// <summary>
+    /// Set a short-lived source override for a specific power application.
+    /// Used by PaleBlueDotPower.AfterCardPlayed, whose real apply happens
+    /// after an await; the normal AsyncLocal active context is not reliable
+    /// enough there. The marker expires after five seconds so a trigger that
+    /// is cancelled by combat end cannot poison a later draw.
+    /// </summary>
+    public void SetPendingPowerSource(string powerId, string sourceId, string sourceType)
+    {
+        if (string.IsNullOrEmpty(powerId) || string.IsNullOrEmpty(sourceId)) return;
+        _pendingPowerSourceAL.Value = (powerId, sourceId, sourceType, Environment.TickCount64 + 5000);
+    }
+
+    public void ClearPendingPowerSource() => _pendingPowerSourceAL.Value = null;
+
+    private bool TryConsumePendingPowerSource(string powerId, out string sourceId, out string sourceType)
+    {
+        sourceId = "";
+        sourceType = "";
+        var pending = _pendingPowerSourceAL.Value;
+        if (pending == null) return false;
+        _pendingPowerSourceAL.Value = null;
+        if (!string.Equals(pending.Value.PowerId, powerId, StringComparison.Ordinal)) return false;
+        if (Environment.TickCount64 > pending.Value.ExpiresAtMs) return false;
+        sourceId = pending.Value.SourceId;
+        sourceType = pending.Value.SourceType;
+        return true;
+    }
+
     public void OnPowerApplied(string powerId, decimal amount, int creatureHash, bool isPlayerTarget)
     {
         // Fix 3.6: power > relic > potion > card priority (see ResolveSource notes).
@@ -1002,6 +1080,12 @@ public sealed class CombatTracker
                             _activeRelicId != null ? "relic" :
                             _activePotionId != null ? "potion" :
                             _activeCardId != null ? "card" : "card";
+
+        if (TryConsumePendingPowerSource(powerId, out var pendingId, out var pendingType))
+        {
+            sourceId = pendingId;
+            sourceType = pendingType;
+        }
 
         if (sourceId == null) return;
 

@@ -178,7 +178,11 @@ public sealed class RunHistoryAnalyzer
         Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: GetAllRunHistoryNames returned {names.Count} files");
         if (names.Count == 0) return CareerStatsData.Empty(characterFilter, minAscension, recentCount, modeFilter);
 
-        var loaded = new List<RunHistory>(capacity: names.Count);
+        // Load every history first. Career stats use the selected filter,
+        // but the "my cards/relics" compendium bundles are global local data:
+        // opening a character-filtered career page must not shrink the card
+        // and relic libraries to that character.
+        var allRuns = new List<RunHistory>(capacity: names.Count);
         foreach (var name in names)
         {
             ct.ThrowIfCancellationRequested();
@@ -194,7 +198,12 @@ public sealed class RunHistoryAnalyzer
                 Safe.Warn($"RunHistoryAnalyzer: failed to load '{name}': {ex.Message}");
                 continue;
             }
+            allRuns.Add(history);
+        }
 
+        var loaded = new List<RunHistory>(allRuns.Count);
+        foreach (var history in allRuns)
+        {
             if (characterFilter != null)
             {
                 var local = GetLocalPlayer(history);
@@ -210,27 +219,22 @@ public sealed class RunHistoryAnalyzer
         if (recentCount > 0 && loaded.Count > recentCount)
         {
             loaded.Sort((a, b) => b.StartTime.CompareTo(a.StartTime));
+            int before = loaded.Count;
             loaded = loaded.Take(recentCount).ToList();
-            Godot.GD.Print($"[StatsTheSpire] BuildSnapshot: recent filter applied, trimmed {loaded.Count + (loaded.Count < recentCount ? 0 : 0)} → {loaded.Count}");
+            Godot.GD.Print($"[StatsTheSpire] BuildSnapshot: recent filter applied, trimmed {before} → {loaded.Count}");
         }
 
-        Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: loaded {loaded.Count} histories (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount}, mode={modeFilter})");
+        Safe.Info($"[RunHistoryAnalyzer] BuildSnapshot: loaded {loaded.Count}/{allRuns.Count} histories (filter={characterFilter ?? "all"}, minAsc={minAscension}, recent={recentCount}, mode={modeFilter})");
+
+        // Bundles always describe all local runs, never the temporary filter.
+        _cardBundle = allRuns.Count > 0 ? ComputeLocalCardBundle(allRuns) : LocalCardStatsBundle.Empty;
+        _relicBundle = allRuns.Count > 0 ? ComputeLocalRelicBundle(allRuns) : LocalRelicStatsBundle.Empty;
+
         if (loaded.Count == 0)
-        {
-            _cardBundle = LocalCardStatsBundle.Empty;
-            _relicBundle = LocalRelicStatsBundle.Empty;
             return CareerStatsData.Empty(characterFilter, minAscension, recentCount, modeFilter);
-        }
 
         // Sort newest first by StartTime for rolling-window calculation.
         loaded.Sort((a, b) => b.StartTime.CompareTo(a.StartTime));
-
-        // Per-card / per-relic local aggregations run in the same loop.
-        // Results are cached on the analyzer instance so the card library
-        // and relic library compendia can read them synchronously without
-        // re-walking files.
-        _cardBundle = ComputeLocalCardBundle(loaded);
-        _relicBundle = ComputeLocalRelicBundle(loaded);
 
         var averages = ComputeDeckAverages(loaded);
         return new CareerStatsData

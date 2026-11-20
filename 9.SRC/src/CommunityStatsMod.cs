@@ -32,11 +32,13 @@ public static class CommunityStatsMod
         // Register the RitsuLib settings page before the user can open it.
         RitsuSettingsPage.Register();
 
-        // Ensure data directories exist
-        ModConfig.EnsureDirectories();
+        // Ensure data directories exist. A read-only AppData must not prevent
+        // the game from starting; individual writes report their own errors.
+        if (!ModConfig.EnsureDirectories())
+            Safe.Warn("[Startup] data directory unavailable; running without disk cache");
 
-        // Prune contribution snapshots older than 90 days.
-        ContributionPersistence.PruneOldFiles();
+        // Old contribution files are never deleted automatically. Users may
+        // keep years of run history; cleanup is an explicit manual action.
 
         // Pre-warm the in-memory career-stats cache from disk so the very first
         // 百科大全 → 角色数据 page open shows data instantly.
@@ -49,10 +51,6 @@ public static class CommunityStatsMod
             try { await Collection.RunHistoryAnalyzer.Instance.LoadAllAsync(null); }
             catch (Exception ex) { Safe.Warn($"Startup LoadAllAsync failed: {ex.Message}"); }
         });
-
-        // Pre-bake the monster intent state machines so the hover panel
-        // never has to touch live combat state.
-        Safe.Run(() => Util.MonsterIntentMetadata.Initialize());
 
         // Load saved filter settings
         Safe.Run(() =>
@@ -77,14 +75,21 @@ public static class CommunityStatsMod
             }
         }
 
-        // Apply manual hook context patches (individual try/catch per method)
-        RelicHookContextPatcher.PatchAll(_harmony);
-        PowerHookContextPatcher.PatchAll(_harmony);
-        OrbPassivePatch.PatchOrbTurnEndTriggers(_harmony);
-        OrbEvokePatch.PatchOrbEvokeMethods(_harmony);
-        KillingBlowPatcher.PatchAll(_harmony);
-        RealDamageGuardPatch.Patch(_harmony);
-        CardGenerationOriginPatch.Patch(_harmony);
+        // Apply manual hook context patches. Each block is isolated so one
+        // failed target does not prevent the remaining attribution hooks,
+        // metric hook, hotkeys, or language event from being installed.
+        TryInstall("relic hooks", () => RelicHookContextPatcher.PatchAll(_harmony));
+        TryInstall("power hooks", () => PowerHookContextPatcher.PatchAll(_harmony));
+        TryInstall("orb turn-end", () => OrbPassivePatch.PatchOrbTurnEndTriggers(_harmony));
+        TryInstall("orb evoke", () => OrbEvokePatch.PatchOrbEvokeMethods(_harmony));
+        TryInstall("killing blow", () => KillingBlowPatcher.PatchAll(_harmony));
+        TryInstall("damage guard", () => RealDamageGuardPatch.Patch(_harmony));
+        TryInstall("card generation", () => CardGenerationOriginPatch.Patch(_harmony));
+
+        // Harmony is now installed. The intent cache model lookup can safely
+        // run and can be retried from CombatLifecyclePatch if ModelDb is late.
+        Safe.Run(() => Util.MonsterIntentMetadata.Initialize());
+        PatchInventory.Log(_harmony);
 
         // Register ModManager.OnMetricsUpload hook for run contribution saving
         RunLifecyclePatch.RegisterMetricsHook();
@@ -100,6 +105,12 @@ public static class CommunityStatsMod
         Safe.Run(() => RegisterHotkeys());
 
         Safe.Info("Stats the Spire initialized successfully");
+    }
+
+    private static void TryInstall(string name, Action action)
+    {
+        try { action(); }
+        catch (Exception ex) { Safe.Warn($"[Harmony] {name} install failed: {ex.Message}"); }
     }
 
     private static void RegisterHotkeys()

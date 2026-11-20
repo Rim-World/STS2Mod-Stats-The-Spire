@@ -28,12 +28,9 @@ namespace CommunityStats.Util;
 ///   {DataDir}/contributions/{seed}_summary.json
 ///   {DataDir}/contributions/{seed}_live.json
 ///
-/// Files older than 90 days are pruned at mod init.
 /// </summary>
 public static class ContributionPersistence
 {
-    private const int RetentionDays = 90;
-
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = false,
@@ -135,7 +132,7 @@ public static class ContributionPersistence
                 SavedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Sources = data.Values.Select(ToDto).ToList(),
             };
-            File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
         });
     }
 
@@ -158,7 +155,7 @@ public static class ContributionPersistence
                 SavedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Sources = data.Values.Select(ToDto).ToList(),
             };
-            File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
         });
     }
 
@@ -224,6 +221,7 @@ public static class ContributionPersistence
         catch (Exception ex)
         {
             Safe.Warn($"ContributionPersistence: load {Path.GetFileName(path)} failed: {ex.Message}");
+            AtomicFile.Quarantine(path, ex);
             return null;
         }
     }
@@ -370,7 +368,7 @@ public static class ContributionPersistence
                 RunTotals = snapshot.RunTotals?.Values.Select(ToDto).ToList() ?? new(),
                 Encounters = snapshot.Encounters?.Select(ToEncounterDto).ToList() ?? new(),
             };
-            File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
             Godot.GD.Print($"[StatsTheSpire] SaveLiveState: wrote to {path}, runTotalEntries={dto.RunTotals.Count}, encounters={dto.Encounters.Count}");
         });
     }
@@ -414,6 +412,7 @@ public static class ContributionPersistence
         catch (Exception ex)
         {
             Safe.Warn($"ContributionPersistence: LoadLiveState failed for {identity}: {ex.Message}");
+            AtomicFile.Quarantine(path, ex);
             return null;
         }
     }
@@ -428,57 +427,6 @@ public static class ContributionPersistence
             if (File.Exists(path)) File.Delete(path);
         }
         catch { }
-    }
-
-    /// <summary>
-    /// Delete contribution files older than 90 days. New run directories are
-    /// removed as a unit; legacy flat files are removed by file timestamp.
-    /// </summary>
-    public static void PruneOldFiles()
-    {
-        Safe.Run(() =>
-        {
-            var dir = ModConfig.ContributionsDir;
-            if (!Directory.Exists(dir)) return;
-            var cutoff = DateTime.UtcNow.AddDays(-RetentionDays);
-            int removedFiles = 0;
-            int removedDirs = 0;
-
-            foreach (var path in Directory.EnumerateFiles(dir, "*.json"))
-            {
-                try
-                {
-                    if (File.GetLastWriteTimeUtc(path) < cutoff)
-                    {
-                        File.Delete(path);
-                        removedFiles++;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Safe.Warn($"ContributionPersistence: failed to prune {path}: {ex.Message}");
-                }
-            }
-
-            foreach (var runDir in Directory.EnumerateDirectories(dir))
-            {
-                try
-                {
-                    if (Directory.GetLastWriteTimeUtc(runDir) < cutoff)
-                    {
-                        Directory.Delete(runDir, recursive: true);
-                        removedDirs++;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Safe.Warn($"ContributionPersistence: failed to prune {runDir}: {ex.Message}");
-                }
-            }
-
-            if (removedFiles > 0 || removedDirs > 0)
-                Safe.Info($"Contribution prune removed {removedFiles} expired files and {removedDirs} run directories.");
-        });
     }
 
     // ── DTO mapping ─────────────────────────────────────────

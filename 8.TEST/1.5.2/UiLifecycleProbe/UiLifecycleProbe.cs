@@ -4,6 +4,7 @@ using System.Reflection;
 using CommunityStats.Collection;
 using CommunityStats.Patches;
 using CommunityStats.UI;
+using CommunityStats.Util;
 using Godot;
 using MegaCrit.Sts2.Core.Modding;
 

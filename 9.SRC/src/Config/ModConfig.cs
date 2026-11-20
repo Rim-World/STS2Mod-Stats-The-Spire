@@ -1,4 +1,5 @@
 using System.Text.Json;
+using CommunityStats.Util;
 using MegaCrit.Sts2.Core.Logging;
 
 namespace CommunityStats.Config;
@@ -9,7 +10,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.5.1";
+    public const string ModVersion = "1.5.2";
 
     // User preferences
     public static string Language { get; set; } = "CN"; // "CN" | "EN"
@@ -65,10 +66,19 @@ public static class ModConfig
     /// <summary>User-modifiable preferences saved to AppData (always writable).</summary>
     public static string PrefsPath => Path.Combine(DataDir, "mod_prefs.json");
 
-    public static void EnsureDirectories()
+    public static bool EnsureDirectories()
     {
-        Directory.CreateDirectory(CacheDir);
-        Directory.CreateDirectory(ContributionsDir);
+        try
+        {
+            Directory.CreateDirectory(CacheDir);
+            Directory.CreateDirectory(ContributionsDir);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"[StatsTheSpire][Config] data directory unavailable; running without disk cache: {ex.GetType().Name}: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>
@@ -186,7 +196,7 @@ public static class ModConfig
 
             EnsureDirectories();
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(PrefsPath, json);
+            AtomicFile.WriteAllText(PrefsPath, json);
         }
         catch { /* ignore write failures */ }
     }

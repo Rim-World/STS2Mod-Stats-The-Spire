@@ -49,7 +49,7 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 `%AppData%/sts2_community_stats/`
 
 - `contributions/{StartTime}_{seed}/`：每局独立的单场、汇总、中途快照和商店数据。
-- `contributions/{seed}_*.json`：1.4.4 及更早的只读回退数据。
+- `contributions/{seed}_*.json`：1.4.4 及更早的只读回退数据；不会自动清理或改名。
 - `cache/`：生涯统计缓存。
 - `mod_prefs.json`：用户设置。
 
@@ -60,6 +60,7 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 - 1.4.4 已在 v0.113.1 与 v0.111.1 完成实机验证。
 - 1.5.0 的 RitsuLib 设置页、热键、放弃/胜利收尾和同 seed 隔离已在 v0.111.1 与 v0.113.1 验证。
 - 1.5.1 补上 legacy 续局商店购买复制、设置损坏日志与 `min_game_version` 修正；源码通过两版程序集构建。
+- 1.5.2 删除四个无消费者补丁与 PaleBlueDot 错误钩子，修复 PaleBlueDot 来源捕获、UI 生命周期、原子写、损坏隔离、写盘防抖、生成卡重复计数、Boss 白兽雕像、路径购买、死亡来源与角色筛选 bundle；发布构建不嵌入本机源码路径。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

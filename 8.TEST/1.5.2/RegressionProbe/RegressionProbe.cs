@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using CommunityStats.Collection;
 using CommunityStats.Config;
 using CommunityStats.Util;
 using Godot;
 using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace StatsTheSpire.RegressionProbe;
 
@@ -43,6 +45,8 @@ public static class RegressionProbe
         all &= ProbeCorruptQuarantine();
         all &= ProbeAtomicWrite();
         all &= ProbeCareerSource();
+        all &= ProbeAbandonedCause();
+        all &= ProbeShopPathBuys();
         GD.Print($"[RegressionProbe] RESULT {(all ? "PASS" : "FAIL")}");
         tree.Quit();
     }
@@ -148,6 +152,84 @@ public static class RegressionProbe
         finally
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+    }
+
+    private static bool ProbeAbandonedCause()
+    {
+        try
+        {
+            var run = new RunHistory
+            {
+                Win = false,
+                WasAbandoned = true,
+                MapPointHistory = new List<List<MegaCrit.Sts2.Core.Runs.History.MapPointHistoryEntry>>
+                {
+                    new(),
+                },
+            };
+            var method = typeof(RunHistoryAnalyzer).GetMethod(
+                "ComputeDeathCauses", BindingFlags.Static | BindingFlags.NonPublic);
+            if (method == null)
+            {
+                GD.Print("[RegressionProbe] abandoned-cause FAIL method missing");
+                return false;
+            }
+            var result = method.Invoke(null, new object[] { new List<RunHistory> { run } })
+                as IReadOnlyDictionary<int, IReadOnlyList<DeathEntry>>;
+            var first = result?.GetValueOrDefault(1)?.FirstOrDefault();
+            bool pass = first?.EncounterId == "ABANDONED" && first.Source == DeathSource.Abandoned;
+            GD.Print($"[RegressionProbe] abandoned-cause cause={first?.EncounterId ?? "null"} source={first?.Source.ToString() ?? "null"} {(pass ? "PASS" : "FAIL")}");
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[RegressionProbe] abandoned-cause FAIL {ex}");
+            return false;
+        }
+    }
+
+    private static bool ProbeShopPathBuys()
+    {
+        var identity = new RunIdentity(StartTime + 2, Seed + "path");
+        var runDir = RunStorage.DirectoryFor(identity);
+        try
+        {
+            if (Directory.Exists(runDir)) Directory.Delete(runDir, recursive: true);
+            ContributionPersistence.SetActiveRun(identity);
+            ShopPurchasePersistence.Save(new List<LocalShopPurchase>
+            {
+                new() { ItemId = "CARD_A", ItemType = "card", Cost = 1, Floor = 2 },
+                new() { ItemId = "RELIC_A", ItemType = "relic", Cost = 1, Floor = 3 },
+                new() { ItemId = "CARD_B", ItemType = "card", Cost = 1, Floor = 4 },
+                new() { ItemId = "CARD_C", ItemType = "card", Cost = 1, Floor = 5 },
+            });
+            var run = new RunHistory
+            {
+                Seed = identity.Seed,
+                StartTime = identity.StartTime,
+                MapPointHistory = new List<List<MegaCrit.Sts2.Core.Runs.History.MapPointHistoryEntry>>
+                {
+                    new() { new(), new(), new() },
+                    new() { new(), new() },
+                },
+            };
+            var method = typeof(RunHistoryAnalyzer).GetMethod(
+                "BuildPerActShopCardBuys", BindingFlags.Static | BindingFlags.NonPublic);
+            var buys = method?.Invoke(null, new object[] { run }) as Dictionary<int, int>;
+            bool pass = buys != null && buys.GetValueOrDefault(1) == 1 && buys.GetValueOrDefault(2) == 2;
+            GD.Print($"[RegressionProbe] shop-path act1={buys?.GetValueOrDefault(1)} act2={buys?.GetValueOrDefault(2)} expect=1/2 {(pass ? "PASS" : "FAIL")}");
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[RegressionProbe] shop-path FAIL {ex}");
+            return false;
+        }
+        finally
+        {
+            try { if (Directory.Exists(runDir)) Directory.Delete(runDir, recursive: true); } catch { }
+            ContributionPersistence.ClearRunContext();
         }
     }
 

@@ -2,26 +2,48 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
-## [Unreleased]
+## [1.5.2] - 2026-11-21
+
+### Added
+
+- Runtime patch inventory (`PatchInventory`) listing every bound target and patch class.
+- One-shot pending power-source override for pale-blue-dot's delayed `DrawCardsNextTurnPower` apply.
+- Atomic JSON writes with `.corrupt-*` quarantine for unreadable contribution, shop, live, and career files.
 
 ### Fixed
 
-- Map hover panels (shop prices and unknown-room odds) are now removed when the map screen closes, is cleaned up, is reopened, or replaces its map. The old panels were parented to `NMapPoint`, which is not unfocused by `NMapScreen.Close`, so they survived a close/reopen.
-- Top-bar odds indicators now skip `MoveChild` when the host HBox was rebuilt and a child no longer belongs to it. This removes the repeated `Child is not a child of this node` errors from `PinToLeftOfMap`.
-- Card drop odds now read the live `CardRarityOdds` values (A7+ Scarcity), apply negative offsets to both rare and uncommon thresholds, use single-card wording, show one Boss-reward row, hide in Blitz, and honor Big Game Hunter.
-- Potion odds keep the raw pity value for elite calculation, show White Beast Statue as 100%, remove cumulative rows, refresh after reward generation, and hide in Blitz.
-- Shop prices add the Shop-rarity relic row, use the local player, round base random prices before truncating discounts/removal, refresh an open panel after card removal, and hide in Blitz.
-- Unknown-room odds remove Shop after a previous Shop room and assign the freed share to Event.
-- Intent graphs use total damage for attack icon tiers, resolve Wriggler SPAWNED by slot, label lone Nibbit correctly, use Chomper's runtime variant, show literal `<` in English, and keep the Exoskeleton 4th slot.
-- Ancient relic pools fix Seal of Gold, Sand Castle, Neow pools, and Darv act gates; Sea Glass character suffixes are normalized; Ancient names use the official Chinese titles; Boss act labels use `ActModel.Index`.
+- Pale blue dot's next-turn draw is now credited to `PALEBLUE_DOT`, not the fifth attack card; amount 1 and 2 probes pass.
+- Run-history popup closes when the submenu hides, Esc closes only the popup, and replay data is cleared when the contribution panel hides.
+- Contribution and intent panels hide on run end, abandon, save-quit, new run, and defeat.
+- `live.json` writes are coalesced with a 1 s debounce and force-flushed at combat end and save-quit.
+- Generated and native cards with the same source id no longer merge into a doubled summary entry.
+- White Beast Statue shows 100% in boss rooms.
+- Path card purchases use the shop sidecar for both colored and colorless cards.
+- Career cache preserves `DeathSource`; abandoned runs display `ABANDONED`.
+- Card/relic bundles stay global when a character filter is selected.
+- Data-directory failures no longer prevent startup; manual patch blocks are independently isolated; intent metadata initializes after Harmony.
+
+### Removed
+
+- `PaleBlueDotDrawCompatPatch` (wrong target: `PaleBlueDotPower.ModifyHandDraw`).
+- `CardRemovalPatch`, `CardUpgradePatch`, `EventOptionPatch`, and the no-op `SelectCard` hook.
+- Empty `CombatHistory.PowerReceived` hook.
+- Automatic 90-day contribution cleanup.
+
+### Security
+
+- Test logs and standard-output files under `8.TEST` are ignored.
+- Test logs and old release DLLs containing the builder profile path are removed from published Git history.
+- Release builds use a source path map, no PDB, and contain no `C:\Users\` path.
 
 ### Verified
 
-- v0.111.1 and v0.113.1 assembly builds: 0 errors, 7 existing nullable warnings.
-- v0.111.1 A10 AutoSlayer seeds 71112 and 41111: exit 0; targeted probe values pass for card, potion, shop, ancient, intent, and boss-act displays.
-- v0.113.1 standard seed 71112: victory at floor 49; values match A10 expectations.
-- v0.113.1 Blitz seed 71113: victory at floor 24; top-bar card/potion indicators are hidden.
-- v0.113.1 isolated probe: a map hover panel is hidden and queued for deletion after `NMapScreen.Close`; `[MapFixProbe] PASS`; no `Child is not a child of this node` errors.
+- v0.113.1 persistence regression probe: duplicate merge, corrupt quarantine, atomic write, career source, abandoned cause, shop path buckets all PASS.
+- v0.113.1 PaleBlueDot probes: amount 1 and amount 2 both PASS; first draw count matches and source is `PALEBLUE_DOT`.
+- v0.113.1 UI lifecycle probe: popup close, Esc, replay clear all PASS.
+- v0.113.1 map probe: `MapFixProbe PASS`; no `Child is not a child` error.
+- v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings.
+- v0.111.1 runtime recheck was not possible with the current single-install copy: the copied launcher still reports v0.113.1 and RitsuLib selects its v0.113 variant. The assembly build and prior v0.111.1 evidence remain available.
 
 ## [1.5.1] - 2026-11-20
 

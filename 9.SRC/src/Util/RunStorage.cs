@@ -126,7 +126,7 @@ public static class RunStorage
                 ModVersion = ModConfig.ModVersion,
                 CreatedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             };
-            File.WriteAllText(path, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex)
         {

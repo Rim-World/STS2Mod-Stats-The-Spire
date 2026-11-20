@@ -24,7 +24,7 @@ public static class CareerStatsCache
 
     // Bump when the DTO contents change in a user-visible way. v2 adds
     // AncientId normalization and the corrected Ancient pool aggregation.
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -64,6 +64,7 @@ public static class CareerStatsCache
         catch (Exception ex)
         {
             Safe.Warn($"CareerStatsCache.Load failed: {ex.Message}");
+            try { AtomicFile.Quarantine(PathFor(characterFilter, modeFilter), ex); } catch { }
             return null;
         }
     }
@@ -76,7 +77,7 @@ public static class CareerStatsCache
             ModConfig.EnsureDirectories();
             var path = PathFor(data.CharacterFilter, data.ModeFilter);
             var dto = ToDto(data);
-            File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
+            AtomicFile.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOpts));
         }
         catch (Exception ex)
         {
@@ -145,6 +146,7 @@ public static class CareerStatsCache
                 EncounterId = e.EncounterId,
                 Count = e.Count,
                 Share = e.Share,
+                Source = e.Source,
             }).ToList()),
         PathStatsByAct = d.PathStatsByAct.ToDictionary(
             kv => kv.Key,
@@ -223,6 +225,7 @@ public static class CareerStatsCache
                 EncounterId = e.EncounterId,
                 Count = e.Count,
                 Share = e.Share,
+                Source = e.Source,
             }).ToList()),
         PathStatsByAct = (d.PathStatsByAct ?? new()).ToDictionary(
             kv => kv.Key,
@@ -309,6 +312,7 @@ public static class CareerStatsCache
         [JsonPropertyName("e")] public string EncounterId { get; set; } = "";
         [JsonPropertyName("c")] public int Count { get; set; }
         [JsonPropertyName("s")] public float Share { get; set; }
+        [JsonPropertyName("src")] public DeathSource Source { get; set; }
     }
 
     private sealed class ActPathStatsDto

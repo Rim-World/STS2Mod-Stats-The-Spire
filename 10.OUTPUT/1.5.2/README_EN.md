@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.5.1
+**Version**: 1.5.2
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -22,7 +22,7 @@ Stats the Spire (Local Edition) is a pure offline data analysis tool for Slay th
 
 **Potion Chance Tracker**
 
-An indicator on the top bar tracks your current potion drop chance. Hover over it to see elite combat drop chance and the probability of seeing at least one potion after multiple combats.
+An indicator on the top bar tracks your current potion drop chance. Hover over it to see the elite combat drop chance; White Beast Statue shows 100%.
 
 **Unknown Room Preview**
 
@@ -30,15 +30,15 @@ Hover over unvisited unknown rooms to see the full probability list of what the 
 
 **Card Drop Chance**
 
-An indicator on the top bar shows the likelihood of seeing each rarity tier in your next combat reward.
+An indicator on the top bar shows single-card rarity odds for the next combat reward, using the current ascension and rarity offset. Boss fights show only "Boss reward: Rare 100%"; Blitz hides the indicator.
 
 **Shop Prices**
 
-Hover over unvisited shop rooms to see expected prices at the next shop. Prices are color-coded so you can easily tell whether you can afford a given item with your current gold. Relics that affect shop prices are factored into the price calculation.
+Hover over unvisited shop rooms to see expected prices at the next shop, including Common, Uncommon, Rare, and Shop-rarity relics. Prices are color-coded so you can easily tell whether you can afford a given item with your current gold. Relics that affect shop prices are factored into the price calculation.
 
 ### Intent Graph — Monster AI Visualization
 
-Displays monster intents as a state machine. Hover over a monster to view its intent state machine.
+Displays monster intents as a state machine. Hover over a monster to view its intent state machine. Multi-hit attack icons use total damage; initial branches use the actual slot or encounter variant.
 
 **Intent** — Shows what the monster will do next turn.
 
@@ -210,6 +210,8 @@ Files from 1.4.4 and earlier named `{seed}_*.json` are read as a legacy fallback
 2. Place the `sts2_statsthespire_local` folder into the game directory's `mods/` folder.
 3. Launch the game. The manifest dependency loads RitsuLib first.
 
+> **Keep one copy only.** The local build and the old Workshop build share the ID `sts2_statsthespire_local`. Unsubscribe from or disable the Workshop copy first. Unchecking the local copy does not disable the Workshop copy.
+
 ### File Structure
 
 ```
@@ -245,4 +247,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. Version 1.5.1 passed compatibility probes on both versions. A standard AutoSlayer run on v0.111.1 (seed 81111) completed 23 combats and finalized as abandoned at the 49-floor limit. Version 1.5.0 covers the v0.111.1 victory finalization path; 1.5.1 added no victory-specific branch. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.5.2 passed persistence and PaleBlueDot probes on v0.113.1 and compiles against both assemblies; run the v0.111.1 game binary for that version's runtime check. Card/relic ID changes across game versions are handled automatically.
