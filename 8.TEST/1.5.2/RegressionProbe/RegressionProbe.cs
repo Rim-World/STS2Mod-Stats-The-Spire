@@ -7,6 +7,7 @@ using CommunityStats.Collection;
 using CommunityStats.Config;
 using CommunityStats.Util;
 using Godot;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Runs;
 
@@ -47,6 +48,8 @@ public static class RegressionProbe
         all &= ProbeCareerSource();
         all &= ProbeAbandonedCause();
         all &= ProbeShopPathBuys();
+        all &= ProbeOstyCompositeKey();
+        all &= ProbeLegacyCorruptUntouched();
         GD.Print($"[RegressionProbe] RESULT {(all ? "PASS" : "FAIL")}");
         tree.Quit();
     }
@@ -138,10 +141,11 @@ public static class RegressionProbe
         {
             Directory.CreateDirectory(ModConfig.DataDir);
             AtomicFile.WriteAllText(path, "atomic-ok");
-            bool content = File.ReadAllText(path) == "atomic-ok";
+            AtomicFile.WriteAllText(path, "atomic-ok-2");
+            bool content = File.ReadAllText(path) == "atomic-ok-2";
             bool noTemp = !Directory.EnumerateFiles(ModConfig.DataDir, "probe-atomic-152.txt.tmp-*").Any();
             bool pass = content && noTemp;
-            GD.Print($"[RegressionProbe] atomic content={content} noTemp={noTemp} {(pass ? "PASS" : "FAIL")}");
+            GD.Print($"[RegressionProbe] atomic replace={content} noTemp={noTemp} {(pass ? "PASS" : "FAIL")}");
             return pass;
         }
         catch (Exception ex)
@@ -155,6 +159,57 @@ public static class RegressionProbe
         }
     }
 
+    private static bool ProbeLegacyCorruptUntouched()
+    {
+        const string seed = "codex152legacycorrupt";
+        var path = RunStorage.LegacySummaryPath(seed);
+        try
+        {
+            Directory.CreateDirectory(ModConfig.ContributionsDir);
+            if (File.Exists(path)) File.Delete(path);
+            File.WriteAllText(path, "{ broken");
+            _ = ContributionPersistence.LoadRunSummary(new RunIdentity(0, seed));
+            bool untouched = File.Exists(path);
+            bool noCorrupt = !Directory.EnumerateFiles(ModConfig.ContributionsDir, "codex152legacycorrupt_summary.json.corrupt-*").Any();
+            bool pass = untouched && noCorrupt;
+            GD.Print($"[RegressionProbe] legacy-corrupt untouched={untouched} noCorrupt={noCorrupt} {(pass ? "PASS" : "FAIL")}");
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[RegressionProbe] legacy-corrupt FAIL {ex}");
+            return false;
+        }
+        finally
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+    }
+
+    private static bool ProbeOstyCompositeKey()
+    {
+        try
+        {
+            CombatTracker.Instance.ForceResetAllContext();
+            CombatTracker.Instance.OnOstyDamageDealt(5, "TEST_ATTACK");
+            var data = CombatTracker.Instance.GetCurrentCombatData();
+            bool plain = data.ContainsKey("TEST_ATTACK");
+            bool composite = data.ContainsKey("TEST_ATTACK\u0001OSTY");
+            bool pass = !plain && composite;
+            GD.Print($"[RegressionProbe] osty-key plain={plain} composite={composite} {(pass ? "PASS" : "FAIL")}");
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[RegressionProbe] osty-key FAIL {ex}");
+            return false;
+        }
+        finally
+        {
+            CombatTracker.Instance.ForceResetAllContext();
+        }
+    }
+
     private static bool ProbeAbandonedCause()
     {
         try
@@ -163,9 +218,10 @@ public static class RegressionProbe
             {
                 Win = false,
                 WasAbandoned = true,
+                KilledByEncounter = new ModelId("ENCOUNTERS", "PROBE_BOSS"),
                 MapPointHistory = new List<List<MegaCrit.Sts2.Core.Runs.History.MapPointHistoryEntry>>
                 {
-                    new(),
+                    new() { new() },
                 },
             };
             var method = typeof(RunHistoryAnalyzer).GetMethod(

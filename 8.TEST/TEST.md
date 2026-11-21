@@ -225,7 +225,7 @@
 | `regressionprobe2-game.log` | 2026-11-21 07:17 | 否 | 1 | 同一回归探针的游戏日志 | 是 |
 | `palebluedot-1c-stdout.log` | 2026-11-21 07:18 | 否 | 451 | 普通版 PaleBlueDot 探针；`firstDrawn=1` PASS | 是 |
 | `palebluedot-2-stdout.log` | 2026-11-21 07:19 | 否 | 453 | 升级版 PaleBlueDot 探针；`firstDrawn=2` PASS | 是 |
-| `ui-lifecycle-stdout.log` | 2026-11-21 07:19 | 否 | 313 | 弹窗、Esc、回放清空探针；RESULT PASS | 是 |
+| `ui-lifecycle-stdout.log` | 2026-11-21 07:19 | 否 | 313 | 弹窗 helper、直接 Esc、回放清空；RESULT PASS；未触发真实 OnSubmenuHidden | 是 |
 | `mapfix-152-stdout.log` | 2026-11-21 07:20 | 否 | 438 | 地图悬停清理；`[MapFixProbe] PASS` | 是 |
 | `regressionprobe-v111-stdout-console.log` | 2026-11-21 07:20 | 否 | 332 | 复制安装的 v0.111.1 尝试；RitsuLib 仍选 0.113 分支，初始化失败 | 是 |
 | `RegressionProbe/` | 2026-11-21 07:17 | 否 | 16 | 持久化、缓存、路径购买与放弃局探针工程（目录整体登记） | 是 |

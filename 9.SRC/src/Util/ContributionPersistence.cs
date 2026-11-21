@@ -170,7 +170,7 @@ public static class ContributionPersistence
 
         if (identity.HasStartTime)
         {
-            var direct = TryLoadDoc(RunStorage.SummaryPath(identity));
+            var direct = TryLoadDoc(RunStorage.SummaryPath(identity), identity.HasStartTime);
             if (direct != null && direct.Count > 0) return direct;
 
             var assembled = AssembleFromCombats(identity);
@@ -194,7 +194,7 @@ public static class ContributionPersistence
     {
         if (string.IsNullOrEmpty(seed)) return null;
 
-        var direct = TryLoadDoc(RunStorage.LegacySummaryPath(seed));
+        var direct = TryLoadDoc(RunStorage.LegacySummaryPath(seed), quarantine: false);
         if (direct != null && direct.Count > 0)
         {
             Safe.Info($"[ContributionPersistence] using legacy summary for seed={seed}");
@@ -207,7 +207,7 @@ public static class ContributionPersistence
         return assembled;
     }
 
-    private static IReadOnlyDictionary<string, ContributionAccum>? TryLoadDoc(string path)
+    private static IReadOnlyDictionary<string, ContributionAccum>? TryLoadDoc(string path, bool quarantine = true)
     {
         if (!File.Exists(path)) return null;
         try
@@ -221,7 +221,10 @@ public static class ContributionPersistence
         catch (Exception ex)
         {
             Safe.Warn($"ContributionPersistence: load {Path.GetFileName(path)} failed: {ex.Message}");
-            AtomicFile.Quarantine(path, ex);
+            if (quarantine)
+                AtomicFile.Quarantine(path, ex);
+            else
+                Safe.Warn($"ContributionPersistence: legacy file {Path.GetFileName(path)} left untouched (read-only fallback)");
             return null;
         }
     }
@@ -287,7 +290,7 @@ public static class ContributionPersistence
             if (name.EndsWith("_shop_offers", StringComparison.Ordinal)) continue;
             if (name.EndsWith("_shop_purchases", StringComparison.Ordinal)) continue;
 
-            var combat = TryLoadDoc(path);
+            var combat = TryLoadDoc(path, quarantine: false);
             if (combat == null) continue;
             files++;
             foreach (var (key, accum) in combat)
@@ -382,8 +385,12 @@ public static class ContributionPersistence
         if (identity == null || !identity.IsValid) return null;
 
         var path = RunStorage.LivePath(identity);
+        bool legacyPath = !identity.HasStartTime;
         if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
+        {
             path = RunStorage.LegacyLivePath(identity.Seed);
+            legacyPath = true;
+        }
 
         if (!File.Exists(path)) return null;
         try
@@ -412,7 +419,10 @@ public static class ContributionPersistence
         catch (Exception ex)
         {
             Safe.Warn($"ContributionPersistence: LoadLiveState failed for {identity}: {ex.Message}");
-            AtomicFile.Quarantine(path, ex);
+            if (!legacyPath)
+                AtomicFile.Quarantine(path, ex);
+            else
+                Safe.Warn($"ContributionPersistence: legacy live file {Path.GetFileName(path)} left untouched");
             return null;
         }
     }

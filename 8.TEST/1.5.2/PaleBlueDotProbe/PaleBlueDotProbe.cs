@@ -15,7 +15,7 @@ namespace StatsTheSpire.PaleBlueDotProbe;
 /// <summary>
 /// Test-only probe: apply PaleBlueDotPower directly at the first combat,
 /// record its logical card source, then verify that the next-turn draw is
-/// attributed to PALEBLUE_DOT exactly once and not to the fifth attack.
+/// attributed to PALE_BLUE_DOT exactly once and not to the fifth attack.
 ///
 /// Set PALE_BLUE_AMOUNT=2 to exercise the upgraded amount. The probe quits
 /// itself and prints PASS/FAIL lines.
@@ -29,6 +29,8 @@ public static class PaleBlueDotProbe
     private static int _drawFrames;
     private static int _firstDrawn;
     private static string _firstSource = "";
+    private static string _otherDrawSource = "";
+    private static string _mapSource = "";
 
     public static void Initialize()
     {
@@ -46,7 +48,10 @@ public static class PaleBlueDotProbe
 
             TryReadDraw();
             if (_sawDraw && ++_drawFrames > 60)
-                Finish(tree, pass: _firstDrawn == ExpectedAmount && _firstSource == "PALEBLUE_DOT");
+                Finish(tree, pass: _firstDrawn == ExpectedAmount
+                    && _firstSource == "PALE_BLUE_DOT"
+                    && _mapSource == "PALE_BLUE_DOT"
+                    && _otherDrawSource.Length == 0);
             else if (!_sawDraw && _frames > 3600)
                 Finish(tree, pass: false);
         };
@@ -71,7 +76,7 @@ public static class PaleBlueDotProbe
         _applied = true;
         int amount = ExpectedAmount;
         ContributionMap.Instance.RecordPowerSource(
-            "PALEBLUE_DOT_POWER", "PALEBLUE_DOT", "card", amount);
+            "PALE_BLUE_DOT_POWER", "PALE_BLUE_DOT", "card", amount);
         GD.Print($"[PaleBlueDotProbe] applying amount={amount} combat={state.Encounter?.Id.Entry ?? "?"}");
         _ = ApplyAsync(me.Creature, amount);
     }
@@ -103,13 +108,18 @@ public static class PaleBlueDotProbe
             foreach (var (key, accum) in data)
             {
                 if (accum.CardsDrawn <= 0) continue;
-                if (accum.SourceId != "PALEBLUE_DOT" && accum.SourceId != "PALEBLUE_DOT_POWER") continue;
+                if (accum.SourceId != "PALE_BLUE_DOT" && accum.SourceId != "PALE_BLUE_DOT_POWER")
+                {
+                    _otherDrawSource = accum.SourceId;
+                    continue;
+                }
                 if (_sawDraw && accum.CardsDrawn == _firstDrawn && accum.SourceId == _firstSource) continue;
 
                 if (!_sawDraw)
                 {
                     _firstDrawn = accum.CardsDrawn;
                     _firstSource = accum.SourceId;
+                    _mapSource = ContributionMap.Instance.GetPowerSource("DRAW_CARDS_NEXT_TURN_POWER")?.SourceId ?? "";
                     _sawDraw = true;
                     _drawFrames = 0;
                 }
@@ -124,7 +134,7 @@ public static class PaleBlueDotProbe
 
     private static void Finish(SceneTree tree, bool pass)
     {
-        GD.Print($"[PaleBlueDotProbe] RESULT {(pass ? "PASS" : "FAIL")} expected={ExpectedAmount} firstDrawn={_firstDrawn} source={_firstSource}");
+        GD.Print($"[PaleBlueDotProbe] RESULT {(pass ? "PASS" : "FAIL")} expected={ExpectedAmount} firstDrawn={_firstDrawn} source={_firstSource} mapSource={_mapSource} otherSource={_otherDrawSource}");
         tree.Quit();
     }
 }

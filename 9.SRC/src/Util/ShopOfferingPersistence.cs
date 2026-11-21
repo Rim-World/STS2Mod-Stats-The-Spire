@@ -35,8 +35,12 @@ public static class ShopOfferingPersistence
         if (identity == null || !identity.IsValid) return null;
 
         var path = RunStorage.ShopOffersPath(identity);
+        bool legacyPath = identity.IsLegacy;
         if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
+        {
             path = RunStorage.LegacyShopOffersPath(identity.Seed);
+            legacyPath = true;
+        }
 
         if (!File.Exists(path)) return null;
         try
@@ -47,7 +51,10 @@ public static class ShopOfferingPersistence
         catch (System.Exception ex)
         {
             Safe.Warn($"ShopOfferingPersistence: load failed: {ex.Message}");
-            AtomicFile.Quarantine(path, ex);
+            if (!legacyPath)
+                AtomicFile.Quarantine(path, ex);
+            else
+                Safe.Warn($"ShopOfferingPersistence: legacy file {Path.GetFileName(path)} left untouched");
             return null;
         }
     }

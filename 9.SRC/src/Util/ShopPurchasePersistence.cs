@@ -44,6 +44,7 @@ public static class ShopPurchasePersistence
         fromLegacy = false;
         identity ??= ContributionPersistence.GetActiveIdentity();
         if (identity == null || !identity.IsValid) return null;
+        fromLegacy = identity.IsLegacy;
 
         var path = RunStorage.ShopPurchasesPath(identity);
         if (!File.Exists(path) && identity.HasStartTime && !RunStorage.HasNewDirectory(identity))
@@ -61,7 +62,10 @@ public static class ShopPurchasePersistence
         catch (System.Exception ex)
         {
             Safe.Warn($"ShopPurchasePersistence: load failed: {ex.Message}");
-            AtomicFile.Quarantine(path, ex);
+            if (!fromLegacy)
+                AtomicFile.Quarantine(path, ex);
+            else
+                Safe.Warn($"ShopPurchasePersistence: legacy file {Path.GetFileName(path)} left untouched");
             return null;
         }
     }

@@ -1,5 +1,6 @@
 using CommunityStats.Collection;
 using CommunityStats.Util;
+using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
@@ -2453,23 +2454,39 @@ public static class MaxHpGainPatch
 [HarmonyPatch]
 public static class PaleBlueDotPowerContextPatch
 {
+    private static readonly FieldInfo? InternalDataField =
+        typeof(PowerModel).GetField("_internalData", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly FieldInfo? ActivatedField =
+        typeof(PaleBlueDotPower).GetNestedType("Data", BindingFlags.NonPublic)
+            ?.GetField("alreadyActivatedThisTurn", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private static bool AlreadyActivated(PaleBlueDotPower power)
+    {
+        try
+        {
+            var data = InternalDataField?.GetValue(power);
+            return data != null && ActivatedField?.GetValue(data) is true;
+        }
+        catch { return false; }
+    }
+
     [HarmonyPatch(typeof(PaleBlueDotPower), nameof(PaleBlueDotPower.AfterCardPlayed))]
     [HarmonyPrefix]
     public static void BeforeAfterCardPlayed(PaleBlueDotPower __instance)
     {
         Safe.Run(() =>
         {
-            // DisplayAmount is 0 once five card plays have happened. Only
-            // then can this hook apply DrawCardsNextTurnPower, so a marker
-            // set on earlier plays cannot misattribute a later draw.
-            if (__instance.DisplayAmount > 0) return;
+            // DisplayAmount is 0 once five card plays have happened. The
+            // private per-turn flag prevents 6th+ plays from leaving a stale
+            // marker after this turn's trigger has already fired.
+            if (AlreadyActivated(__instance) || __instance.DisplayAmount > 0) return;
 
             var powerId = __instance.Id.Entry;
             if (string.IsNullOrEmpty(powerId)) return;
             var source = ContributionMap.Instance.GetPowerSource(powerId);
             CombatTracker.Instance.SetPendingPowerSource(
                 "DRAW_CARDS_NEXT_TURN_POWER",
-                source?.SourceId ?? "PALEBLUE_DOT",
+                source?.SourceId ?? "PALE_BLUE_DOT",
                 source?.SourceType ?? "card");
         });
     }

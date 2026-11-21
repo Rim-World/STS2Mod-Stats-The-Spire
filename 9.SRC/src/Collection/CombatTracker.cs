@@ -501,6 +501,9 @@ public sealed class CombatTracker
     public void OnTurnStart()
     {
         _turnCount++;
+        // A trigger that never produced a power application must not survive
+        // into the next turn and steal a different draw's attribution.
+        ClearPendingPowerSource();
     }
 
     // ── Resolve Source ───────────────────────────────────────
@@ -1363,10 +1366,10 @@ public sealed class CombatTracker
         // Ensure OSTY parent entry exists
         GetOrCreate(OstyParentId, "osty");
 
-        // Attribute damage to the specific card
-        var accum = GetOrCreate(cardSourceId, "card");
+        // Attribute damage to the specific card, using the same composite
+        // key that persistence will later reconstruct.
+        var accum = GetOrCreate(cardSourceId, "card", OstyParentId);
         accum.DirectDamage += totalDamage;
-        accum.OriginSourceId = OstyParentId;
 
         // Also consume modifier context if present
         var modifiers = ContributionMap.Instance.LastDamageModifiers;
@@ -1395,9 +1398,8 @@ public sealed class CombatTracker
         var consumed = ContributionMap.Instance.ConsumeOstyHp(damage);
         foreach (var (sourceId, sourceType, amount) in consumed)
         {
-            var accum = GetOrCreate(sourceId, sourceType);
+            var accum = GetOrCreate(sourceId, sourceType, OstyParentId);
             accum.EffectiveBlock += amount;
-            accum.OriginSourceId = OstyParentId;
         }
 
         // If stack was insufficient (shouldn't normally happen), attribute remainder to OSTY itself
@@ -1545,8 +1547,7 @@ public sealed class CombatTracker
                 if (srcType == "power" && srcId.EndsWith("_POWER", StringComparison.Ordinal))
                     srcId = srcId.Substring(0, srcId.Length - "_POWER".Length);
                 string key = $"FORGE:{srcId}";
-                var accum = GetOrCreate(key, srcType);
-                accum.OriginSourceId = "SOVEREIGN_BLADE";
+                var accum = GetOrCreate(key, srcType, "SOVEREIGN_BLADE");
                 accum.DirectDamage += totalAmt;
                 accum.TimesPlayed += count;
             }
@@ -1556,8 +1557,7 @@ public sealed class CombatTracker
         // Replay mechanics (Sword Sage) accumulate correctly across
         // multiple OnPlay calls within the same combat.
         const int baseDamage = 10;
-        var baseAccum = GetOrCreate("FORGE:BASE", "card");
-        baseAccum.OriginSourceId = "SOVEREIGN_BLADE";
+        var baseAccum = GetOrCreate("FORGE:BASE", "card", "SOVEREIGN_BLADE");
         baseAccum.DirectDamage += baseDamage;
         baseAccum.TimesPlayed += 1;
     }
