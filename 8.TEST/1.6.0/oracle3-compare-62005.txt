@@ -1,0 +1,47 @@
+run=1795294316_62005
+oracle_files=29 mod_files=29
+floor status                   damage          block        plays        draws  encounter
+    2 PASS                48/48           0/0          8/8         3/3      SEAPUNK_WEAK
+    3 PASS                50/50           0/0          7/7         1/1      TOADPOLES_WEAK
+    4 DIFF                41/42           0/0          4/4         1/1      SLUDGE_SPINNER_WEAK
+    5 PASS                33/33           0/0          7/7         2/2      PUNCH_CONSTRUCT_NORMAL
+    7 PASS                84/84           0/0         17/17        7/7      CORPSE_SLUGS_NORMAL
+    8 PASS                63/63           0/0         10/10        4/4      TWO_TAILED_RATS_NORMAL
+    9 DIFF                82/82           0/0         25/25       23/21     GREMLIN_MERC_NORMAL
+   11 PASS                82/82           0/0          4/4         1/1      LIVING_FOG_NORMAL
+   12 PASS               147/147          0/0         15/15        5/5      PHANTASMAL_GARDENERS_ELITE
+   13 DIFF                92/93           0/0         12/12        4/4      CULTISTS_NORMAL
+   15 DIFF               150/150          0/0         27/27       12/11     TERROR_EEL_ELITE
+   17 DIFF              4395/280          0/0         55/55       21/15     WATERFALL_GIANT_BOSS
+   19 PASS                92/92           0/0         11/11        4/4      TUNNELER_WEAK
+   21 PASS                84/84           0/0          9/9         3/3      EXOSKELETONS_WEAK
+   23 DIFF               121/121          0/5         19/19       14/14     SPINY_TOAD_NORMAL
+   24 PASS               133/133          0/0         12/12        6/6      MYTES_NORMAL
+   29 PASS               171/171          0/0         16/16        5/5      INFESTED_PRISMS_ELITE
+   30 PASS               198/198          0/0          5/5         0/0      SLUMBERING_BEETLE_NORMAL
+   33 DIFF               428/434          0/0         34/34       11/9      KAISER_CRAB_BOSS
+   35 PASS               141/141          0/0         14/14        2/2      TURRET_OPERATOR_WEAK
+   36 PASS               112/112          0/0         13/13        2/2      SCROLLS_OF_BITING_WEAK
+   37 DIFF               200/200          0/0         28/28       11/9      CONSTRUCT_MENAGERIE_NORMAL
+   39 PASS               247/247          0/0         17/17        2/2      OWL_MAGISTRATE_NORMAL
+   40 DIFF               254/264          0/0         21/21        7/5      SOUL_NEXUS_ELITE
+   42 DIFF               237/242          0/0         23/23        8/8      FROG_KNIGHT_NORMAL
+   43 PASS               294/294          0/0         17/17        6/6      KNIGHTS_ELITE
+   46 DIFF               320/331         12/12        23/23        6/5      MECHA_KNIGHT_ELITE
+   48 DIFF               568/603          9/9         39/39       24/20     AEONGLASS_BOSS
+   49 DIFF               636/663          7/7         44/44       10/9      TEST_SUBJECT_BOSS
+
+summary: pass=16 nonpass=13 total=29
+  floor 4: DIFF SLUDGE_SPINNER_WEAK
+  floor 9: DIFF GREMLIN_MERC_NORMAL
+  floor 13: DIFF CULTISTS_NORMAL
+  floor 15: DIFF TERROR_EEL_ELITE
+  floor 17: DIFF WATERFALL_GIANT_BOSS
+  floor 23: DIFF SPINY_TOAD_NORMAL
+  floor 33: DIFF KAISER_CRAB_BOSS
+  floor 37: DIFF CONSTRUCT_MENAGERIE_NORMAL
+  floor 40: DIFF SOUL_NEXUS_ELITE
+  floor 42: DIFF FROG_KNIGHT_NORMAL
+  floor 46: DIFF MECHA_KNIGHT_ELITE
+  floor 48: DIFF AEONGLASS_BOSS
+  floor 49: DIFF TEST_SUBJECT_BOSS

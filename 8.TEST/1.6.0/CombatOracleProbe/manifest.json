@@ -1,0 +1,17 @@
+{
+  "id": "sts2_combat_oracle_160",
+  "name": "StatsTheSpire Combat Oracle 1.6.0",
+  "author": "test",
+  "description": "Test-only runtime combat history oracle for contribution reconciliation.",
+  "version": "1.6.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.6.0"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+run=1795293815_62003
+oracle_files=29 mod_files=28
+floor status                   damage          block        plays        draws  encounter
+    2 PASS                38/38           0/0          4/4         1/1      SLUDGE_SPINNER_WEAK
+    3 PASS                45/45           0/0          9/9         2/2      TOADPOLES_WEAK
+    4 DIFF                52/52           0/0         10/10       12/10     CORPSE_SLUGS_WEAK
+    5 PASS                55/55           0/0          9/9         3/3      PUNCH_CONSTRUCT_NORMAL
+    7 PASS                84/84           0/0         11/11        4/4      SEAPUNK_NORMAL
+    8 PASS                64/64           0/0          5/5         1/1      SEWER_CLAM_NORMAL
+    9 PASS                63/63           0/0          8/8         1/1      HAUNTED_SHIP_NORMAL
+   11 PASS                80/80           0/0         12/12        6/6      LIVING_FOG_NORMAL
+   12 PASS                75/75           0/0         15/15        6/6      GREMLIN_MERC_NORMAL
+   13 PASS                55/55           0/0          5/5         2/2      TWO_TAILED_RATS_NORMAL
+   14 DIFF               127/128          0/0          8/8         2/2      PHANTASMAL_GARDENERS_ELITE
+   17 PASS               211/211          0/0         21/21        7/7      SOUL_FYSH_BOSS
+   19 PASS                79/79           0/0         13/13        2/2      EXOSKELETONS_WEAK
+   24 PASS                87/87           0/0          6/6         1/1      TUNNELER_WEAK
+   25 PASS               145/145          0/0         14/14        3/3      ENTOMANCER_ELITE
+   27 PASS               148/148          0/0         14/14        6/6      LOUSE_PROGENITOR_NORMAL
+   28 PASS               117/117          0/0          9/9         2/2      SPINY_TOAD_NORMAL
+   31 PASS               161/161          0/0         15/15        3/3      INFESTED_PRISMS_ELITE
+   33 DIFF               441/454          0/0         28/28       10/9      KAISER_CRAB_BOSS
+   35 PASS               101/101          0/0         13/13        2/2      SCROLLS_OF_BITING_WEAK
+   36 DIFF               162/162          2/2         20/20       13/11     DEVOTED_SCULPTOR_WEAK
+   38 PASS               206/206          0/0         17/17        3/3      FROG_KNIGHT_NORMAL
+   39 DIFF               250/250          0/0         30/30       11/9      AXEBOTS_NORMAL
+   40 PASS               148/148          6/6         12/12        2/2      GLOBE_HEAD_NORMAL
+   42 PASS               150/150          0/0         15/15        4/4      FABRICATOR_NORMAL
+   44 PASS               103/103          0/0          9/9         2/2      SCROLLS_OF_BITING_NORMAL
+   45 MISSING_MOD          0/0            0/0          0/0         0/0      BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER
+   46 PASS               234/234          0/0         13/13        1/1      SOUL_NEXUS_ELITE
+   48 PASS               599/599          0/0         35/35       12/12     QUEEN_BOSS
+
+summary: pass=23 nonpass=6 total=29
+  floor 4: DIFF CORPSE_SLUGS_WEAK
+  floor 14: DIFF PHANTASMAL_GARDENERS_ELITE
+  floor 33: DIFF KAISER_CRAB_BOSS
+  floor 36: DIFF DEVOTED_SCULPTOR_WEAK
+  floor 39: DIFF AXEBOTS_NORMAL
+  floor 45: MISSING_MOD BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER
