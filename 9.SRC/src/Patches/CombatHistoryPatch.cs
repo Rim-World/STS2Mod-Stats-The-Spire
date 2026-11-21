@@ -126,16 +126,25 @@ public static class CombatHistoryPatch
             if (dealer != null && dealer.IsPlayer && !IsLocalCreature(dealer)) return;
             if (cardSource?.Owner != null && !IsLocalPlayer(cardSource.Owner)) return;
 
-            // Mark this result as processed so KillingBlowPatcher won't double-count
-            CombatTracker.Instance.MarkDamageResultProcessed(
-                System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(result));
-
             var isPlayerReceiver = receiver.IsPlayer;
             var cardSourceId = cardSource?.Id.Entry;
 
             // Detect Osty as dealer or receiver
             bool isOstyDealer = dealer != null && dealer.Monster is Osty;
             bool isOstyReceiver = receiver.Monster is Osty;
+
+            // Enemy-vs-enemy and enemy-vs-pet damage is not player contribution.
+            // Wuppy is the common case: Wuppy's Loyalty redirects enemy attacks
+            // to the pet, and the old code counted those hits as player damage
+            // under UNTRACKED. Osty is exempt because its absorb path is a
+            // deliberate defense contribution.
+            if (dealer != null && dealer.Side == CombatSide.Enemy
+                && !isPlayerReceiver && !isOstyReceiver)
+                return;
+
+            // Mark this result as processed so KillingBlowPatcher won't double-count
+            CombatTracker.Instance.MarkDamageResultProcessed(
+                System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(result));
 
             // Skip damage attribution for enemies in an invincible phase
             // (ShowsInfiniteHp flag) — see CombatTracker.OnDamageDealt for
@@ -2052,6 +2061,10 @@ public static class KillingBlowPatcher
             // Only care about damage TO enemies
             if (isPlayerReceiver) return;
             if (results.TotalDamage <= 0) return;
+
+            // Enemy self-damage and enemy-vs-enemy damage are not player
+            // contribution; keep them out of the killing-blow fallback too.
+            if (dealer != null && dealer.Side == CombatSide.Enemy) return;
 
             // Multiplayer: ignore damage caused by another player's actions.
             if (dealer != null && dealer.IsPlayer && !CombatHistoryPatch.IsLocalCreature(dealer)) return;

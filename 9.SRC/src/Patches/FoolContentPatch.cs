@@ -3,6 +3,7 @@ using CommunityStats.Collection;
 using CommunityStats.Util;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
 namespace CommunityStats.Patches;
@@ -140,6 +141,58 @@ public static class FoolContentPatch
         }
 
         Safe.Info($"[FoolContent] {installed} hooks installed, {skipped} skipped (targets={Targets.Length})");
+        TryPatchEnnuiHandDraw(harmony);
+    }
+
+    /// <summary>
+    /// EnnuiPower.ModifyHandDraw is a separate hook from the context table:
+    /// it adds cards to the opening hand and has no damage/block callback.
+    /// Patch it manually because the type does not exist on v0.111.1.
+    /// Without this, the extra cards silently disappear from CardsDrawn.
+    /// </summary>
+    private static void TryPatchEnnuiHandDraw(Harmony harmony)
+    {
+        try
+        {
+            var type = AccessTools.TypeByName(PowerNamespace + "EnnuiPower");
+            if (type == null)
+            {
+                Safe.Info("[FoolContent] EnnuiPower.ModifyHandDraw skipped (pre-0.113 game)");
+                return;
+            }
+
+            var method = AccessTools.DeclaredMethod(type, "ModifyHandDraw");
+            if (method == null)
+            {
+                Safe.Warn("[FoolContent] EnnuiPower.ModifyHandDraw method not found; skipped");
+                return;
+            }
+
+            var postfix = new HarmonyMethod(
+                AccessTools.Method(typeof(FoolContentPatch), nameof(AfterEnnuiHandDraw)));
+            harmony.Patch(method, postfix: postfix);
+            Safe.Info("[FoolContent] EnnuiPower.ModifyHandDraw installed");
+        }
+        catch (Exception ex)
+        {
+            Safe.Warn($"[FoolContent] EnnuiPower.ModifyHandDraw failed: {ex.Message}");
+        }
+    }
+
+    public static void AfterEnnuiHandDraw(PowerModel __instance, Player player,
+        decimal count, decimal __result)
+    {
+        Safe.Run(() =>
+        {
+            if (__instance.Owner?.Player != player) return;
+            int extra = (int)(__result - count);
+            if (extra <= 0) return;
+
+            var source = ContributionMap.Instance.GetPowerSource(__instance.Id.Entry);
+            string sourceId = source?.SourceId ?? __instance.Id.Entry;
+            string sourceType = source?.SourceType ?? "power";
+            ContributionMap.Instance.RecordHandDrawBonus(sourceId, sourceType, extra);
+        });
     }
 
     private static bool TryPatch(Harmony harmony,

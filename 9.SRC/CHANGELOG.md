@@ -6,10 +6,14 @@
 
 ### Fixed
 - No-reward event combat (for example the Battleworn Dummy) now saves at `CombatRoom.Exit`, before `CombatManager.Reset`. The no-reward `ProceedWithoutRewards` path exits the room before `EndCombatInternal` reaches `CombatEnded`, so the old save trigger was skipped in non-interactive and instant modes.
+- Enemy attacks on Wuppy/other non-Osty pets no longer count as player damage. Wuppy's Loyalty redirects those hits to the pet; the old path put them under `UNTRACKED`.
+- `EnnuiPower.ModifyHandDraw` extra cards now enter `CardsDrawn` through a runtime-optional postfix; v0.111.1 skips the patch safely.
 
 ### Verified
 - v0.113.1 seed 62003: floor 45 wrote `combat_45_1.json` with 1 test-injected source; 29 combat files, no duplicate floor; victory, exit 0; log `8.TEST/1.6.0/exitfix6-62003-stdout.log`.
 - v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; logs `8.TEST/1.6.0/build-v113-exitfix-release.log`, `build-v111-exitfix-release.log`.
+- v0.113.1 seed 62005 with Fool probe: `UNTRACKED` damage 0; `ENNUI_POWER` hand draws match oracle; log `runtimefix-62005-stdout.log`, compare `runtimefix-compare-fool.txt`.
+- v0.113.1 standard seed 62005: 49 floors, `UNTRACKED` 0; process cleanup timed out after the run, data complete; compare `runtimefix-compare-standard.txt`.
 - Not verified: normal GUI event-combat visual acceptance; test-only `EventSourceProbe` is not shipped.
 
 ## [1.6.0] - 2026-11-22

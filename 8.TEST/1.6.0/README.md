@@ -78,7 +78,22 @@
 - `attribution-probe-v111-stdout.log`：带 Ritsu/主 Mod 的首次无头运行在资源预加载阶段崩溃，探针未执行。
 - `attribution-probe-isolated-stdout.log`：隔离探针缺少主 DLL 依赖，`FileNotFoundException` 重复报错；该失败用于确认探针必须声明主 Mod 依赖。
 
-## 7. 记录与清理
+## 7. 归因与手抽修复复测（2026-11-22 07:20）
+
+| 项目 | 结果 | 日志 |
+|---|---|---|
+| v0.113.1 Release 构建 | 0 错误、7 个既有警告 | `build-v113-runtimecheck.log` |
+| v0.111.1 Release 构建 | 0 错误、7 个既有警告 | `build-v111-runtimecheck.log` |
+| Fool 注入局种子 62005 | `UNTRACKED` 全为 0；`ENNUI_POWER` 手抽 2/1/6/2/2/4/1 与 oracle 一致 | `runtimefix-62005-stdout.log`、`runtimefix-compare-fool.txt` |
+| 标准局种子 62005 | 49 层完整；`UNTRACKED` 全为 0；进程收尾超时，数据完整 | `runtimefix-standard-62005-stdout.log`、`runtimefix-compare-standard.txt` |
+| 比对脚本 | 无 `UNTRACKED`；Fool 局可选手抽断言 PASS | `compare_runtimefix.py` |
+
+失败记录：
+
+- 标准局在战斗结束后的主菜单停留，900 秒超时被测试框架终止；战斗与事件文件完整，统计对照仍有效。
+- v0.111.1 未做运行复测，只做兼容构建。
+
+## 8. 记录与清理
 
 - 每次运行保存一个新的日志文件，不覆盖旧结果。
 - 测试日志放在 `8.TEST/1.6.0/`，文件登记到 `8.TEST/TEST.md`。
