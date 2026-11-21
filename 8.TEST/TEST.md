@@ -283,6 +283,7 @@
 | `v113.1-foolprobe-62003c-stdout.log` | 2026-11-22 01:47 | 否 | 880 | v0.113.1 愚者实机；victory，Ironclad，48 层；28 战斗、97 来源、7 购买 | 是 |
 | `v113.1-foolprobe-62003c-autoslay.log` | 2026-11-22 01:47 | 否 | 123 | 同一愚者局 AutoSlayer 操作日志 | 是 |
 | `v113.1-foolprobe-context-62999-stdout.log` | 2026-11-22 01:48 | 否 | 365 | 愚者上下文检查；18/18 能力、15/15 遗物 PASS | 是 |
+| `final-load-63001-stdout.log` | 2026-11-22 02:10 | 否 | 610 | 最终 1.6.0 DLL 加载；v1.6.0 初始化、34 条 hook、AutoSlayer 选择愚者；外部 60 秒超时终止 | 是 |
 | `v113.1-foolprobe-62003b-stdout.log` | 2026-11-22 01:40 | 否 | 779 | 首次成功加入 18 能力但未记录来源的愚者实机；保留作对照 | 否 |
 | `v113.1-foolprobe-62003-stdout.log` | 2026-11-22 01:33 | 否 | 662 | 首次愚者实机；SetUpCombat patch 未生效，能力未加入；保留失败记录 | 否 |
 

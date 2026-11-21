@@ -22,6 +22,7 @@
 
 ### Verified
 - v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings; final 1.6.0 DLL is 563,200 bytes, SHA-256 `c206f9dd00a30384f7142525a52d37024cb3c82072577e95104d11f54e44be9e`.
+- Final v1.6.0 DLL load: `Stats the Spire (Local) v1.6.0 initializing...`; `FoolContent 34 hooks installed, 0 skipped`; AutoSlayer selected `CHARACTER.FOOL` for seed 63001; log `8.TEST/1.6.0/final-load-63001-stdout.log`.
 - v0.113.1 standard AutoSlayer seed 62005: victory, Silent, Standard, act 3/3, floor 49; 29 combats, 31 combat files, 53 summary sources; log `8.TEST/1.6.0/v113.1-autoslay-62005-stdout.log`.
 - v0.113.1 Fool live probe seed 62003: victory, Ironclad, act 3/3, floor 48; 28 combats, 97 summary sources, 7 shop purchases; 15 Fool relics added and 18 Fool powers applied; log `8.TEST/1.6.0/v113.1-foolprobe-62003c-stdout.log`.
 - v0.113.1 Fool hook context check: 18/18 powers and 15/15 relics PASS; log `8.TEST/1.6.0/v113.1-foolprobe-context-62999-stdout.log`.
