@@ -2,6 +2,30 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [Unreleased]
+
+### Added
+- `AttributionGapPatch` for confirmed 1.6.0 relic/power source gaps: Belt Buckle, Ruined Helmet, Snecko Skull, Unsettling Lamp, Tungsten Rod, Beating Remnant, Brilliant Scarf, Bookmark.
+- `FoolContentPatch` with 34 runtime-optional hooks for 16 Fool power cards, 15 Fool relics, God Byrd, and Wuppy's Loyalty.
+- Deterministic `AttributionProbe` for first-heal placement, forge-log consumption, upgrade-block split, and pending-draw cleanup.
+
+### Fixed
+- Real damage guard uses async-local depth and binds the v0.113.1 `DamageTargetData` root overload; v0.111.1 keeps the 7-parameter fallback.
+- Non-drawing relic/power hooks no longer leave a pending draw source; pending draw is cleared at hook/turn/combat boundaries.
+- Block pool is cleared only when block is actually zero, preserving Barricade/Blur/Self-Forming Clay block.
+- Pantograph and Bath Robes heal hooks run with relic context; post-victory Burning Blood/Black Blood/Meat on the Bone heals land in the just-ended combat.
+- Osty death is observed through the collection `Kill` overload once.
+- Defeat flushes the final combat before run finalization; victory and defeat both save and display through `CombatManager.CombatEnded`.
+- Energy/star gains are recorded from the actual `PlayerCombatState` change with local-player filtering.
+- No-star-cost cards clamp canonical stars to zero; auto-played cards do not claim cost savings.
+- Sovereign Blade forge sub-bars consume their forge log; generated-card origins use the live power/relic/potion context; upgrade block no longer double counts.
+
+### Verified
+- v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings.
+- v0.111.1 `AttributionProbe`: 4/4 PASS (`RESULT PASS`) on final code, log `8.TEST/1.6.0/attribution-probe-v111-6-stdout.log`; final rerun `v111-6` exited 0.
+- v0.111.1 mod initialization: `RealDamageGuard patched v0.111 7-param`; `OstyDeathPatch patched collection Kill(Creature, bool)`; all 34 Fool targets skipped on the older game.
+- Not verified: v0.113.1 full AutoSlayer, Fool target attribution in a live run, and the remaining P1 probes.
+
 ## [1.5.2] - 2026-11-21
 
 ### Added

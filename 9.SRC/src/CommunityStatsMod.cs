@@ -85,6 +85,7 @@ public static class CommunityStatsMod
         TryInstall("killing blow", () => KillingBlowPatcher.PatchAll(_harmony));
         TryInstall("damage guard", () => RealDamageGuardPatch.Patch(_harmony));
         TryInstall("card generation", () => CardGenerationOriginPatch.Patch(_harmony));
+        TryInstall("fool content hooks", () => FoolContentPatch.PatchAll(_harmony));
 
         // Harmony is now installed. The intent cache model lookup can safely
         // run and can be retried from CombatLifecyclePatch if ModelDb is late.

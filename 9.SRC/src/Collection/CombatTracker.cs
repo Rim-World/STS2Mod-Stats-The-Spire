@@ -148,6 +148,10 @@ public sealed class CombatTracker
 
     // H3: Deferred Osty death negative defense — only applied when enemy next attacks player
     private (string sourceId, string sourceType, int amount)? _pendingOstyDeathDefense;
+    // Idempotency guard: a single Osty death can be observed by both the
+    // single-creature and collection Kill overloads (and duplicated by nested
+    // prefixes). Reset on combat start and whenever Osty is summoned again.
+    private bool _ostyDeathHandled;
 
     // Forge tracking: each ForgeCmd.Forge call records (sourceId, sourceType, amount).
     // When SovereignBlade plays, these are written as sub-bar entries under SOVEREIGN_BLADE.
@@ -176,10 +180,23 @@ public sealed class CombatTracker
     private bool _liveSaveDirty;
     private bool _liveSavePending;
     private bool _liveCombatInProgress;
+    // A single combat can reach the flush path more than once (victory fires
+    // CombatRoom.OnCombatEnded and later CombatManager.CombatEnded; defeat only
+    // fires the latter). Flush and display exactly once, and keep the flag true
+    // across the whole post-combat heal window so AfterCombatVictory healing
+    // still lands on the combat that just ended.
+    private bool _combatEndHandled;
 
     public IReadOnlyDictionary<string, ContributionAccum>? LastCombatData => _lastCombatData;
     public string LastEncounterId => _lastEncounterId;
     public string? CurrentEncounterId => string.IsNullOrEmpty(_encounterId) ? null : _encounterId;
+
+    /// <summary>
+    /// True from OnCombatStart until OnCombatEnd flushes the combat. Unlike
+    /// CombatManager.IsInProgress this stays true during AfterCombatVictory,
+    /// where post-combat relic heals are still part of the just-ended fight.
+    /// </summary>
+    public bool LiveCombatInProgress => _liveCombatInProgress;
 
     // Public DPS accessors (PRD 3.7)
     public int TurnCount => _turnCount;
@@ -195,7 +212,9 @@ public sealed class CombatTracker
         // Coalesce live persistence. The actual snapshot is built at flush
         // time, so the file always contains the newest state and one busy
         // card-play sequence does not write dozens of JSON files.
-        _liveCombatInProgress = true;
+        // Once a combat is flushed, a late UI refresh must not make the tracker
+        // look in-combat again (that would misroute post-combat heals).
+        if (!_combatEndHandled) _liveCombatInProgress = true;
         _liveSaveDirty = true;
         ScheduleLiveSave();
 
@@ -326,6 +345,7 @@ public sealed class CombatTracker
         _playerDied = false;
         _floor = floor;
         _pendingOstyDeathDefense = null;
+        _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
         _pendingUpgradeBlockDelta = 0;
         _pendingUpgradeSourceId = null;
@@ -335,12 +355,19 @@ public sealed class CombatTracker
         _forgeLog.Clear();
         _liveSaveDirty = false;
         _liveCombatInProgress = true;
+        _combatEndHandled = false;
+        ClearPendingDrawSource();
         ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
     }
 
     public void OnCombatEnd()
     {
+        // Victory and defeat can both reach this method; only the first call
+        // owns the snapshot, aggregator flush, and live-save teardown.
+        if (_combatEndHandled) return;
+        _combatEndHandled = true;
+
         // Snapshot for UI
         _lastCombatData = new Dictionary<string, ContributionAccum>(_currentCombat);
         _lastEncounterId = _encounterId;
@@ -352,6 +379,7 @@ public sealed class CombatTracker
             _currentCombat);
 
         _currentCombat.Clear();
+        ClearPendingDrawSource();
         ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
         _liveCombatInProgress = false;
@@ -440,6 +468,14 @@ public sealed class CombatTracker
             _activePowerSourceId = source.SourceId;
             _activePowerSourceType = source.SourceType;
         }
+        else
+        {
+            // An unresolved power must not inherit the previous power's
+            // source; otherwise a hook on a power applied by an untracked
+            // path credits whoever happened to fire last.
+            _activePowerSourceId = null;
+            _activePowerSourceType = null;
+        }
     }
 
     /// <summary>
@@ -484,6 +520,7 @@ public sealed class CombatTracker
         _pendingDrawSourceType = null;
         _pendingDrawRemainingAL.Value = null;
         _pendingOstyDeathDefense = null;
+        _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
         _pendingUpgradeBlockDelta = 0;
         _pendingUpgradeSourceId = null;
@@ -504,6 +541,9 @@ public sealed class CombatTracker
         // A trigger that never produced a power application must not survive
         // into the next turn and steal a different draw's attribution.
         ClearPendingPowerSource();
+        // Pending draw sources are one-shot: a hook that did not actually draw
+        // must not poison the next hand draw or the next non-hand draw.
+        ClearPendingDrawSource();
     }
 
     // ── Resolve Source ───────────────────────────────────────
@@ -1009,19 +1049,31 @@ public sealed class CombatTracker
             }
 
             int baseAmount = Math.Max(0, amount - modifierTotal);
-            if (baseAmount > 0 || modifierTotal > 0)
-                ContributionMap.Instance.AddBlock(sourceId, sourceType, baseAmount, modifierList);
 
             // Per-hit upgrade block delta split (C2) — credits immediately since
             // upgrade delta is a static property of the card, not a consumption-
             // dependent contribution.
             // Fix 6: attribute to the UPGRADE SOURCE (e.g. ARMAMENTS), not the
             // triggering card being played.
+            // H10/P0: the upgrade delta must not also sit in the card's base
+            // block chunk, otherwise one point of block is counted twice (once
+            // when the chunk is consumed as EffectiveBlock, once as UpgradeBlock).
+            int upgSplit = 0;
+            string upgSrcId = sourceId;
+            string upgSrcType = sourceType;
             if (_pendingUpgradeBlockDelta > 0 && baseAmount > 0)
             {
-                int upgSplit = Math.Min(_pendingUpgradeBlockDelta, baseAmount);
-                string upgSrcId = _pendingUpgradeSourceId ?? sourceId;
-                string upgSrcType = _pendingUpgradeSourceType ?? sourceType;
+                upgSplit = Math.Min(_pendingUpgradeBlockDelta, baseAmount);
+                upgSrcId = _pendingUpgradeSourceId ?? sourceId;
+                upgSrcType = _pendingUpgradeSourceType ?? sourceType;
+            }
+
+            int poolBaseAmount = baseAmount - upgSplit;
+            if (poolBaseAmount > 0 || modifierTotal > 0)
+                ContributionMap.Instance.AddBlock(sourceId, sourceType, poolBaseAmount, modifierList);
+
+            if (upgSplit > 0)
+            {
                 // Fix D: route upgrade block to upgrader's origin bucket.
                 GetOrCreate(upgSrcId, upgSrcType, originOverride: _pendingUpgradeSourceOrigin).UpgradeBlock += upgSplit;
             }
@@ -1157,10 +1209,11 @@ public sealed class CombatTracker
 
     // ── Card Draw ───────────────────────────────────────────
 
-    // Pending power/relic draw attribution: set by async power/relic hooks
-    // (like DarkEmbrace, CentennialPuzzle) whose Harmony postfix fires before the
-    // draw completes. The prefix records the intended source here; OnCardDrawn checks
-    // it first. Backed by AsyncLocal so the value survives the first `await` point.
+    // Pending draw attribution override. Contexts that cannot rely on the
+    // AsyncLocal active source across an async boundary may set a one-shot
+    // source here; OnCardDrawn consumes it before ResolveSource. Every combat,
+    // turn, and hook-context boundary clears it (see ClearPendingDrawSource
+    // callers) so a hook that did not draw cannot poison a later draw.
     private string? _pendingDrawSourceId
     {
         get => _pendingDrawSourceIdAL.Value;
@@ -1284,9 +1337,18 @@ public sealed class CombatTracker
     };
 
     public void AttributeCostSavings(int cardHash, int canonicalEnergy, int energySpent,
-        int canonicalStars, int starsSpent, bool costsX)
+        int canonicalStars, int starsSpent, bool costsX, bool isAutoPlay)
     {
         if (costsX) return; // X-cost cards excluded
+
+        // Auto-played cards are not paid by the player, so no cost reduction
+        // contributed to their play. Drop the pending tag instead of leaving it
+        // to poison a later play of the same card instance.
+        if (isAutoPlay)
+        {
+            ContributionMap.Instance.ClearCostReductionSourceTag(cardHash);
+            return;
+        }
 
         int energySaved = canonicalEnergy - energySpent;
         int starsSaved = canonicalStars - starsSpent;
@@ -1303,6 +1365,20 @@ public sealed class CombatTracker
         if (tag == null) return;
 
         var (sourceId, sourceType) = tag.Value;
+
+        // Generated-and-free detection at consumption time. Potions call
+        // SetToFreeThisTurn BEFORE AddGeneratedCardToCombat, so the origin may
+        // not exist yet when the tag is written. Re-check here so a
+        // potion-generated free card still follows the sub-bar path instead of
+        // being credited as an energy saving.
+        var origin = ContributionMap.Instance.GetCardOrigin(cardHash);
+        if (origin != null && origin.Value.originId == sourceId)
+        {
+            ContributionMap.Instance.MarkCardAsGeneratedAndFree(cardHash);
+            ContributionMap.Instance.ClearCostReductionSourceTag(cardHash);
+            return;
+        }
+
         bool allowNegative = _negativeSavingsAllowedSources.Contains(sourceId);
 
         // Default: only credit positive savings.
@@ -1416,6 +1492,8 @@ public sealed class CombatTracker
 
     public void OnOstySummoned(string sourceId, string sourceType, int hpAmount)
     {
+        // A fresh summon starts a fresh life: allow the next death to be recorded.
+        _ostyDeathHandled = false;
         ContributionMap.Instance.PushOstyHp(sourceId, sourceType, hpAmount);
     }
 
@@ -1424,9 +1502,13 @@ public sealed class CombatTracker
     /// Subtracts remaining Osty HP from the killer card's defense contribution
     /// (killing Osty destroys its HP pool, removing that defensive resource).
     /// Then clears the LIFO stack.
+    /// Idempotent: nested/duplicated Kill prefixes for the same death are ignored.
     /// </summary>
     public void OnOstyKilled()
     {
+        if (_ostyDeathHandled) return;
+        _ostyDeathHandled = true;
+
         int remainingHp = ContributionMap.Instance.GetRemainingOstyHpTotal();
 
         if (remainingHp > 0 && _activeCardId != null)
@@ -1551,6 +1633,11 @@ public sealed class CombatTracker
                 accum.DirectDamage += totalAmt;
                 accum.TimesPlayed += count;
             }
+
+            // The forge log describes the forges performed since the previous
+            // Sovereign Blade play. Consume it so replaying the blade (Sword
+            // Sage / Replay) does not add the same forge sources twice.
+            _forgeLog.Clear();
         }
 
         // Base damage entry — SovereignBlade starts at 10. Uses += so
@@ -1566,9 +1653,10 @@ public sealed class CombatTracker
 
     /// <summary>
     /// Called when player is healed. Attributes to active card/relic/potion/power source.
-    /// Healing can occur both during combat (e.g. Reaper card) and after combat ends
-    /// (e.g. BurningBlood.AfterCombatVictory fires AFTER OnCombatEnded).
-    /// When combat data has been flushed, writes directly to RunContributionAggregator.
+    /// Healing can occur both during combat (e.g. Reaper card) and in the
+    /// AfterCombatVictory window (Burning Blood / Black Blood), which runs
+    /// before CombatManager.CombatEnded and therefore still belongs to the
+    /// combat being flushed.
     /// fallbackId/fallbackType: used when no active context (rest site, event, merchant).
     /// </summary>
     public void OnHealingReceived(int amount, string? fallbackId = null, string? fallbackType = null)
@@ -1583,14 +1671,17 @@ public sealed class CombatTracker
             sourceType = fallbackType ?? "other";
         }
 
-        if (_currentCombat.Count > 0)
+        if (_liveCombatInProgress)
         {
-            // During combat — write to per-combat data
+            // Combat in progress, including the post-victory window before
+            // CombatManager.CombatEnded. Writing by _currentCombat.Count would
+            // drop the first heal of a combat and the Burning Blood / Black
+            // Blood heals that land before the combat is flushed.
             GetOrCreate(sourceId, sourceType).HpHealed += amount;
         }
         else
         {
-            // Outside combat (e.g. AfterCombatVictory, rest site, events)
+            // Outside combat (rest site, events, merchant, floor regen)
             // Write directly to run-level aggregator
             RunContributionAggregator.Instance.AddHealing(sourceId, sourceType, amount);
         }

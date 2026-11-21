@@ -14,10 +14,27 @@ namespace CommunityStats.Patches;
 [HarmonyPatch]
 public static class CombatLifecyclePatch
 {
+    // A combat result is saved once and displayed once. On defeat the game
+    // finalizes the run (RunManager.OnEnded -> CreateRunHistoryEntry) before
+    // CombatManager.CombatEnded, so the flush must happen at the LoseCombat
+    // signal; the display still happens at CombatEnded.
+    private static bool _combatResultSaved;
+    private static bool _combatResultShown;
+
     [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.SetUpCombat))]
     [HarmonyPostfix]
     public static void AfterSetUpCombat(CombatManager __instance, CombatStateType state)
     {
+        _combatResultSaved = false;
+        _combatResultShown = false;
+
+        // Subscribe once per CombatManager instance. Both victory and defeat
+        // fire CombatEnded exactly once; victory runs AfterCombatVictory
+        // (Burning Blood / Black Blood / Meat on the Bone) first, so the flush
+        // in the event handler includes those heals. CombatRoom.OnCombatEnded
+        // only fires on victory and would miss the defeat path entirely.
+        SubscribeCombatEnded(__instance);
+
         Safe.Run(() =>
         {
             var encounter = state?.Encounter;
@@ -69,6 +86,9 @@ public static class CombatLifecyclePatch
     }
 
     // OnCombatEnded is a sync void method on CombatRoom — Postfix works correctly.
+    // CombatRoom.OnCombatEnded fires before AfterCombatVictory and never on a
+    // loss, so it must not flush the combat. Only clean up hover panels here;
+    // the save/display/flush lives in OnCombatManagerEnded below.
     [HarmonyPatch(typeof(CombatRoom), nameof(CombatRoom.OnCombatEnded))]
     [HarmonyPostfix]
     public static void AfterCombatEnded(CombatRoom __instance)
@@ -79,34 +99,101 @@ public static class CombatLifecyclePatch
             // Monsters that died while the mouse was hovering over them won't
             // fire OnUnfocus, so the panel stays orphaned on the scene root.
             IntentHoverPatch.ForceHideAll();
+        });
+    }
 
-            CombatTracker.Instance.OnCombatEnd();
+    private static void SubscribeCombatEnded(CombatManager manager)
+    {
+        try
+        {
+            // -= before += makes repeated combat setups idempotent.
+            manager.CombatEnded -= OnCombatManagerEnded;
+            manager.CombatEnded += OnCombatManagerEnded;
+        }
+        catch (Exception ex)
+        {
+            Safe.Warn($"[CombatLifecycle] CombatEnded subscribe failed: {ex.Message}");
+        }
+    }
 
-            // Persist this combat snapshot for future Run History replay (PRD §3.12).
-            var lastData = CombatTracker.Instance.LastCombatData;
-            Safe.Info($"[CombatLifecycle] AfterCombatEnded floor={RunDataCollector.CurrentFloor} lastCombatData.Count={lastData?.Count ?? 0}");
-            ContributionPersistence.SaveCombat(
-                RunDataCollector.CurrentFloor,
-                lastData);
-
-            // Show contribution panel after combat (respect feature toggle)
-            if (Config.ModConfig.Toggles.ContributionPanel)
-            {
-                ContributionPanel.ShowCombatResult(CombatTracker.Instance.LastCombatData);
-                Safe.Info("Combat ended, contribution panel shown");
-            }
+    /// <summary>
+    /// Single post-combat entry point for both victory and defeat.
+    /// OnCombatEnd/save/display are all idempotent, so nested or duplicate
+    /// signals cannot flush the same combat twice.
+    /// </summary>
+    private static void OnCombatManagerEnded(CombatRoom room)
+    {
+        Safe.Run(() =>
+        {
+            IntentHoverPatch.ForceHideAll();
+            SaveCombatResultOnce();
+            ShowCombatResultOnce();
         });
     }
 
     /// <summary>
+    /// Flush the current combat into the aggregator and persist its per-combat
+    /// snapshot. Called from CombatEnded, LoseCombat, and RunManager.OnEnded.
+    /// The run-end prefix is required on defeat: OnEnded calls
+    /// CreateRunHistoryEntry (which finalizes run totals from disk) before the
+    /// pending loss produces CombatEnded.
+    /// </summary>
+    private static void SaveCombatResultOnce()
+    {
+        if (_combatResultSaved) return;
+        if (!CombatTracker.Instance.LiveCombatInProgress
+            && CombatTracker.Instance.LastCombatData == null)
+            return;
+
+        _combatResultSaved = true;
+
+        if (CombatTracker.Instance.LiveCombatInProgress)
+            CombatTracker.Instance.OnCombatEnd();
+
+        // Persist this combat snapshot for future Run History replay (PRD §3.12).
+        var lastData = CombatTracker.Instance.LastCombatData;
+        Safe.Info($"[CombatLifecycle] combat result floor={RunDataCollector.CurrentFloor} lastCombatData.Count={lastData?.Count ?? 0}");
+        ContributionPersistence.SaveCombat(
+            RunDataCollector.CurrentFloor,
+            lastData);
+    }
+
+    private static void ShowCombatResultOnce()
+    {
+        if (_combatResultShown) return;
+        if (!Config.ModConfig.Toggles.ContributionPanel) return;
+        _combatResultShown = true;
+
+        ContributionPanel.ShowCombatResult(CombatTracker.Instance.LastCombatData);
+        Safe.Info("Combat ended, contribution panel shown");
+    }
+
+    /// <summary>
+    /// Safety net for run-end paths that never reach CombatEnded (defeat calls
+    /// OnEnded while the pending loss is still queued; abandoning mid-combat
+    /// also ends the run without a combat-end event). Observer only.
+    /// </summary>
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.OnEnded))]
+    [HarmonyPrefix]
+    public static void BeforeRunEnded()
+    {
+        Safe.Run(SaveCombatResultOnce);
+    }
+
+    /// <summary>
     /// Defeat requests loss from LoseCombat; the death screen can render
-    /// before CombatRoom.OnCombatEnded, so hide the hover panel here as well.
+    /// before CombatEnded, so hide the hover panel here as well and record
+    /// the player death before the pending-loss path flushes the combat.
+    /// The flush is also saved here because RunManager.OnEnded finalizes the
+    /// run immediately after this call.
     /// </summary>
     [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.LoseCombat))]
     [HarmonyPostfix]
     public static void AfterLoseCombat()
     {
         Safe.Run(IntentHoverPatch.ForceHideAll);
+        Safe.Run(() => CombatTracker.Instance.OnPlayerDied());
+        Safe.Run(SaveCombatResultOnce);
     }
 
     /// <summary>

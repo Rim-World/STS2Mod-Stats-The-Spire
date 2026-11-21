@@ -54,7 +54,26 @@
 3. 内容探针通过后执行双版本加载和完整跑局。
 4. 最后执行构建、版本、隐私和清理检查。
 
-## 5. 记录与清理
+## 6. 1.6.0 集成施工结果（2026-11-22 00:25）
+
+| 项目 | 结果 | 日志 |
+|---|---|---|
+| v0.111.1 Release 构建 | 0 错误、7 个既有警告 | `build-v111-integrated.log` |
+| v0.113.1 Release 构建 | 0 错误、7 个既有警告 | `build-v113-integrated.log` |
+| `AttributionProbe` 构建 | 0 错误、0 警告 | `build-attribution-probe.log` |
+| v0.111.1 定向探针（最终代码） | 首场治疗、锻造消费、升级格挡、待定抽牌 4/4 PASS | `attribution-probe-v111-6-stdout.log` |
+| v0.111.1 主 Mod 加载 | 初始化成功；`RealDamageGuard patched v0.111 7-param`；`OstyDeathPatch patched collection Kill(Creature, bool)`；34 条愚者目标全部跳过 | `attribution-probe-v111-6-stdout.log` |
+| v0.113.1 完整 AutoSlayer | 未验证（当前安装为 v0.111.1） | — |
+| 16 张能力牌/15 个遗物实机 | 未验证 | — |
+| 来源保存-恢复栈 | 未实现 | — |
+
+失败记录：
+
+- `attribution-probe-v111-2-stdout.log`：探针把 `FORGE:` 复合键当普通键，锻造项 0/4；修正探针后通过。
+- `attribution-probe-v111-stdout.log`：带 Ritsu/主 Mod 的首次无头运行在资源预加载阶段崩溃，探针未执行。
+- `attribution-probe-isolated-stdout.log`：隔离探针缺少主 DLL 依赖，`FileNotFoundException` 重复报错；该失败用于确认探针必须声明主 Mod 依赖。
+
+## 7. 记录与清理
 
 - 每次运行保存一个新的日志文件，不覆盖旧结果。
 - 测试日志放在 `8.TEST/1.6.0/`，文件登记到 `8.TEST/TEST.md`。

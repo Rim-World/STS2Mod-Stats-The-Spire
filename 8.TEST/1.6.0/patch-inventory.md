@@ -4,7 +4,7 @@
 - 基线版本：Mod 1.5.2
 - 源码提交：`79e3575`
 - 对照报告：`3.DOCS/021-R-战斗贡献补丁全面审计.md`
-- 状态：阶段 0 基线；新增目标均为「待施工」，不代表已绑定
+- 状态：1.6.0 集成施工后；新增目标已绑定，v0.111.1 愚者类型目标跳过
 
 ## 1. 当前基线计数
 
@@ -16,6 +16,7 @@
 | 属性补丁 | 76 | 021 报告 §2 |
 | 注册记录总数 | 361 | 021 报告 §2 |
 | 唯一目标数 | 343（不含条件式 342） | 021 报告 §2 |
+| 1.6.0 集成加载绑定 | 742 条注册记录 / 414 个唯一目标 | `8.TEST/1.6.0/attribution-probe-v111-3-stdout.log` |
 | v0.111.1 构建 | 0 错误、7 个既有警告 | `8.TEST/1.6.0/baseline-v111.log` |
 | v0.113.1 构建 | 0 错误、7 个既有警告 | `8.TEST/1.6.0/baseline-v113.log` |
 
@@ -23,11 +24,11 @@
 
 | 目标类/入口 | 目标方法或位置 | 版本 | 当前状态 | 对应任务 |
 |---|---|---|---|---|
-| `RealDamageGuardPatch` | `CreatureCmd.Damage` 根重载 | v0.111.1、v0.113.1 | 待施工 | T-10-01 |
+| `RealDamageGuardPatch` | `CreatureCmd.Damage` 根重载 | v0.111.1、v0.113.1 | 已实现；v0.111.1 绑 7 参数 | T-10-01 |
 | `CombatHistoryPatch` | `Hook.AfterBlockCleared` 与实际格挡清空条件 | v0.111.1、v0.113.1 | 待施工 | T-10-03 |
 | `CombatTracker` | 待定抽牌来源生产/清理 | v0.111.1、v0.113.1 | 待施工 | T-10-02 |
 | `Pantograph`、`BathRobes` | `BeforeCombatStart` | v0.111.1、v0.113.1 | 待施工 | T-10-04 |
-| `OstyDeathPatch` | `Kill` 3 参数与集合重载 | v0.111.1、v0.113.1 | 待施工 | T-10-05 |
+| `OstyDeathPatch` | `Kill` 集合重载 | v0.111.1、v0.113.1 | 已实现；v0.111.1 绑 `Kill(Creature, bool)` | T-10-05 |
 | `CombatLifecyclePatch` | `CombatManager.CombatEnded` | v0.111.1、v0.113.1 | 待施工 | T-10-06 |
 | `CombatHistoryPatch` | 实际能量/辉星到账 | v0.111.1、v0.113.1 | 待施工 | T-10-07 |
 | `CombatTracker` | `FlushForgeSubBars` 消费 | v0.111.1、v0.113.1 | 待施工 | T-10-08 |

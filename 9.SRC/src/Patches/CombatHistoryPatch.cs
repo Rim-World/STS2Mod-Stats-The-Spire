@@ -66,14 +66,17 @@ public static class CombatHistoryPatch
             if (card != null)
             {
                 int canonicalEnergy = card.EnergyCost.Canonical;
-                int canonicalStars = card.BaseStarCost;
+                // No-star-cost cards report CanonicalStarCost = -1. The actual
+                // StarsSpent is clamped to 0, so using the raw value would
+                // manufacture "-1 star" savings for Snecko-family sources.
+                int canonicalStars = Math.Max(0, card.BaseStarCost);
                 int energySpent = cardPlay.Resources.EnergySpent;
                 int starsSpent = cardPlay.Resources.StarsSpent;
                 bool costsX = card.EnergyCost.CostsX;
 
                 CombatTracker.Instance.AttributeCostSavings(
                     card.GetHashCode(), canonicalEnergy, energySpent,
-                    canonicalStars, starsSpent, costsX);
+                    canonicalStars, starsSpent, costsX, cardPlay.IsAutoPlay);
             }
         });
     }
@@ -95,13 +98,17 @@ public static class CombatHistoryPatch
     }
 
     // Sync block pool when block is naturally cleared at turn start.
-    // Without this, _blockPool retains stale entries from previous turns.
+    // Hook.AfterBlockCleared fires unconditionally after Creature.AfterTurnStart,
+    // even when Barricade / Blur / Self-Forming Clay prevented the clear. Only
+    // drop the pool when the creature's block is actually gone; otherwise the
+    // retained block must still absorb and be credited later.
     [HarmonyPatch(typeof(Hook), nameof(Hook.AfterBlockCleared))]
     [HarmonyPrefix]
     public static void BeforeBlockCleared(Creature creature)
     {
         Safe.Run(() =>
         {
+            if (creature == null || creature.Block > 0) return;
             if (IsLocalCreature(creature))
                 ContributionMap.Instance.ClearBlockPool();
         });
@@ -255,14 +262,6 @@ public static class CombatHistoryPatch
 /// </summary>
 public static class RelicHookContextPatcher
 {
-    // P2-3: Relics whose hook draws multiple cards in a single invocation.
-    // The pending draw source must remain sticky for N draws instead of being
-    // consumed on the first draw only. Maps relic ID → expected draw count.
-    private static readonly Dictionary<string, int> _relicMultiDrawCounts = new()
-    {
-        { "CENTENNIAL_PUZZLE", 3 }, // draws 3 cards when damaged
-    };
-
     public static void SetRelicContext(RelicModel __instance)
     {
         Safe.Run(() =>
@@ -272,22 +271,23 @@ public static class RelicHookContextPatcher
 
             var relicId = __instance.Id.Entry;
             CombatTracker.Instance.SetActiveRelic(relicId);
-            // Pending draw source for async relic hooks (CharonsAshes draws via GamePiece etc.)
-            if (_relicMultiDrawCounts.TryGetValue(relicId, out var nCount))
-            {
-                CombatTracker.Instance.SetPendingDrawSource(relicId, "relic", nCount);
-            }
-            else
-            {
-                CombatTracker.Instance.SetPendingDrawSource(relicId, "relic");
-            }
+            // Do NOT set a pending draw source here. Most relic hooks do not
+            // draw, and leaving a pending source behind made the next unrelated
+            // non-hand draw inherit this relic. Hooks that really draw execute
+            // inside this AsyncLocal relic context, so OnCardDrawn resolves the
+            // relic through ResolveSource without any pending state.
         });
     }
 
     public static void ClearRelicContext()
     {
-        Safe.Run(() => CombatTracker.Instance.ClearActiveRelic());
-        // DON'T clear pending draw source — consumed by OnCardDrawn
+        Safe.Run(() =>
+        {
+            CombatTracker.Instance.ClearActiveRelic();
+            // One-shot cleanup: a relic hook that did not draw must not leak
+            // its pending draw attribution into a later draw.
+            CombatTracker.Instance.ClearPendingDrawSource();
+        });
     }
 
     public static void PatchAll(Harmony harmony)
@@ -510,6 +510,13 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(Planisphere), "AfterRoomEntered", prefix, postfix);
         TryPatch(harmony, typeof(StoneCracker), "AfterRoomEntered", prefix, postfix);
         TryPatch(harmony, typeof(Pantograph), "AfterRoomEntered", prefix, postfix);
+        // Pantograph / BathRobes actually heal in BeforeCombatStart. The
+        // AfterRoomEntered hook only sets relic status, so the heal used to
+        // fall through to FLOOR_n_REGEN. BathRobes is v0.113-only, so resolve
+        // it by name to keep the single DLL loadable on v0.111.
+        TryPatch(harmony, typeof(Pantograph), "BeforeCombatStart", prefix, postfix);
+        TryPatchTypeName(harmony, "MegaCrit.Sts2.Core.Models.Relics.BathRobes",
+            "BeforeCombatStart", prefix, postfix);
         TryPatch(harmony, typeof(SwordOfJade), "AfterRoomEntered", prefix, postfix);
         // PumpkinCandle does not override AfterRoomEntered on v0.113.1.
         TryPatch(harmony, typeof(PumpkinCandle), "AfterObtained", prefix, postfix);
@@ -653,6 +660,22 @@ public static class RelicHookContextPatcher
             Safe.Warn($"[RelicPatch] Failed {type.Name}.{methodName}: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Patch a relic type that only exists in one game version. The type name
+    /// is resolved at runtime so the v0.111 build never references v0.113 types.
+    /// </summary>
+    private static void TryPatchTypeName(Harmony harmony, string typeName,
+        string methodName, HarmonyMethod prefix, HarmonyMethod postfix)
+    {
+        var type = AccessTools.TypeByName(typeName);
+        if (type == null)
+        {
+            Safe.Info($"[RelicPatch] skipped {typeName}.{methodName} (type not present)");
+            return;
+        }
+        TryPatch(harmony, type, methodName, prefix, postfix);
+    }
 }
 
 /// <summary>
@@ -663,16 +686,6 @@ public static class RelicHookContextPatcher
 /// </summary>
 public static class PowerHookContextPatcher
 {
-    // P2-5: Powers whose hook draws multiple cards in a single invocation.
-    // The pending draw source is made sticky for N draws so powers like Pagestorm
-    // (draws `Amount` cards when ethereal card drawn) fully attribute all extra
-    // draws, not just the first. Count is resolved from PowerModel.Amount at
-    // hook-fire time so upgraded/scaled powers attribute the correct number.
-    private static readonly HashSet<string> _powerMultiDrawIds = new()
-    {
-        "PAGESTORM_POWER",
-    };
-
     public static void SetPowerContext(PowerModel __instance)
     {
         Safe.Run(() =>
@@ -722,23 +735,10 @@ public static class PowerHookContextPatcher
                 CombatTracker.Instance.SetActivePowerSource(powerId);
             }
 
-            // Also set pending draw/block/damage source for async power hooks.
-            // These persist through async await because they're AsyncLocal-backed.
-            // Consumed by OnCardDrawn/OnBlockGained after use.
-            if (source != null)
-            {
-                if (_powerMultiDrawIds.Contains(powerId))
-                {
-                    int count = Math.Max(1, (int)__instance.Amount);
-                    CombatTracker.Instance.SetPendingDrawSource(
-                        source.SourceId, source.SourceType, count);
-                }
-                else
-                {
-                    CombatTracker.Instance.SetPendingDrawSource(
-                        source.SourceId, source.SourceType);
-                }
-            }
+            // Do NOT set a pending draw source here. Most power hooks do not
+            // draw, and the stale source leaked onto the next unrelated draw.
+            // A hook that really draws executes inside this AsyncLocal power
+            // context, so OnCardDrawn resolves it through ResolveSource.
         });
     }
 
@@ -747,9 +747,9 @@ public static class PowerHookContextPatcher
         Safe.Run(() =>
         {
             CombatTracker.Instance.ClearActivePowerSource();
-            // DON'T clear pending draw source — it persists through async and is
-            // consumed by OnCardDrawn. If no draw happens, ForceResetAllContext
-            // cleans it up between tests.
+            // A power trigger that ends without drawing must not leave a
+            // pending draw source behind for the next draw.
+            CombatTracker.Instance.ClearPendingDrawSource();
         });
     }
 
@@ -883,6 +883,21 @@ public static class PowerHookContextPatcher
 
         // ── Thorns ──
         TryPatch(harmony, typeof(ThornsPower), "BeforeDamageReceived", prefix, postfix);
+
+        // ── Block retention / block-clear powers (B2 audit gaps) ──
+        // Self-Forming Clay converts cleared block into fresh block; Coolant
+        // grants block at side-turn start. Setting the power source here keeps
+        // that block attributed to the card/relic that applied the power.
+        TryPatch(harmony, typeof(SelfFormingClayPower), "AfterBlockCleared", prefix, postfix);
+        TryPatch(harmony, typeof(CoolantPower), "AfterSideTurnStart", prefix, postfix);
+        // Blur prevents the block clear (AfterPreventingBlockClear) and
+        // decrements itself at turn start. Neither produces a contribution,
+        // but the context keeps ShouldClearBlock/after-hook bookkeeping
+        // consistent with the other block powers.
+        TryPatch(harmony, typeof(BlurPower), "AfterPreventingBlockClear", prefix, postfix);
+        TryPatch(harmony, typeof(BlurPower), "AfterSideTurnStart", prefix, postfix);
+        // Barricade is applied as a power and never clears block.
+        TryPatch(harmony, typeof(BarricadePower), "AfterApplied", prefix, postfix);
 
         // ── Healing powers ──
         TryPatch(harmony, typeof(RegenPower), "BeforeSideTurnEndEarly", prefix, postfix);
@@ -1175,30 +1190,63 @@ public static class DamageModifierPatch
 // ═══════════════════════════════════════════════════════════
 
 /// <summary>
-/// Thread-static guard that is true only while we are inside a
-/// CreatureCmd.Damage call (real combat damage). Hook.ModifyDamage
-/// is also called during intent-display UI updates and AI evaluation;
-/// those calls happen OUTSIDE CreatureCmd.Damage and must not produce
-/// contribution entries.
+/// Async-local guard that is true only while we are inside a real
+/// CreatureCmd.Damage call. Hook.ModifyDamage is also called during
+/// intent-display UI updates and AI evaluation; those calls happen OUTSIDE
+/// CreatureCmd.Damage and must not produce contribution entries.
+/// A depth counter (not a bool) keeps nested Damage calls — e.g. Thorns or
+/// Juggernaut firing while resolving another hit — inside the window.
+/// AsyncLocal (not ThreadStatic) is required because Damage is async and its
+/// continuation may resume on a different thread.
 /// </summary>
 public static class RealDamageGuardPatch
 {
-    [ThreadStatic]
-    public static bool IsInsideCreatureDamage;
+    private static readonly AsyncLocal<int> _damageDepth = new();
+
+    public static bool IsInsideCreatureDamage => _damageDepth.Value > 0;
 
     /// <summary>
-    /// v0.111 has a 7-parameter root overload; v0.113 added an 8th
-    /// ModifyDamageHookType parameter. Prefer the 8-parameter overload when
-    /// present, otherwise patch the 7-parameter overload. Attribute patching
-    /// cannot express this fallback: a missing 8-parameter target aborts the
-    /// whole class and leaves the guard inactive.
+    /// v0.113 routes attacks through the 8-parameter
+    /// <c>Damage(PlayerChoiceContext, IEnumerable&lt;DamageTargetData&gt;, ...)</c>
+    /// root overload; v0.111 only has the 7-parameter
+    /// <c>IEnumerable&lt;Creature&gt;</c> overload. Patch every overload that
+    /// exists at runtime. When both a wrapper and the root are available, both
+    /// are wrapped; the depth counter makes the nested window harmless.
+    /// Attribute patching cannot express this fallback, so install manually.
     /// </summary>
     public static void Patch(Harmony harmony)
     {
         var prefix = new HarmonyMethod(AccessTools.Method(typeof(RealDamageGuardPatch), nameof(BeforeDamage)));
         var postfix = new HarmonyMethod(AccessTools.Method(typeof(RealDamageGuardPatch), nameof(AfterDamage)));
 
-        var target = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
+        int patched = 0;
+
+        // v0.113 root: IEnumerable<DamageTargetData>. Resolve the element type
+        // by name because it does not exist in the v0.111 assembly.
+        var damageTargetDataType = AccessTools.TypeByName(
+            "MegaCrit.Sts2.Core.Entities.Creatures.DamageTargetData");
+        if (damageTargetDataType != null)
+        {
+            var root = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
+            {
+                typeof(PlayerChoiceContext),
+                typeof(IEnumerable<>).MakeGenericType(damageTargetDataType),
+                typeof(decimal),
+                typeof(ValueProp),
+                typeof(Creature),
+                typeof(CardModel),
+                typeof(CardPlay),
+                typeof(ModifyDamageHookType),
+            });
+            if (root != null)
+            {
+                TryPatchMethod(harmony, root, prefix, postfix, "v0.113 root (DamageTargetData)");
+                patched++;
+            }
+        }
+
+        // v0.111 fallback: 7-parameter IEnumerable<Creature>.
+        var legacy = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
         {
             typeof(PlayerChoiceContext),
             typeof(IEnumerable<Creature>),
@@ -1207,37 +1255,39 @@ public static class RealDamageGuardPatch
             typeof(Creature),
             typeof(CardModel),
             typeof(CardPlay),
-            typeof(ModifyDamageHookType),
         });
-
-        string signature = "8-param";
-        if (target == null)
+        if (legacy != null)
         {
-            signature = "7-param";
-            target = AccessTools.Method(typeof(CreatureCmd), "Damage", new Type[]
-            {
-                typeof(PlayerChoiceContext),
-                typeof(IEnumerable<Creature>),
-                typeof(decimal),
-                typeof(ValueProp),
-                typeof(Creature),
-                typeof(CardModel),
-                typeof(CardPlay),
-            });
+            TryPatchMethod(harmony, legacy, prefix, postfix, "v0.111 7-param");
+            patched++;
         }
 
-        if (target == null)
-        {
+        if (patched == 0)
             Safe.Warn("[RealDamageGuard] no matching CreatureCmd.Damage overload");
-            return;
-        }
-
-        harmony.Patch(target, prefix: prefix, postfix: postfix);
-        Safe.Info($"[RealDamageGuard] patched {signature} CreatureCmd.Damage");
     }
 
-    private static void BeforeDamage() => IsInsideCreatureDamage = true;
-    private static void AfterDamage() => IsInsideCreatureDamage = false;
+    private static void TryPatchMethod(Harmony harmony, MethodBase target,
+        HarmonyMethod prefix, HarmonyMethod postfix, string label)
+    {
+        try
+        {
+            harmony.Patch(target, prefix: prefix, postfix: postfix);
+            Safe.Info($"[RealDamageGuard] patched {label} CreatureCmd.Damage");
+        }
+        catch (Exception ex)
+        {
+            Safe.Warn($"[RealDamageGuard] failed to patch {label}: {ex.Message}");
+        }
+    }
+
+    private static void BeforeDamage()
+        => _damageDepth.Value = _damageDepth.Value + 1;
+
+    private static void AfterDamage()
+    {
+        int depth = _damageDepth.Value;
+        if (depth > 0) _damageDepth.Value = depth - 1;
+    }
 }
 
 [HarmonyPatch]
@@ -1567,19 +1617,33 @@ public static class BlockModifierPatch
 
 // ═══════════════════════════════════════════════════════════
 // Module C: Energy gain tracking
+// Records EnergyGained when energy actually lands in the local
+// player's combat pool (PlayerCombatState.GainEnergy).
 // ═══════════════════════════════════════════════════════════
 
 [HarmonyPatch]
 public static class EnergyGainPatch
 {
-    [HarmonyPatch(typeof(PlayerCmd), nameof(PlayerCmd.GainEnergy))]
+    // PlayerCombatState keeps its owner in a private readonly field; there is
+    // no public accessor. Resolve once and read per call.
+    private static readonly FieldInfo? PlayerField =
+        AccessTools.Field(typeof(PlayerCombatState), "_player");
+
+    // Record the amount that actually reached the player's energy pool.
+    // PlayerCmd.GainEnergy is the request path (it runs ModifyEnergyGain and
+    // async hooks before applying); patching it credited the requested value
+    // even when the effect was skipped or clamped, and double-counted when
+    // both the command and the state setter changed energy.
+    [HarmonyPatch(typeof(PlayerCombatState), nameof(PlayerCombatState.GainEnergy))]
     [HarmonyPostfix]
-    public static void AfterGainEnergy(decimal amount)
+    public static void AfterGainEnergy(PlayerCombatState __instance, decimal amount)
     {
         Safe.Run(() =>
         {
-            if (amount > 0)
-                CombatTracker.Instance.OnEnergyGained((int)amount);
+            if (amount <= 0) return;
+            if (PlayerField?.GetValue(__instance) is not Player owner) return;
+            if (!CombatHistoryPatch.IsLocalPlayer(owner)) return;
+            CombatTracker.Instance.OnEnergyGained((int)amount);
         });
     }
 }
@@ -1714,17 +1778,30 @@ public static class CardUpgradeTrackerPatch
 
 // ═══════════════════════════════════════════════════════════
 // Stars gained tracking
-// Patches PlayerCmd.GainStars to record StarsContribution.
+// Records StarsContribution when stars actually land in the
+// local player's combat pool (PlayerCombatState.GainStars).
 // ═══════════════════════════════════════════════════════════
 
 [HarmonyPatch]
 public static class StarsGainedPatch
 {
-    [HarmonyPatch(typeof(PlayerCmd), nameof(PlayerCmd.GainStars))]
+    private static readonly FieldInfo? PlayerField =
+        AccessTools.Field(typeof(PlayerCombatState), "_player");
+
+    // Record stars at the point they are added to the player's pool, not at
+    // the PlayerCmd request. This keeps the value identical to what the game
+    // actually granted and lets us filter non-local players.
+    [HarmonyPatch(typeof(PlayerCombatState), nameof(PlayerCombatState.GainStars))]
     [HarmonyPostfix]
-    public static void AfterGainStars(decimal amount)
+    public static void AfterGainStars(PlayerCombatState __instance, decimal amount)
     {
-        Safe.Run(() => CombatTracker.Instance.OnStarsGained((int)amount));
+        Safe.Run(() =>
+        {
+            if (amount <= 0) return;
+            if (PlayerField?.GetValue(__instance) is not Player owner) return;
+            if (!CombatHistoryPatch.IsLocalPlayer(owner)) return;
+            CombatTracker.Instance.OnStarsGained((int)amount);
+        });
     }
 }
 
@@ -1868,7 +1945,8 @@ public static class HealingPatch
         __state = (0, 0);
         try
         {
-            if (creature != null && creature.IsPlayer)
+            if (creature != null && creature.IsPlayer
+                && CombatHistoryPatch.IsLocalPlayer(creature.Player))
             {
                 __state = (creature.GetHashCode(), creature.CurrentHp);
             }
@@ -1884,14 +1962,18 @@ public static class HealingPatch
         Safe.Run(() =>
         {
             if (creature == null || !creature.IsPlayer) return;
+            if (!CombatHistoryPatch.IsLocalPlayer(creature.Player)) return;
             if (__state.hash != creature.GetHashCode()) return;
 
             // NEW-3: Skip if this heal was triggered internally by GainMaxHp
             // (MaxHpGainPatch already recorded it as HpHealed)
             if (ContributionMap.Instance.CheckAndClearGainMaxHpFlag()) return;
 
-            // Skip initial HP setup (character created with 0 HP then healed to full)
-            if (__state.hpBefore <= 0) return;
+            // Character creation starts at 0 HP and heals to full outside
+            // combat. That setup heal is not a contribution. A heal that
+            // starts from 0 HP inside a live combat is a revive and must be
+            // recorded (BoneRepairKnife / revive-before-combat-end paths).
+            if (__state.hpBefore <= 0 && !CombatTracker.Instance.LiveCombatInProgress) return;
 
             int actualHealed = (int)(creature.CurrentHp - __state.hpBefore);
             if (actualHealed <= 0) return;
@@ -2380,7 +2462,8 @@ public static class MaxHpGainPatch
         __state = 0;
         try
         {
-            if (creature != null && creature.IsPlayer && amount > 0m)
+            if (creature != null && creature.IsPlayer && amount > 0m
+                && CombatHistoryPatch.IsLocalPlayer(creature.Player))
             {
                 __state = creature.MaxHp;
                 // Flag tells HealingPatch to skip the internal Heal from GainMaxHp
@@ -2398,6 +2481,7 @@ public static class MaxHpGainPatch
         Safe.Run(() =>
         {
             if (creature == null || !creature.IsPlayer || __state == 0) return;
+            if (!CombatHistoryPatch.IsLocalPlayer(creature.Player)) return;
 
             int actualGain = creature.MaxHp - __state;
             if (actualGain <= 0)
@@ -2418,18 +2502,31 @@ public static class MaxHpGainPatch
                 fallbackId = tracker.ActiveRelicId;
                 fallbackType = "relic";
             }
+            else if (tracker.ActiveCardId != null)
+            {
+                fallbackId = tracker.ActiveCardId;
+                fallbackType = "card";
+            }
+            else if (tracker.ActivePotionId != null)
+            {
+                fallbackId = tracker.ActivePotionId;
+                fallbackType = "potion";
+            }
             else
             {
                 var room = creature.Player?.RunState?.CurrentRoom;
-                if (room is EventRoom)
+                if (room is EventRoom eventRoom)
                 {
-                    fallbackId = "EVENT";
+                    // Keep per-event distinction instead of collapsing every
+                    // event max-HP gain into a single EVENT row.
+                    var eventId = eventRoom.CanonicalEvent?.Id.Entry;
+                    fallbackId = !string.IsNullOrEmpty(eventId) ? eventId : "EVENT_UNKNOWN";
                     fallbackType = "event";
                 }
                 else if (room is RestSiteRoom)
                 {
                     fallbackId = "REST_SITE";
-                    fallbackType = "rest_site";
+                    fallbackType = "rest";
                 }
             }
 
@@ -3021,23 +3118,41 @@ public static class CardGenerationOriginPatch
 
     private static void RecordCardOriginInternal(CardModel card)
     {
-        var activeCard = CombatTracker.Instance.ActiveCardId;
-        if (activeCard != null)
+        // Use the live context directly. Looking the source up by powerId in
+        // the global _powerSources map dropped enemy/self power sources and
+        // resolved the wrong entry when several cards had applied the same
+        // power. Priority matches ResolveSource: power > relic > potion > card.
+        var tracker = CombatTracker.Instance;
+
+        if (tracker.ActivePowerSourceId != null)
         {
             CombatTracker.Instance.RecordCardOrigin(
-                card.GetHashCode(), activeCard, "card");
+                card.GetHashCode(), tracker.ActivePowerSourceId,
+                tracker.ActivePowerSourceType ?? "power");
             return;
         }
 
-        var powerSourceId = CombatTracker.Instance.ActivePowerSourceId;
-        if (powerSourceId != null)
+        if (tracker.ActiveRelicId != null)
         {
-            var source = ContributionMap.Instance.GetPowerSource(powerSourceId);
-            if (source != null)
-            {
-                CombatTracker.Instance.RecordCardOrigin(
-                    card.GetHashCode(), source.SourceId, source.SourceType);
-            }
+            CombatTracker.Instance.RecordCardOrigin(
+                card.GetHashCode(), tracker.ActiveRelicId, "relic");
+            return;
+        }
+
+        if (tracker.ActivePotionId != null)
+        {
+            // Potion-generated cards must carry the potion origin so a
+            // subsequent SetToFreeThisTurn is recognized as generated-and-free
+            // instead of being credited as an energy saving.
+            CombatTracker.Instance.RecordCardOrigin(
+                card.GetHashCode(), tracker.ActivePotionId, "potion");
+            return;
+        }
+
+        if (tracker.ActiveCardId != null)
+        {
+            CombatTracker.Instance.RecordCardOrigin(
+                card.GetHashCode(), tracker.ActiveCardId, "card");
         }
     }
 }
@@ -3164,16 +3279,58 @@ public static class DoomKillPatch
 [HarmonyPatch]
 public static class OstyDeathPatch
 {
-    [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Kill),
-        new Type[] { typeof(Creature), typeof(bool) })]
+    /// <summary>
+    /// v0.113 adds a CardModel overload and routes BoneShards/Sacrifice
+    /// through it; both single-creature overloads delegate to the collection
+    /// overload. v0.111 only has the collection overload without CardModel.
+    /// Patch the collection overload so one prefix observes every Osty death,
+    /// with no duplicate trigger from the 2-parameter single overload.
+    /// </summary>
+    [HarmonyTargetMethods]
+    public static IEnumerable<MethodBase> TargetMethods()
+    {
+        var tagged = AccessTools.Method(typeof(CreatureCmd), "Kill", new Type[]
+        {
+            typeof(IReadOnlyCollection<Creature>),
+            typeof(CardModel),
+            typeof(bool),
+        });
+        if (tagged != null)
+        {
+            Safe.Info("[OstyDeathPatch] patched collection Kill(Creature, CardModel?, bool)");
+            yield return tagged;
+            yield break;
+        }
+
+        var legacy = AccessTools.Method(typeof(CreatureCmd), "Kill", new Type[]
+        {
+            typeof(IReadOnlyCollection<Creature>),
+            typeof(bool),
+        });
+        if (legacy != null)
+        {
+            Safe.Info("[OstyDeathPatch] patched collection Kill(Creature, bool)");
+            yield return legacy;
+            yield break;
+        }
+
+        Safe.Warn("[OstyDeathPatch] no collection CreatureCmd.Kill overload found");
+    }
+
     [HarmonyPrefix]
-    public static void BeforeKill(Creature creature)
+    public static void BeforeKill(IReadOnlyCollection<Creature> creatures)
     {
         Safe.Run(() =>
         {
-            if (creature.Monster is Osty)
+            if (creatures == null) return;
+            foreach (var creature in creatures)
             {
+                if (creature?.Monster is not Osty) continue;
+                // Multiplayer: only the local player's Osty HP pool belongs
+                // to the local contribution ledger.
+                if (!CombatHistoryPatch.IsLocalPlayer(creature.PetOwner)) continue;
                 CombatTracker.Instance.OnOstyKilled();
+                return;
             }
         });
     }
