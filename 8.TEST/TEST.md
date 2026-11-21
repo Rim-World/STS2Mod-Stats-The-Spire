@@ -264,6 +264,7 @@
 | `attribution-probe-v111-8-stdout.log` | 2026-11-22 01:05 | 否 | 315 | 上下文恢复与费用节省探针；6/6 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-10-stdout.log` | 2026-11-22 01:20 | 否 | 315 | 实际抽牌、上下文、费用探针；7/7 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-11-stdout.log` | 2026-11-22 01:30 | 否 | 315 | 实际抽牌、上下文、费用、休息处拆分探针；8/8 PASS，EXIT=0 | 是 |
+| `attribution-probe-v111-12-stdout.log` | 2026-11-22 01:40 | 否 | 315 | 负向抽牌净额与全部探针；8/8 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-9-stdout.log` | 2026-11-22 01:18 | 否 | 315 | 同组探针 7/7 PASS，但无头退出异常；保留失败记录 | 否 |
 | `v111-autoslay-62001.log` | 2026-11-22 00:39 | 否 | 71 | v0.111.1 AutoSlayer 种子 62001；跑到第 25 层、14 场战斗后测试超时 | 是 |
 | `v111-autoslay-62001-stdout.log` | 2026-11-22 00:39 | 否 | 654 | 同一局游戏输出；主 Mod 初始化、战斗保存与击杀补刀记录 | 是 |

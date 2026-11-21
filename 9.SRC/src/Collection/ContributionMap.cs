@@ -624,8 +624,23 @@ public class ContributionMap
 
     public void RecordHandDrawBonus(string sourceId, string sourceType, int extraDraw)
     {
-        if (extraDraw > 0)
+        if (extraDraw != 0)
             _pendingHandDrawBonus.Add((sourceId, sourceType, extraDraw));
+    }
+
+    /// <summary>
+    /// Signed net of planned extra hand draws. Negative modifiers (Big
+    /// Mushroom, Amnesia, Mind Rot) reduce the pool; only a positive net can
+    /// consume actual cards beyond the base five.
+    /// </summary>
+    public int PendingHandDrawNet
+    {
+        get
+        {
+            int net = 0;
+            foreach (var entry in _pendingHandDrawBonus) net += entry.count;
+            return net;
+        }
     }
 
     /// <summary>

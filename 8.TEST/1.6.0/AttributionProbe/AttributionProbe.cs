@@ -206,8 +206,15 @@ public static class AttributionProbe
             data = tracker.GetCurrentCombatData();
             int limited = data.TryGetValue("PROBE_DRAW_SOURCE", out var b) ? b.CardsDrawn : 0;
 
-            bool pass = full == 3 && limited == 1;
-            GD.Print($"[AttributionProbe] actual-hand-draw full={full} limited={limited} expect=3/1 {(pass ? "PASS" : "FAIL")}");
+            // Negative modifiers reduce the net pool: +3 -2 => 1.
+            tracker.OnCombatStart("PROBE_HAND_NET", "normal", 1);
+            ContributionMap.Instance.RecordHandDrawBonus("PROBE_DRAW_SOURCE", "power", 3);
+            ContributionMap.Instance.RecordHandDrawBonus("PROBE_DRAW_PENALTY", "power", -2);
+            for (int i = 0; i < 8; i++) tracker.OnCardDrawn(true);
+            data = tracker.GetCurrentCombatData();
+            int net = data.TryGetValue("PROBE_DRAW_SOURCE", out var c) ? c.CardsDrawn : 0;
+            bool pass = full == 3 && limited == 1 && net == 1;
+            GD.Print($"[AttributionProbe] actual-hand-draw full={full} limited={limited} net={net} expect=3/1/1 {(pass ? "PASS" : "FAIL")}");
             tracker.OnCombatEnd();
             return pass;
         }

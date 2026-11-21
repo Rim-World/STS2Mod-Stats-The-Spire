@@ -1306,7 +1306,7 @@ public sealed class CombatTracker
             // that consume a planned draw-bonus source; a hand-limit cut
             // therefore leaves the source with less than its planned count.
             _handDrawCount++;
-            if (_handDrawCount > 5)
+            if (_handDrawCount > 5 && ContributionMap.Instance.PendingHandDrawNet > 0)
             {
                 var bonus = ContributionMap.Instance.ConsumeOneHandDrawBonus();
                 if (bonus != null)
