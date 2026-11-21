@@ -2,7 +2,7 @@
 
 Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统计、怪物意图状态机、药水/卡牌掉落概率、问号房间概率与商店价格。
 
-本仓库是基于作者公开源码的维护分支。同一 DLL 目标兼容游戏 v0.111.1 与 v0.113.1。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
+本仓库是基于作者公开源码的维护分支。原仓库与本维护仓库都未声明许可证。同一 DLL 目标兼容游戏 v0.111.1 与 v0.113.1。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
 
 ## 功能
 
@@ -24,10 +24,10 @@ Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统�
 - NuGet 包 `STS2.RitsuLib 0.6.14`（`dotnet restore` 自动获取）
 
 ```bash
-dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\Steam\steamapps\common\Slay the Spire 2"
+dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the Spire 2 安装目录>"
 ```
 
-默认 `STS2GameDir` 已指向本机 Steam 安装目录；换机器或换版本时用 `-p:STS2GameDir=...` 覆盖。
+`STS2GameDir` 必须指向包含 `data_sts2_windows_x86_64` 的游戏安装目录。
 
 输出：`bin/Debug/sts2_statsthespire_local.dll`。打包时把 DLL 与 `manifest.json` 放在同一目录。
 
@@ -61,8 +61,9 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="C:\Game\St
 - 1.5.0 的 RitsuLib 设置页、热键、放弃/胜利收尾和同 seed 隔离已在 v0.111.1 与 v0.113.1 验证。
 - 1.5.1 补上 legacy 续局商店购买复制、设置损坏日志与 `min_game_version` 修正；源码通过两版程序集构建。
 - 1.5.2 删除四个无消费者补丁与 PaleBlueDot 错误钩子，修复 PaleBlueDot 来源捕获、UI 生命周期、原子写、损坏隔离、写盘防抖、生成卡重复计数、Boss 白兽雕像、路径购买、死亡来源与角色筛选 bundle；发布构建不嵌入本机源码路径。
+- 1.6.0 修复战斗归因并补齐愚者内容；v0.113.1 完成标准完整局、愚者实机与上下文检查；v0.111.1 完成定向探针 10/10。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源
 
-源码基线来自 `https://github.com/reddots1453/STS2mod-Stats_the_Spire`。原仓库未声明许可证。公开发布衍生版前必须确认作者授权。
+源码基线来自 `https://github.com/reddots1453/STS2mod-Stats_the_Spire`，原作者为 `reddots1453`。原仓库与本维护仓库都未声明许可证。在取得作者明确授权前，不得公开再分发本构建或衍生源码。本节只记录授权状态，不构成授权。

@@ -248,3 +248,11 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 ## Version Compatibility
 
 This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.6.0 passed a full standard-character AutoSlayer run, a live Fool probe, and shop settlement on v0.113.1; v0.111.1 passed the 10/10 attribution probe and load check. Card/relic ID changes across game versions are handled automatically.
+
+## License and authorization
+
+- Source baseline: `https://github.com/reddots1453/STS2mod-Stats_the_Spire`.
+- Original author: `reddots1453`.
+- The original repository declares no license. This maintenance repository also declares no license.
+- Do not publicly redistribute this build or derived source before the original author gives explicit authorization.
+- This section records the authorization status only. It does not grant a license.
