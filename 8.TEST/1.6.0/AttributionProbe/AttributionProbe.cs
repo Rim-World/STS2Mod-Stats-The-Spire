@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw() & ProbeRestHealSplit() & ProbeMultiSourceBlock();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw() & ProbeRestHealSplit() & ProbeMultiSourceBlock() & ProbeNestedCardContext();
         }
         catch (Exception ex)
         {
@@ -226,6 +226,33 @@ public static class AttributionProbe
     }
 
 
+
+
+    private static bool ProbeNestedCardContext()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.ForceResetAllContext();
+            tracker.OnCombatStart("PROBE_NESTED_CARD", "normal", 1);
+            tracker.OnCardPlayStarted("OUTER_CARD", 0x7A41);
+            tracker.OnCardPlayStarted("INNER_CARD", 0x7A42);
+            bool inner = tracker.ActiveCardId == "INNER_CARD";
+            tracker.OnCardPlayFinished();
+            bool outer = tracker.ActiveCardId == "OUTER_CARD";
+            tracker.OnCardPlayFinished();
+            bool cleared = tracker.ActiveCardId == null;
+            bool pass = inner && outer && cleared;
+            GD.Print($"[AttributionProbe] nested-card inner={inner} outer={outer} cleared={cleared} {(pass ? "PASS" : "FAIL")}");
+            tracker.OnCombatEnd();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] nested-card FAIL {ex}");
+            return false;
+        }
+    }
 
     private static bool ProbeMultiSourceBlock()
     {

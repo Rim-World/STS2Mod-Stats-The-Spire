@@ -187,6 +187,9 @@ public sealed class CombatTracker
     // Actual cards drawn by the hand-draw path this turn. The first five
     // are the base draw; only later cards consume pending hand-draw bonuses.
     private int _handDrawCount;
+    // Nested card plays: save the outer card context and restore it when the
+    // inner play finishes.
+    private readonly AsyncLocal<Stack<(string? CardId, string? CardOrigin)>?> _cardContextStackAL = new();
     // A single combat can reach the flush path more than once (victory fires
     // CombatRoom.OnCombatEnded and later CombatManager.CombatEnded; defeat only
     // fires the latter). Flush and display exactly once, and keep the flag true
@@ -211,6 +214,8 @@ public sealed class CombatTracker
     /// postfix, so the outer hook's later effects keep their source.
     /// </summary>
     public readonly record struct AttributionContext(
+        string? CardId,
+        string? CardOrigin,
         string? RelicId,
         string? PotionId,
         string? PowerSourceId,
@@ -218,6 +223,8 @@ public sealed class CombatTracker
         string? PowerId);
 
     public AttributionContext CaptureAttributionContext() => new(
+        _activeCardId,
+        _activeCardOrigin,
         _activeRelicId,
         _activePotionId,
         _activePowerSourceId,
@@ -226,6 +233,8 @@ public sealed class CombatTracker
 
     public void RestoreAttributionContext(AttributionContext context)
     {
+        _activeCardId = context.CardId;
+        _activeCardOrigin = context.CardOrigin;
         _activeRelicId = context.RelicId;
         _activePotionId = context.PotionId;
         _activePowerSourceId = context.PowerSourceId;
@@ -390,6 +399,7 @@ public sealed class CombatTracker
         _processedDamageResults.Clear();
         _forgeLog.Clear();
         _handDrawCount = 0;
+        _cardContextStackAL.Value = null;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
         _liveSaveDirty = false;
         _liveCombatInProgress = true;
@@ -442,6 +452,8 @@ public sealed class CombatTracker
 
     public void OnCardPlayStarted(string cardId, int cardHash)
     {
+        var stack = _cardContextStackAL.Value ??= new Stack<(string?, string?)>();
+        stack.Push((_activeCardId, _activeCardOrigin));
         _activeCardId = cardId;
         // Safety: clear stale potion context (shouldn't still be set, but guards against
         // edge cases where PotionUsed didn't fire, e.g. combat ended mid-potion)
@@ -467,8 +479,18 @@ public sealed class CombatTracker
 
     public void OnCardPlayFinished()
     {
-        _activeCardId = null;
-        _activeCardOrigin = null;
+        var stack = _cardContextStackAL.Value;
+        if (stack != null && stack.Count > 0)
+        {
+            var (outerId, outerOrigin) = stack.Pop();
+            _activeCardId = outerId;
+            _activeCardOrigin = outerOrigin;
+        }
+        else
+        {
+            _activeCardId = null;
+            _activeCardOrigin = null;
+        }
         // Round 14 v5 review §9: defensive clear of pending upgrade state at end
         // of each card play. OnCardPlayStarted already overwrites these each time,
         // so this is strictly defense-in-depth for any future code path that might
@@ -561,6 +583,7 @@ public sealed class CombatTracker
         _pendingDrawSourceType = null;
         _pendingDrawRemainingAL.Value = null;
         _handDrawCount = 0;
+        _cardContextStackAL.Value = null;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
         _pendingOstyDeathDefense = null;
         _ostyDeathHandled = false;
