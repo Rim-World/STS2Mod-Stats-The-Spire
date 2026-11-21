@@ -22,7 +22,7 @@
 
 ### Verified
 - v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings.
-- v0.111.1 `AttributionProbe`: 8/8 PASS (`RESULT PASS`) on final code, log `8.TEST/1.6.0/attribution-probe-v111-12-stdout.log`; final rerun `v111-11` exited 0.
+- v0.111.1 `AttributionProbe`: 9/9 PASS (`RESULT PASS`) on final code, log `8.TEST/1.6.0/attribution-probe-v111-14-stdout.log`; final rerun `v111-11` exited 0.
 - v0.111.1 mod initialization: `RealDamageGuard patched v0.111 7-param`; `OstyDeathPatch patched collection Kill(Creature, bool)`; all 34 Fool targets skipped on the older game.
 - Not verified: v0.113.1 full AutoSlayer, Fool target attribution in a live run, and the remaining P1 probes.
 

@@ -436,6 +436,7 @@ public sealed class CombatTracker
     public string? ActiveCardId => _activeCardId;
     public string? ActivePowerSourceId => _activePowerSourceId;
     public string? ActivePowerSourceType => _activePowerSourceType;
+    public string? ActivePowerId => _activePowerId;
 
     // ── Card Play Tracking ──────────────────────────────────
 
@@ -1115,6 +1116,26 @@ public sealed class CombatTracker
             }
 
             int poolBaseAmount = baseAmount - upgSplit;
+
+            // Plating/other power hooks can have multiple recorded sources.
+            // Split the base block proportionally instead of crediting only
+            // the first source. Modifier chunks keep the normal single-source
+            // path; they are not duplicated across sources.
+            if (cardPlayId == null && _activePowerId != null && poolBaseAmount > 0)
+            {
+                var powerSources = ContributionMap.Instance.GetPowerSources(_activePowerId);
+                if (powerSources != null && powerSources.Count > 1)
+                {
+                    foreach (var (sid, stype, share) in ContributionMap.Instance
+                        .DistributeByPowerSources(_activePowerId, poolBaseAmount))
+                    {
+                        if (share > 0)
+                            ContributionMap.Instance.AddBlock(sid, stype, share, null);
+                    }
+                    poolBaseAmount = 0;
+                }
+            }
+
             if (poolBaseAmount > 0 || modifierTotal > 0)
                 ContributionMap.Instance.AddBlock(sourceId, sourceType, poolBaseAmount, modifierList);
 

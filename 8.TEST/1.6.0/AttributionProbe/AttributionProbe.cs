@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw() & ProbeRestHealSplit();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw() & ProbeRestHealSplit() & ProbeMultiSourceBlock();
         }
         catch (Exception ex)
         {
@@ -225,6 +225,35 @@ public static class AttributionProbe
         }
     }
 
+
+
+    private static bool ProbeMultiSourceBlock()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.ForceResetAllContext();
+            tracker.OnCombatStart("PROBE_MULTI_BLOCK", "normal", 1);
+            ContributionMap.Instance.RecordPowerSource("PROBE_PLATING", "PROBE_SRC_A", "card", 2);
+            ContributionMap.Instance.RecordPowerSource("PROBE_PLATING", "PROBE_SRC_B", "card", 1);
+            tracker.SetActivePowerSource("PROBE_PLATING");
+            tracker.OnBlockGained(9, null);
+            tracker.OnDamageDealt(9, 9, null, true, 0x7A31, 0);
+
+            var data = tracker.GetCurrentCombatData();
+            int a = data.TryGetValue("PROBE_SRC_A", out var ac) ? ac.EffectiveBlock : 0;
+            int b = data.TryGetValue("PROBE_SRC_B", out var bc) ? bc.EffectiveBlock : 0;
+            bool pass = a == 6 && b == 3;
+            GD.Print($"[AttributionProbe] multi-source-block a={a} b={b} expect=6/3 {(pass ? "PASS" : "FAIL")}");
+            tracker.OnCombatEnd();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] multi-source-block FAIL {ex}");
+            return false;
+        }
+    }
 
     private static bool ProbeRestHealSplit()
     {
