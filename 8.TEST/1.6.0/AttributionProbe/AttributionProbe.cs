@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings();
         }
         catch (Exception ex)
         {
@@ -179,6 +179,37 @@ public static class AttributionProbe
         catch (Exception ex)
         {
             GD.Print($"[AttributionProbe] context-restore FAIL {ex}");
+            return false;
+        }
+    }
+
+
+    private static bool ProbeCostSavings()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.ForceResetAllContext();
+            tracker.OnCombatStart("PROBE_COST", "normal", 1);
+
+            int normalHash = 0x7A21;
+            ContributionMap.Instance.TagCostReductionSource(normalHash, "PROBE_RELIC", "relic");
+            tracker.AttributeCostSavings(normalHash, 2, 0, 0, 0, false, false);
+
+            int autoHash = 0x7A22;
+            ContributionMap.Instance.TagCostReductionSource(autoHash, "PROBE_RELIC", "relic");
+            tracker.AttributeCostSavings(autoHash, 2, 0, 0, 0, false, true);
+
+            var data = tracker.GetCurrentCombatData();
+            int saved = data.TryGetValue("PROBE_RELIC", out var accum) ? accum.EnergyGained : 0;
+            bool pass = saved == 2;
+            GD.Print($"[AttributionProbe] cost-savings saved={saved} expect=2(autoPlay=0) {(pass ? "PASS" : "FAIL")}");
+            tracker.OnCombatEnd();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] cost-savings FAIL {ex}");
             return false;
         }
     }

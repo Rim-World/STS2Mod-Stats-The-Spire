@@ -61,11 +61,12 @@
 | v0.111.1 Release 构建 | 0 错误、7 个既有警告 | `build-v111-integrated.log` |
 | v0.113.1 Release 构建 | 0 错误、7 个既有警告 | `build-v113-integrated.log` |
 | `AttributionProbe` 构建 | 0 错误、0 警告 | `build-attribution-probe.log` |
-| v0.111.1 定向探针（最终代码） | 首场治疗、锻造消费、升级格挡、待定抽牌、上下文恢复 5/5 PASS | `attribution-probe-v111-7-stdout.log` |
-| v0.111.1 主 Mod 加载 | 初始化成功；`RealDamageGuard patched v0.111 7-param`；`OstyDeathPatch patched collection Kill(Creature, bool)`；34 条愚者目标全部跳过 | `attribution-probe-v111-7-stdout.log` |
+| v0.111.1 定向探针（最终代码） | 首场治疗、锻造消费、升级格挡、待定抽牌、上下文恢复 6/6 PASS | `attribution-probe-v111-8-stdout.log` |
+| v0.111.1 主 Mod 加载 | 初始化成功；`RealDamageGuard patched v0.111 7-param`；`OstyDeathPatch patched collection Kill(Creature, bool)`；34 条愚者目标全部跳过 | `attribution-probe-v111-8-stdout.log` |
+| v0.111.1 AutoSlayer 抽检 | 种子 62001 跑到第 25 层、14 场战斗后测试超时；战斗数据正常 | `v111-autoslay-62001-stdout.log` |
 | v0.113.1 完整 AutoSlayer | 未验证（当前安装为 v0.111.1） | — |
 | 16 张能力牌/15 个遗物实机 | 未验证 | — |
-| 来源保存-恢复 | 遗物/能力 hook 已实现；卡牌/预览未纳入 | `attribution-probe-v111-7-stdout.log` |
+| 来源保存-恢复 | 遗物/能力 hook 已实现；卡牌/预览未纳入 | `attribution-probe-v111-8-stdout.log` |
 
 失败记录：
 
