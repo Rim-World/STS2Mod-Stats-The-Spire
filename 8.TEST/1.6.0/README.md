@@ -1,0 +1,63 @@
+# 1.6.0 阶段 0 基线测试计划
+
+- 建立时间：2026-11-21 19:32
+- 基线版本：Mod 1.5.2
+- 源码提交：`79e3575`
+- 游戏基线：当前安装为 Slay the Spire 2 v0.111.1
+- 目标版本：1.6.0
+- 关联计划：`2.PLANS/018-G-1.6.0-战斗归因修复与愚者覆盖.md`
+
+## 1. 基线构建
+
+| 项目 | 值 |
+|---|---|
+| v0.111.1 构建日志 | `8.TEST/1.6.0/baseline-v111.log` |
+| v0.113.1 构建日志 | `8.TEST/1.6.0/baseline-v113.log` |
+| v0.111.1 DLL | `TMP/1.6.0/build-v111/sts2_statsthespire_local.dll` |
+| v0.113.1 DLL | `TMP/1.6.0/build-v113/sts2_statsthespire_local.dll` |
+| 源码构建大小 | 516,608 字节 |
+| 源码构建 SHA-256 | `8e5c77d8bb4b760c84ddc95f79ef722c0c4fe48d02aebc145cc0c7041c89e2db` |
+| 构建结果 | 两版均 0 错误；7 个既有可空性警告 |
+| v0.113.1 引用包装 | `TMP/1.6.0/refs-v113/`，sts2.dll 来自 `STS2-Reference/4.STS2-113.1Reference/assemblies` |
+| v0.113.1 sts2.dll SHA-256 | `62ecbe91093e1fa862de4329aac865209dcb297804caf0f0520d92d8c0b4a9c3` |
+| v0.111.1 当前游戏 sts2.dll SHA-256 | `3fb1fa1bf0249087b706a5d0f062a60579e2f5b08df4ee477ddd6f2607f654d5` |
+
+注：源码重建的 DLL 大小 516,608 字节，与已发布的 1.5.2 成品 519,168 字节不同。基线以当前源码重建结果为准；差异不写入代码变更结论，发布阶段再核对版本与构建配置。
+
+## 2. 固定测试种子
+
+| 组 | 种子 | 用途 |
+|---|---:|---|
+| P0 | 62001 | 真实伤害守卫、待定抽牌、格挡池、治疗、奥斯提、战败 flush、辉星/能量 |
+| P1 | 62002 | 减伤边际、力量变化、治疗/复活、费用、抽牌、嵌套上下文 |
+| 内容 | 62003 | 16 张能力牌、15 个遗物、非卡牌能力 |
+| v0.111.1 兼容 | 62004 | 新内容补丁跳过、加载与完整跑局 |
+| v0.113.1 完整局 | 62005 | 愚者内容或标准角色完整 AutoSlayer |
+
+种子只用于 1.6.0 阶段测试。测试前记录贡献目录清单；测试后把测试目录移入 `TMP/1.6.0/evidence-<seed>/`，不混入正式统计。
+
+## 3. 探针分组
+
+| 组 | 需要的探针 |
+|---|---|
+| P0 | `RealDamageGuardProbe`、`PendingDrawProbe`、`BlockPoolProbe`、`CombatStartHealProbe`、`OstyDeathProbe`、`DefeatFlushProbe`、`ResourceActualProbe`、`ForgeProbe`、`CardLifecycleProbe` |
+| P1 | `MitigationSplitProbe`、`StrengthDeltaProbe`、`HealingLifecycleProbe`、`CostTagProbe`、`DrawActualProbe`、`NestedContextProbe`、`RelicPowerGapProbe` |
+| 内容 | `FoolPowerProbe`、`FoolRelicProbe`、`FoolBoundaryProbe`、`FoolRuntimeSkipProbe` |
+| 回归 | `FullRunProbe`、`PatchInventoryProbe`、`PerformanceProbe` |
+
+探针工程放在 `8.TEST/1.6.0/<Probe>/`。每个探针至少输出一行带 `PASS` 或 `FAIL` 的固定格式结果；失败时保留完整游戏日志和标准输出。
+
+## 4. 执行顺序
+
+1. 先执行 P0 探针；全部 PASS 后进入 P1。
+2. P1 已确认项全部 PASS 后进入内容探针。
+3. 内容探针通过后执行双版本加载和完整跑局。
+4. 最后执行构建、版本、隐私和清理检查。
+
+## 5. 记录与清理
+
+- 每次运行保存一个新的日志文件，不覆盖旧结果。
+- 测试日志放在 `8.TEST/1.6.0/`，文件登记到 `8.TEST/TEST.md`。
+- 测试游戏部署只放在临时目录或游戏 `mods/` 的专用测试目录；结束后移出。
+- 测试结束后关闭游戏进程，检查 `mods/` 是否残留测试目录。
+- 不把测试日志、构建路径或用户目录写入发布包。
