@@ -1,0 +1,14 @@
+{
+  "id": "stats_event_source_probe_160",
+  "name": "StatsTheSpire Event Source Probe 1.6.0",
+  "author": "test",
+  "description": "Test-only: injects one real CombatTracker source during the Battleworn Dummy event combat to verify the exit save fallback writes a non-empty combat file.",
+  "version": "1.6.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.113.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.6.0" }
+  ]
+}

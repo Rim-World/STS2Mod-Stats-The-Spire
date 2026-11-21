@@ -2,6 +2,16 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [Unreleased] - 2026-11-22
+
+### Fixed
+- No-reward event combat (for example the Battleworn Dummy) now saves at `CombatRoom.Exit`, before `CombatManager.Reset`. The no-reward `ProceedWithoutRewards` path exits the room before `EndCombatInternal` reaches `CombatEnded`, so the old save trigger was skipped in non-interactive and instant modes.
+
+### Verified
+- v0.113.1 seed 62003: floor 45 wrote `combat_45_1.json` with 1 test-injected source; 29 combat files, no duplicate floor; victory, exit 0; log `8.TEST/1.6.0/exitfix6-62003-stdout.log`.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; logs `8.TEST/1.6.0/build-v113-exitfix-release.log`, `build-v111-exitfix-release.log`.
+- Not verified: normal GUI event-combat visual acceptance; test-only `EventSourceProbe` is not shipped.
+
 ## [1.6.0] - 2026-11-22
 
 ### Added

@@ -70,6 +70,7 @@
 | 16 张能力牌/15 个遗物实机 | 上下文 18/18、15/15 PASS；实机可计量来源 9 个能力、6 个遗物 | `v113.1-foolprobe-62003c-stdout.log` |
 | 来源保存-恢复 | 遗物/能力/卡牌上下文已实现；伤害/格挡预览已隔离 | `attribution-probe-v111-15-stdout.log` |
 | 最终双版本构建 | v0.113.1 与 v0.111.1 均 0 错误、7 个既有警告；DLL 563,200 字节 | `build-v113-160-final.log`、`build-v111-160-final.log` |
+| 第 45 层事件保存兜底 | `CombatRoom.Exit` 兜底写出 `combat_45_1.json`；29 个战斗文件、无重复；victory，exit 0 | `exitfix6-62003-stdout.log` |
 
 失败记录：
 

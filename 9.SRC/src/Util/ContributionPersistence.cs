@@ -109,7 +109,9 @@ public static class ContributionPersistence
     // ── Public API ──────────────────────────────────────────
 
     /// <summary>
-    /// Persist a single combat snapshot. Called from CombatLifecyclePatch.AfterCombatEnded.
+    /// Persist a single combat snapshot. Called from
+    /// CombatLifecyclePatch.SaveCombatResultOnce, including the CombatRoom.Exit
+    /// fallback for no-reward event combat.
     /// </summary>
     public static void SaveCombat(int floor, IReadOnlyDictionary<string, ContributionAccum>? data)
     {

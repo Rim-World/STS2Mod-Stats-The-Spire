@@ -102,6 +102,34 @@ public static class CombatLifecyclePatch
         });
     }
 
+    /// <summary>
+    /// Event combats whose encounter sets ShouldGiveRewards=false (for example
+    /// the Battleworn Dummy) call NCombatUi.OnCombatWon -> ProceedWithoutRewards
+    /// immediately. That path exits and resets the combat room before
+    /// EndCombatInternal reaches its CombatEnded invocation at the end of the
+    /// method. Save and display at the exit boundary instead. The prefix runs
+    /// before CombatManager.Reset, so the tracker still holds the live combat.
+    /// Normal combats have already saved in OnCombatManagerEnded; the flags
+    /// make this fallback idempotent.
+    /// </summary>
+    [HarmonyPatch(typeof(CombatRoom), nameof(CombatRoom.Exit))]
+    [HarmonyPrefix]
+    public static void BeforeCombatRoomExit(CombatRoom __instance)
+    {
+        Safe.Run(() =>
+        {
+            // A mid-combat exit is handled by RunManager.OnEnded / LoseCombat.
+            // Save here only after EndCombatInternal has marked combat finished.
+            if (CombatManager.Instance.IsInProgress) return;
+            if (!CombatTracker.Instance.LiveCombatInProgress) return;
+            if (_combatResultSaved) return;
+
+            Safe.Info("[CombatLifecycle] combat room exit fallback");
+            SaveCombatResultOnce();
+            ShowCombatResultOnce();
+        });
+    }
+
     private static void SubscribeCombatEnded(CombatManager manager)
     {
         try
@@ -133,7 +161,8 @@ public static class CombatLifecyclePatch
 
     /// <summary>
     /// Flush the current combat into the aggregator and persist its per-combat
-    /// snapshot. Called from CombatEnded, LoseCombat, and RunManager.OnEnded.
+    /// snapshot. Called from CombatEnded, LoseCombat, RunManager.OnEnded, and
+    /// the CombatRoom.Exit fallback for no-reward event combats.
     /// The run-end prefix is required on defeat: OnEnded calls
     /// CreateRunHistoryEntry (which finalizes run totals from disk) before the
     /// pending loss produces CombatEnded.
