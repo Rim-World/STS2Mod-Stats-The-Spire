@@ -2741,12 +2741,13 @@ public static class HandDrawBonusPatch
         });
     }
 
-    // Flush pending hand draw bonuses after hand draw modifiers complete
+    // Start the actual hand-draw window after hand draw modifiers complete.
+    // Bonuses are consumed by OnCardDrawn(true) for cards beyond the base 5.
     [HarmonyPatch(typeof(Hook), nameof(Hook.AfterModifyingHandDraw))]
     [HarmonyPostfix]
     public static void AfterModifyingHandDraw()
     {
-        Safe.Run(() => CombatTracker.Instance.FlushPendingHandDrawBonus());
+        Safe.Run(() => CombatTracker.Instance.BeginHandDrawAttribution());
     }
 }
 

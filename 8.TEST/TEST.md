@@ -262,6 +262,8 @@
 | `attribution-probe-v111-6-stdout.log` | 2026-11-22 00:25 | 否 | 315 | 审阅修正后最终 DLL 定向探针；4/4 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-7-stdout.log` | 2026-11-22 00:55 | 否 | 315 | 上下文保存/恢复改动后探针；5/5 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-8-stdout.log` | 2026-11-22 01:05 | 否 | 315 | 上下文恢复与费用节省探针；6/6 PASS，EXIT=0 | 是 |
+| `attribution-probe-v111-10-stdout.log` | 2026-11-22 01:20 | 否 | 315 | 实际抽牌、上下文、费用探针；7/7 PASS，EXIT=0 | 是 |
+| `attribution-probe-v111-9-stdout.log` | 2026-11-22 01:18 | 否 | 315 | 同组探针 7/7 PASS，但无头退出异常；保留失败记录 | 否 |
 | `v111-autoslay-62001.log` | 2026-11-22 00:39 | 否 | 71 | v0.111.1 AutoSlayer 种子 62001；跑到第 25 层、14 场战斗后测试超时 | 是 |
 | `v111-autoslay-62001-stdout.log` | 2026-11-22 00:39 | 否 | 654 | 同一局游戏输出；主 Mod 初始化、战斗保存与击杀补刀记录 | 是 |
 | `attribution-probe-v111-2-stdout.log` | 2026-11-21 23:44 | 否 | 314 | 探针中间失败：锻造复合键读取错误；保留作失败记录 | 否 |

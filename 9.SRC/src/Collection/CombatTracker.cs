@@ -180,6 +180,9 @@ public sealed class CombatTracker
     private bool _liveSaveDirty;
     private bool _liveSavePending;
     private bool _liveCombatInProgress;
+    // Actual cards drawn by the hand-draw path this turn. The first five
+    // are the base draw; only later cards consume pending hand-draw bonuses.
+    private int _handDrawCount;
     // A single combat can reach the flush path more than once (victory fires
     // CombatRoom.OnCombatEnded and later CombatManager.CombatEnded; defeat only
     // fires the latter). Flush and display exactly once, and keep the flag true
@@ -381,6 +384,8 @@ public sealed class CombatTracker
         _pendingUpgradeSourceOrigin = null;
         _processedDamageResults.Clear();
         _forgeLog.Clear();
+        _handDrawCount = 0;
+        ContributionMap.Instance.ClearPendingHandDrawBonus();
         _liveSaveDirty = false;
         _liveCombatInProgress = true;
         _combatEndHandled = false;
@@ -407,6 +412,8 @@ public sealed class CombatTracker
             _currentCombat);
 
         _currentCombat.Clear();
+        _handDrawCount = 0;
+        ContributionMap.Instance.ClearPendingHandDrawBonus();
         ClearPendingDrawSource();
         ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
@@ -547,6 +554,8 @@ public sealed class CombatTracker
         _pendingDrawSourceId = null;
         _pendingDrawSourceType = null;
         _pendingDrawRemainingAL.Value = null;
+        _handDrawCount = 0;
+        ContributionMap.Instance.ClearPendingHandDrawBonus();
         _pendingOstyDeathDefense = null;
         _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
@@ -572,6 +581,10 @@ public sealed class CombatTracker
         // Pending draw sources are one-shot: a hook that did not actually draw
         // must not poison the next hand draw or the next non-hand draw.
         ClearPendingDrawSource();
+        // The hand-draw window is complete; discard any unspent planned bonus
+        // so a hand-limit truncation cannot credit a later draw.
+        _handDrawCount = 0;
+        ContributionMap.Instance.ClearPendingHandDrawBonus();
     }
 
     // ── Resolve Source ───────────────────────────────────────
@@ -1282,7 +1295,20 @@ public sealed class CombatTracker
 
     public void OnCardDrawn(bool fromHandDraw)
     {
-        if (fromHandDraw) return; // Normal turn draw, not attributed
+        if (fromHandDraw)
+        {
+            // The base five cards are not a bonus. Only actual cards beyond
+            // that consume a planned draw-bonus source; a hand-limit cut
+            // therefore leaves the source with less than its planned count.
+            _handDrawCount++;
+            if (_handDrawCount > 5)
+            {
+                var bonus = ContributionMap.Instance.ConsumeOneHandDrawBonus();
+                if (bonus != null)
+                    GetOrCreate(bonus.Value.sourceId, bonus.Value.sourceType).CardsDrawn++;
+            }
+            return;
+        }
 
         // Check pending power/relic draw source first (for async hooks like DarkEmbrace,
         // CentennialPuzzle). If an N-count is set, decrement and keep the source alive
@@ -1436,14 +1462,12 @@ public sealed class CombatTracker
     /// Called after hand draw completes to attribute extra draws from powers
     /// (PaleBlueDot, Tyranny) that modify hand draw count.
     /// </summary>
-    public void FlushPendingHandDrawBonus()
-    {
-        var bonuses = ContributionMap.Instance.ConsumePendingHandDrawBonus();
-        foreach (var (sourceId, sourceType, count) in bonuses)
-        {
-            GetOrCreate(sourceId, sourceType).CardsDrawn += count;
-        }
-    }
+    /// <summary>
+    /// Called once after hand-draw modifiers complete. Resets the actual-card
+    /// counter; individual OnCardDrawn(true) events consume the planned
+    /// bonuses only for cards beyond the base five.
+    /// </summary>
+    public void BeginHandDrawAttribution() => _handDrawCount = 0;
 
     // ── SeekingEdge Context ──────────────────────────────────
 

@@ -628,12 +628,24 @@ public class ContributionMap
             _pendingHandDrawBonus.Add((sourceId, sourceType, extraDraw));
     }
 
-    public List<(string sourceId, string sourceType, int count)> ConsumePendingHandDrawBonus()
+    /// <summary>
+    /// Consume one actual hand-draw slot from the first source with a
+    /// remaining count. Returns null when the plan is exhausted.
+    /// </summary>
+    public (string sourceId, string sourceType)? ConsumeOneHandDrawBonus()
     {
-        var result = new List<(string, string, int)>(_pendingHandDrawBonus);
-        _pendingHandDrawBonus.Clear();
-        return result;
+        for (int i = 0; i < _pendingHandDrawBonus.Count; i++)
+        {
+            var entry = _pendingHandDrawBonus[i];
+            if (entry.count <= 0) continue;
+            if (entry.count == 1) _pendingHandDrawBonus.RemoveAt(i);
+            else _pendingHandDrawBonus[i] = (entry.sourceId, entry.sourceType, entry.count - 1);
+            return (entry.sourceId, entry.sourceType);
+        }
+        return null;
     }
+
+    public void ClearPendingHandDrawBonus() => _pendingHandDrawBonus.Clear();
 
     // ── Osty HP Source LIFO Stack ─────────────────────────────
     // Tracks which card/relic summoned Osty HP, consumed LIFO when Osty takes damage.

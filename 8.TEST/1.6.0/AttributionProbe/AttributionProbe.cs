@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw();
         }
         catch (Exception ex)
         {
@@ -183,6 +183,40 @@ public static class AttributionProbe
         }
     }
 
+
+
+    private static bool ProbeActualHandDraw()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.ForceResetAllContext();
+            tracker.OnCombatStart("PROBE_HAND_DRAW", "normal", 1);
+            ContributionMap.Instance.RecordHandDrawBonus("PROBE_DRAW_SOURCE", "power", 3);
+            for (int i = 0; i < 8; i++) tracker.OnCardDrawn(true);
+
+            var data = tracker.GetCurrentCombatData();
+            int full = data.TryGetValue("PROBE_DRAW_SOURCE", out var a) ? a.CardsDrawn : 0;
+
+            // Simulate a hand-limit cut: 3 planned, only one actual card
+            // beyond the base five.
+            tracker.OnCombatStart("PROBE_HAND_LIMIT", "normal", 1);
+            ContributionMap.Instance.RecordHandDrawBonus("PROBE_DRAW_SOURCE", "power", 3);
+            for (int i = 0; i < 6; i++) tracker.OnCardDrawn(true);
+            data = tracker.GetCurrentCombatData();
+            int limited = data.TryGetValue("PROBE_DRAW_SOURCE", out var b) ? b.CardsDrawn : 0;
+
+            bool pass = full == 3 && limited == 1;
+            GD.Print($"[AttributionProbe] actual-hand-draw full={full} limited={limited} expect=3/1 {(pass ? "PASS" : "FAIL")}");
+            tracker.OnCombatEnd();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] actual-hand-draw FAIL {ex}");
+            return false;
+        }
+    }
 
     private static bool ProbeCostSavings()
     {
