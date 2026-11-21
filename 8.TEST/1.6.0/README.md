@@ -66,7 +66,7 @@
 | v0.111.1 AutoSlayer 抽检 | 种子 62001 跑到第 25 层、14 场战斗后测试超时；战斗数据正常 | `v111-autoslay-62001-stdout.log` |
 | v0.113.1 完整 AutoSlayer | 未验证（当前安装为 v0.111.1） | — |
 | 16 张能力牌/15 个遗物实机 | 未验证 | — |
-| 来源保存-恢复 | 遗物/能力 hook 已实现；卡牌/预览未纳入 | `attribution-probe-v111-11-stdout.log` |
+| 来源保存-恢复 | 遗物/能力 hook 已实现；伤害/格挡预览已隔离；卡牌上下文未纳入 | `attribution-probe-v111-11-stdout.log` |
 
 失败记录：
 
