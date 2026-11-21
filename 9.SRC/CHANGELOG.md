@@ -2,7 +2,7 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
-## [Unreleased] - 2026-11-22
+## [1.6.1] - 2026-11-22
 
 ### Fixed
 - No-reward event combat (for example the Battleworn Dummy) now saves at `CombatRoom.Exit`, before `CombatManager.Reset`. The no-reward `ProceedWithoutRewards` path exits the room before `EndCombatInternal` reaches `CombatEnded`, so the old save trigger was skipped in non-interactive and instant modes.

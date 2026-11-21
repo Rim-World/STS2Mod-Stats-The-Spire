@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.6.0
+**Version**: 1.6.1
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -247,7 +247,7 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.6.0 passed a full standard-character AutoSlayer run, a live Fool probe, and shop settlement on v0.113.1; v0.111.1 passed the 10/10 attribution probe and load check. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.6.1 fixes no-reward event-combat persistence, enemy pet-damage attribution, and Ennui extra hand draws; v0.113.1 passed Fool-injected and standard seed comparisons, and v0.111.1 passed the compatibility build. Card/relic ID changes across game versions are handled automatically.
 
 ## License and authorization
 
