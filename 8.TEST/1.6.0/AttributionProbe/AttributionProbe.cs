@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore() & ProbeCostSavings() & ProbeActualHandDraw() & ProbeRestHealSplit();
         }
         catch (Exception ex)
         {
@@ -214,6 +214,34 @@ public static class AttributionProbe
         catch (Exception ex)
         {
             GD.Print($"[AttributionProbe] actual-hand-draw FAIL {ex}");
+            return false;
+        }
+    }
+
+
+    private static bool ProbeRestHealSplit()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.OnCombatEnd();
+            tracker.ForceResetAllContext();
+            RunContributionAggregator.Instance.Reset();
+
+            tracker.SetRestHealBonus(15, "REGAL_PILLOW", "relic");
+            tracker.OnHealingReceived(50, "REST_SITE", "rest");
+
+            var totals = RunContributionAggregator.Instance.RunTotals;
+            int rest = totals.TryGetValue("REST_SITE", out var r) ? r.HpHealed : 0;
+            int pillow = totals.TryGetValue("REGAL_PILLOW", out var p) ? p.HpHealed : 0;
+            bool pass = rest == 35 && pillow == 15 && rest + pillow == 50;
+            GD.Print($"[AttributionProbe] rest-heal-split rest={rest} pillow={pillow} total={rest + pillow} expect=35/15/50 {(pass ? "PASS" : "FAIL")}");
+            RunContributionAggregator.Instance.Reset();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] rest-heal-split FAIL {ex}");
             return false;
         }
     }

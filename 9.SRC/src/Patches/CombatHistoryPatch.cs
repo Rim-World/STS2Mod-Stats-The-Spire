@@ -969,6 +969,11 @@ public static class DamageModifierPatch
             // IsPoweredAttack = has Move flag and not Unpowered
             if (!props.HasFlag(ValueProp.Move) || props.HasFlag(ValueProp.Unpowered))
                 return;
+            // Card/UI previews also call ModifyDamage outside a real
+            // CreatureCmd.Damage. Do not let them replace the live modifier
+            // list that the next real hit will consume.
+            if (!RealDamageGuardPatch.IsInsideCreatureDamage)
+                return;
 
             decimal baseDmg = __state;
             decimal finalDmg = __result;
@@ -1525,6 +1530,12 @@ public static class BlockModifierPatch
         Safe.Run(() =>
         {
             if (target == null || !target.IsPlayer) return;
+            // A hand-card block preview has no CardPlay; the real block gain
+            // always carries the play context. Do not write preview modifiers
+            // into the live list.
+            if (cardSource != null && cardPlay == null
+                && cardSource.Pile?.Type == PileType.Hand)
+                return;
 
             decimal baseBlock = __state;
             decimal finalBlock = __result;
@@ -1966,7 +1977,11 @@ public static class HealingPatch
             if (__state.hpBefore <= 0 && !CombatTracker.Instance.LiveCombatInProgress) return;
 
             int actualHealed = (int)(creature.CurrentHp - __state.hpBefore);
-            if (actualHealed <= 0) return;
+            if (actualHealed <= 0)
+            {
+                CombatTracker.Instance.ClearRestHealBonus();
+                return;
+            }
 
             // Determine fallback source from room type when no active context exists
             string? fallbackId = null;

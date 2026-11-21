@@ -188,6 +188,32 @@ public static class BeltBuckleContextGapPatch
 }
 
 // ═══════════════════════════════════════════════════════════
+// R2: RegalPillow adds 15 to the rest-site heal. The heal command runs
+// later, so record the delta here and let HealingPatch split the single
+// Heal event into REST_SITE base + REGAL_PILLOW bonus.
+// ═══════════════════════════════════════════════════════════
+
+[HarmonyPatch]
+public static class RegalPillowRestHealSplitPatch
+{
+    [HarmonyPatch(typeof(RegalPillow), nameof(RegalPillow.ModifyRestSiteHealAmount))]
+    [HarmonyPostfix]
+    public static void AfterModifyRestSiteHealAmount(RegalPillow __instance,
+        Creature creature, decimal amount, decimal __result)
+    {
+        Safe.Run(() =>
+        {
+            if (!CombatHistoryPatch.IsLocalPlayer(__instance.Owner)) return;
+            if (creature?.Player != __instance.Owner) return;
+            if (__result <= amount) return;
+
+            CombatTracker.Instance.SetRestHealBonus(
+                (int)(__result - amount), "REGAL_PILLOW", "relic");
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // R5: RuinedHelmet doubles one Strength gain per combat. SetAmount
 // records the doubled total against the card, so the relic needs its
 // own entry in the STRENGTH_POWER source table. The extra is captured

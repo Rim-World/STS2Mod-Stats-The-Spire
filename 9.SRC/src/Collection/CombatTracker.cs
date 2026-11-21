@@ -148,6 +148,10 @@ public sealed class CombatTracker
 
     // H3: Deferred Osty death negative defense — only applied when enemy next attacks player
     private (string sourceId, string sourceType, int amount)? _pendingOstyDeathDefense;
+
+    // R2: Regal Pillow's +15 rest-site heal is part of the same Heal event.
+    // Split the recorded amount without adding a second full heal.
+    private (string sourceId, string sourceType, int amount)? _pendingRestHealBonus;
     // Idempotency guard: a single Osty death can be observed by both the
     // single-creature and collection Kill overloads (and duplicated by nested
     // prefixes). Reset on combat start and whenever Osty is summoned again.
@@ -376,6 +380,7 @@ public sealed class CombatTracker
         _playerDied = false;
         _floor = floor;
         _pendingOstyDeathDefense = null;
+        _pendingRestHealBonus = null;
         _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
         _pendingUpgradeBlockDelta = 0;
@@ -1701,6 +1706,19 @@ public sealed class CombatTracker
         baseAccum.TimesPlayed += 1;
     }
 
+    /// <summary>
+    /// Set the rest-site bonus that must be split out of the next heal.
+    /// Called by the RegalPillow.ModifyRestSiteHealAmount postfix.
+    /// </summary>
+    public void SetRestHealBonus(int amount, string sourceId = "REGAL_PILLOW",
+        string sourceType = "relic")
+    {
+        if (amount <= 0 || string.IsNullOrEmpty(sourceId)) return;
+        _pendingRestHealBonus = (sourceId, sourceType, amount);
+    }
+
+    public void ClearRestHealBonus() => _pendingRestHealBonus = null;
+
     // ── Healing ──────────────────────────────────────────────
 
     /// <summary>
@@ -1723,6 +1741,28 @@ public sealed class CombatTracker
             sourceType = fallbackType ?? "other";
         }
 
+        // R2: RegalPillow's ModifyRestSiteHealAmount returns base + 15.
+        // Split that single Heal event: the base remains REST_SITE, and the
+        // bonus becomes a relic row. The total healed stays unchanged.
+        if (_pendingRestHealBonus is { } restBonus
+            && string.Equals(fallbackId, "REST_SITE", StringComparison.Ordinal))
+        {
+            _pendingRestHealBonus = null;
+            int bonus = Math.Min(amount, Math.Max(0, restBonus.amount));
+            int baseAmount = amount - bonus;
+            if (baseAmount > 0)
+                AddHealingRecord(sourceId, sourceType, baseAmount);
+            if (bonus > 0)
+                AddHealingRecord(restBonus.sourceId, restBonus.sourceType, bonus);
+            return;
+        }
+
+        AddHealingRecord(sourceId, sourceType, amount);
+    }
+
+    private void AddHealingRecord(string sourceId, string sourceType, int amount)
+    {
+        if (amount <= 0) return;
         if (_liveCombatInProgress)
         {
             // Combat in progress, including the post-victory window before
@@ -1734,7 +1774,7 @@ public sealed class CombatTracker
         else
         {
             // Outside combat (rest site, events, merchant, floor regen)
-            // Write directly to run-level aggregator
+            // Write directly to run-level aggregator.
             RunContributionAggregator.Instance.AddHealing(sourceId, sourceType, amount);
         }
     }
