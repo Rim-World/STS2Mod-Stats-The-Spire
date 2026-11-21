@@ -1,0 +1,15 @@
+{
+  "id": "fool_live_probe_160",
+  "name": "StatsTheSpire Fool Live Probe 1.6.0",
+  "author": "test",
+  "description": "Test-only: adds the 16 Fool powers and 15 Fool relics to the local player so live attribution can be inspected.",
+  "version": "1.6.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.113.1",
+  "dependencies": [
+    { "id": "STS2-RitsuLib", "min_version": "0.6.14" },
+    { "id": "sts2_statsthespire_local", "min_version": "1.5.2" }
+  ]
+}

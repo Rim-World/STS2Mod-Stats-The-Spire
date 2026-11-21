@@ -2,7 +2,7 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
-## [Unreleased]
+## [1.6.0] - 2026-11-22
 
 ### Added
 - `AttributionGapPatch` for confirmed 1.6.0 relic/power source gaps: Belt Buckle, Ruined Helmet, Snecko Skull, Unsettling Lamp, Tungsten Rod, Beating Remnant, Brilliant Scarf, Bookmark.
@@ -21,10 +21,13 @@
 - Sovereign Blade forge sub-bars consume their forge log; generated-card origins use the live power/relic/potion context; upgrade block no longer double counts.
 
 ### Verified
-- v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings.
+- v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings; final 1.6.0 DLL is 563,200 bytes, SHA-256 `c206f9dd00a30384f7142525a52d37024cb3c82072577e95104d11f54e44be9e`.
+- v0.113.1 standard AutoSlayer seed 62005: victory, Silent, Standard, act 3/3, floor 49; 29 combats, 31 combat files, 53 summary sources; log `8.TEST/1.6.0/v113.1-autoslay-62005-stdout.log`.
+- v0.113.1 Fool live probe seed 62003: victory, Ironclad, act 3/3, floor 48; 28 combats, 97 summary sources, 7 shop purchases; 15 Fool relics added and 18 Fool powers applied; log `8.TEST/1.6.0/v113.1-foolprobe-62003c-stdout.log`.
+- v0.113.1 Fool hook context check: 18/18 powers and 15/15 relics PASS; log `8.TEST/1.6.0/v113.1-foolprobe-context-62999-stdout.log`.
 - v0.111.1 `AttributionProbe`: 10/10 PASS (`RESULT PASS`) on final code, log `8.TEST/1.6.0/attribution-probe-v111-15-stdout.log`; final rerun `v111-15` exited 0.
 - v0.111.1 mod initialization: `RealDamageGuard patched v0.111 7-param`; `OstyDeathPatch patched collection Kill(Creature, bool)`; all 34 Fool targets skipped on the older game.
-- Not verified: v0.113.1 full AutoSlayer, Fool target attribution in a live run, and the remaining P1 probes.
+- Not verified: manual F8 press, pause-menu settings page, and visual acceptance of the new counters.
 
 ## [1.5.2] - 2026-11-21
 

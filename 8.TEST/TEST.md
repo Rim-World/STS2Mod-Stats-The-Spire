@@ -214,9 +214,9 @@
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
 |---|---|---|---|---|---|
 | `build-v111-check2.log` | 2026-11-21 07:02 | 否 | 4 | v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
-| `build-v111-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.111.1 Release 构建；0 错误 | 是 |
+| `build-v111-160-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.111.1 Release 构建；0 错误 | 是 |
 | `build-v113-check3.log` | 2026-11-21 07:02 | 否 | 4 | v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
-| `build-v113-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.113.1 Release 构建；0 错误 | 是 |
+| `build-v113-160-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.113.1 Release 构建；0 错误 | 是 |
 | `build-regression-probe4.log` | 2026-11-21 07:17 | 否 | 1 | 持久化回归探针构建 | 是 |
 | `build-palebluedot-probe3.log` | 2026-11-21 07:13 | 否 | 1 | PaleBlueDot 探针构建 | 是 |
 | `build-pbd-v111.log` | 2026-11-21 08:42 | 否 | 1 | v0.111.1 安装下的 PaleBlueDot 探针构建；0 错误 | 是 |
@@ -274,6 +274,17 @@
 | `attribution-probe-v111-2-stdout.log` | 2026-11-21 23:44 | 否 | 314 | 探针中间失败：锻造复合键读取错误；保留作失败记录 | 否 |
 | `attribution-probe-v111-stdout.log` | 2026-11-21 23:43 | 否 | 310 | 首次带 Ritsu/主 Mod 的探针尝试；无头资源加载崩溃，探针未执行 | 否 |
 | `attribution-probe-isolated-stdout.log` | 2026-11-21 23:45 | 否 | 14,509 | 隔离探针缺少主 DLL 依赖，FileNotFound 重复报错；保留作失败记录 | 否 |
+| `build-v113-160-final.log` | 2026-11-22 02:00 | 否 | 4 | 1.6.0 最终 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111-160-final.log` | 2026-11-22 02:00 | 否 | 4 | 1.6.0 最终 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-fool-live-probe.log` | 2026-11-22 01:33 | 否 | 1 | 愚者实机/上下文探针构建；0 错误 | 是 |
+| `FoolLiveProbe/` | 2026-11-22 01:33 | 否 | 20 | 愚者 18 能力/15 遗物/5 触发牌与上下文检查探针工程（目录整体登记） | 是 |
+| `v113.1-autoslay-62005-stdout.log` | 2026-11-22 01:32 | 否 | 896 | v0.113.1 标准完整 AutoSlayer；victory，Silent，49 层；29 战斗、53 来源 | 是 |
+| `v113.1-autoslay-62005-autoslay.log` | 2026-11-22 01:32 | 否 | 148 | 同一局 AutoSlayer 操作日志 | 是 |
+| `v113.1-foolprobe-62003c-stdout.log` | 2026-11-22 01:47 | 否 | 880 | v0.113.1 愚者实机；victory，Ironclad，48 层；28 战斗、97 来源、7 购买 | 是 |
+| `v113.1-foolprobe-62003c-autoslay.log` | 2026-11-22 01:47 | 否 | 123 | 同一愚者局 AutoSlayer 操作日志 | 是 |
+| `v113.1-foolprobe-context-62999-stdout.log` | 2026-11-22 01:48 | 否 | 365 | 愚者上下文检查；18/18 能力、15/15 遗物 PASS | 是 |
+| `v113.1-foolprobe-62003b-stdout.log` | 2026-11-22 01:40 | 否 | 779 | 首次成功加入 18 能力但未记录来源的愚者实机；保留作对照 | 否 |
+| `v113.1-foolprobe-62003-stdout.log` | 2026-11-22 01:33 | 否 | 662 | 首次愚者实机；SetUpCombat patch 未生效，能力未加入；保留失败记录 | 否 |
 
 以上 `.log` 由 `.gitignore` 排除，不进入版本库；只保留在本机。
 

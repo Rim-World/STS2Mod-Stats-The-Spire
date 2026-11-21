@@ -64,9 +64,12 @@
 | v0.111.1 定向探针（最终代码） | 首场治疗、锻造消费、升级格挡、待定抽牌、上下文、费用、抽牌、休息处、多来源格挡、嵌套卡牌 10/10 PASS | `attribution-probe-v111-15-stdout.log` |
 | v0.111.1 主 Mod 加载 | 初始化成功；`RealDamageGuard patched v0.111 7-param`；`OstyDeathPatch patched collection Kill(Creature, bool)`；34 条愚者目标全部跳过 | `attribution-probe-v111-15-stdout.log` |
 | v0.111.1 AutoSlayer 抽检 | 种子 62001 跑到第 25 层、14 场战斗后测试超时；战斗数据正常 | `v111-autoslay-62001-stdout.log` |
-| v0.113.1 完整 AutoSlayer | 未验证（当前安装为 v0.111.1） | — |
-| 16 张能力牌/15 个遗物实机 | 未验证 | — |
+| v0.113.1 标准完整 AutoSlayer | victory，Silent，3/3 幕，49 层；29 场战斗、53 条来源；路径未经过商店 | `v113.1-autoslay-62005-stdout.log` |
+| v0.113.1 愚者实机 | victory，Ironclad，3/3 幕，48 层；28 场战斗、97 条来源、7 条购买；15 遗物、18 能力 | `v113.1-foolprobe-62003c-stdout.log` |
+| 愚者上下文 | 18/18 能力、15/15 遗物 PASS；34 条 hook 全部安装 | `v113.1-foolprobe-context-62999-stdout.log` |
+| 16 张能力牌/15 个遗物实机 | 上下文 18/18、15/15 PASS；实机可计量来源 9 个能力、6 个遗物 | `v113.1-foolprobe-62003c-stdout.log` |
 | 来源保存-恢复 | 遗物/能力/卡牌上下文已实现；伤害/格挡预览已隔离 | `attribution-probe-v111-15-stdout.log` |
+| 最终双版本构建 | v0.113.1 与 v0.111.1 均 0 错误、7 个既有警告；DLL 563,200 字节 | `build-v113-160-final.log`、`build-v111-160-final.log` |
 
 失败记录：
 
