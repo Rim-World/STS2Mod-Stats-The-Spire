@@ -219,6 +219,7 @@
 | `build-v113-final.log` | 2026-11-21 07:24 | 否 | 4 | 最终源码的 v0.113.1 Release 构建；0 错误 | 是 |
 | `build-regression-probe4.log` | 2026-11-21 07:17 | 否 | 1 | 持久化回归探针构建 | 是 |
 | `build-palebluedot-probe3.log` | 2026-11-21 07:13 | 否 | 1 | PaleBlueDot 探针构建 | 是 |
+| `build-pbd-v111.log` | 2026-11-21 08:42 | 否 | 1 | v0.111.1 安装下的 PaleBlueDot 探针构建；0 错误 | 是 |
 | `build-ui-lifecycle-probe2.log` | 2026-11-21 07:14 | 否 | 1 | UI 生命周期探针构建 | 是 |
 | `build-mapfixprobe.log` | 2026-11-21 07:16 | 否 | 1 | 地图悬停清理探针构建 | 是 |
 | `regressionprobe-final-console.log` | 2026-11-21 08:07 | 否 | 320 | 最终回归完整输出；8 项 PASS，含 OSTY 与 legacy | 是 |
@@ -231,6 +232,12 @@
 | `ui-lifecycle-stdout.log` | 2026-11-21 07:19 | 否 | 313 | 弹窗 helper、直接 Esc、回放清空；RESULT PASS；未触发真实 OnSubmenuHidden | 是 |
 | `mapfix-152-stdout.log` | 2026-11-21 07:20 | 否 | 438 | 地图悬停清理；`[MapFixProbe] PASS` | 是 |
 | `regressionprobe-v111-stdout-console.log` | 2026-11-21 07:20 | 否 | 332 | 复制安装的 v0.111.1 尝试；RitsuLib 仍选 0.113 分支，初始化失败 | 是 |
+| `v111.1-final-91111-stdout.log` | 2026-11-21 08:39 | 否 | 785 | 真实 v0.111.1 完整 AutoSlay；主 Mod v1.5.2；26 战斗、60 来源、11 购买；第 49 层放弃 | 是 |
+| `v111.1-final-91111.log` | 2026-11-21 08:39 | 否 | 131 | 同一局的游戏日志 | 是 |
+| `v111.1-pbd-final-console.log` | 2026-11-21 08:45 | 否 | 357 | v0.111.1 PaleBlueDot；`firstDrawn=1`、来源/映射来源正确、`duplicateSameTurn=False` | 是 |
+| `v111.1-pbd-final.log` | 2026-11-21 08:45 | 否 | 5 | 同一探针的游戏日志 | 是 |
+| `v111.1-pbd-upgraded-console.log` | 2026-11-21 08:50 | 否 | 430 | v0.111.1 升级版；`firstDrawn=2`、来源/映射来源正确、`duplicateSameTurn=False` | 是 |
+| `v111.1-pbd-upgraded.log` | 2026-11-21 08:50 | 否 | 5 | 同一探针的游戏日志 | 是 |
 | `RegressionProbe/` | 2026-11-21 07:17 | 否 | 16 | 持久化、缓存、路径购买与放弃局探针工程（目录整体登记） | 是 |
 | `PaleBlueDotProbe/` | 2026-11-21 07:19 | 否 | 24 | PaleBlueDot 普通/升级探针工程（目录整体登记） | 是 |
 | `UiLifecycleProbe/` | 2026-11-21 07:19 | 否 | 20 | 弹窗、Esc、回放探针工程（目录整体登记） | 是 |
@@ -263,3 +270,4 @@
 | 2026-11-21 02:14 | 修正探针节点查找；标准模式指标可见、Blitz 隐藏已实测 |
 | 2026-11-21 03:52 | 新增地图悬停清理探针；`MapFixProbe PASS`，无 `Child is not a child` 错误 |
 | 2026-11-21 07:15 | 建立 1.5.2 测试表；登记回归、PaleBlueDot、UI、地图探针与 v0.111.1 尝试 |
+| 2026-11-21 08:46 | 登记真实 v0.111.1 完整实机、PaleBlueDot 与 v111 探针构建 |

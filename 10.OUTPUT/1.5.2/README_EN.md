@@ -200,7 +200,7 @@ RitsuLib provides the settings page. Open it from the main menu, run pause, or c
 └── mod_prefs.json                     # Mod settings
 ```
 
-Files from 1.4.4 and earlier named `{seed}_*.json` are read as a legacy fallback. They are not moved or renamed. Two consecutive seed-61111 runs were verified on v0.113.1.
+Files from 1.4.4 and earlier named `{seed}_*.json` are read as a legacy fallback. They are not moved or renamed. Two consecutive seed-61111 runs were verified on v0.113.1; v0.111.1 was verified with seed 91111 in a StartTime-keyed directory.
 
 ---
 
@@ -247,4 +247,4 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.5.2 passed persistence and PaleBlueDot probes on v0.113.1 and compiles against both assemblies; run the v0.111.1 game binary for that version's runtime check. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.5.2 passed persistence regression and PaleBlueDot probes on v0.113.1, and a full live run plus PaleBlueDot probe on v0.111.1. Card/relic ID changes across game versions are handled automatically.
