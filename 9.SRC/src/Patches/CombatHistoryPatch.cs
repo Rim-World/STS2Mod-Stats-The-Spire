@@ -2458,7 +2458,7 @@ public static class PaleBlueDotPowerContextPatch
         typeof(PowerModel).GetField("_internalData", BindingFlags.Instance | BindingFlags.NonPublic);
     private static readonly FieldInfo? ActivatedField =
         typeof(PaleBlueDotPower).GetNestedType("Data", BindingFlags.NonPublic)
-            ?.GetField("alreadyActivatedThisTurn", BindingFlags.Instance | BindingFlags.NonPublic);
+            ?.GetField("alreadyActivatedThisTurn", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     private static bool AlreadyActivated(PaleBlueDotPower power)
     {

@@ -12,7 +12,7 @@
 
 ### Fixed
 
-- Pale blue dot's next-turn draw is now credited to `PALEBLUE_DOT`, not the fifth attack card; amount 1 and 2 probes pass.
+- Pale blue dot's next-turn draw is now credited to `PALE_BLUE_DOT`, not the fifth attack card; amount 1 and 2 probes pass.
 - Run-history popup closes when the submenu hides, Esc closes only the popup, and replay data is cleared when the contribution panel hides.
 - Contribution and intent panels hide on run end, abandon, save-quit, new run, and defeat.
 - `live.json` writes are coalesced with a 1 s debounce and force-flushed at combat end and save-quit.
@@ -39,7 +39,7 @@
 ### Verified
 
 - v0.113.1 persistence regression probe: duplicate merge, corrupt quarantine, atomic write, career source, abandoned cause, shop path buckets all PASS.
-- v0.113.1 PaleBlueDot probes: amount 1 and amount 2 both PASS; first draw count matches and source is `PALEBLUE_DOT`.
+- v0.113.1 PaleBlueDot probes: amount 1 and amount 2 both PASS; first draw count matches and source is `PALE_BLUE_DOT`.
 - v0.113.1 UI lifecycle probe: popup close, Esc, replay clear all PASS.
 - v0.113.1 map probe: `MapFixProbe PASS`; no `Child is not a child` error.
 - v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings.

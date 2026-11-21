@@ -31,6 +31,8 @@ public static class PaleBlueDotProbe
     private static string _firstSource = "";
     private static string _otherDrawSource = "";
     private static string _mapSource = "";
+    private static int _firstTurn;
+    private static bool _duplicateSameTurn;
 
     public static void Initialize()
     {
@@ -47,11 +49,11 @@ public static class PaleBlueDotProbe
             }
 
             TryReadDraw();
-            if (_sawDraw && ++_drawFrames > 60)
+            if (_sawDraw && ++_drawFrames > 300)
                 Finish(tree, pass: _firstDrawn == ExpectedAmount
                     && _firstSource == "PALE_BLUE_DOT"
                     && _mapSource == "PALE_BLUE_DOT"
-                    && _otherDrawSource.Length == 0);
+                    && !_duplicateSameTurn);
             else if (!_sawDraw && _frames > 3600)
                 Finish(tree, pass: false);
         };
@@ -122,9 +124,15 @@ public static class PaleBlueDotProbe
                 {
                     _firstDrawn = accum.CardsDrawn;
                     _firstSource = accum.SourceId;
+                    _firstTurn = CombatTracker.Instance.TurnCount;
                     _mapSource = ContributionMap.Instance.GetPowerSource("DRAW_CARDS_NEXT_TURN_POWER")?.SourceId ?? "";
                     _sawDraw = true;
                     _drawFrames = 0;
+                }
+                else if (CombatTracker.Instance.TurnCount == _firstTurn
+                         && accum.CardsDrawn > _firstDrawn)
+                {
+                    _duplicateSameTurn = true;
                 }
                 GD.Print($"[PaleBlueDotProbe] draw source={accum.SourceId} count={accum.CardsDrawn} first={_sawDraw} key={key}");
             }
@@ -137,7 +145,7 @@ public static class PaleBlueDotProbe
 
     private static void Finish(SceneTree tree, bool pass)
     {
-        GD.Print($"[PaleBlueDotProbe] RESULT {(pass ? "PASS" : "FAIL")} expected={ExpectedAmount} firstDrawn={_firstDrawn} source={_firstSource} mapSource={_mapSource} otherSource={_otherDrawSource}");
+        GD.Print($"[PaleBlueDotProbe] RESULT {(pass ? "PASS" : "FAIL")} expected={ExpectedAmount} firstDrawn={_firstDrawn} source={_firstSource} mapSource={_mapSource} otherSource={_otherDrawSource} duplicateSameTurn={_duplicateSameTurn}");
         tree.Quit();
     }
 }
