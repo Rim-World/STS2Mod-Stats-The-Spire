@@ -110,7 +110,10 @@ public static class PaleBlueDotProbe
                 if (accum.CardsDrawn <= 0) continue;
                 if (accum.SourceId != "PALE_BLUE_DOT" && accum.SourceId != "PALE_BLUE_DOT_POWER")
                 {
-                    _otherDrawSource = accum.SourceId;
+                    // Relics such as Ring of the Snake legitimately draw
+                    // extra cards. The regression is a CARD bucket (the fifth
+                    // attack) receiving the pale-blue-dot draw.
+                    if (accum.SourceType == "card") _otherDrawSource = accum.SourceId;
                     continue;
                 }
                 if (_sawDraw && accum.CardsDrawn == _firstDrawn && accum.SourceId == _firstSource) continue;

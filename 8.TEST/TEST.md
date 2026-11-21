@@ -224,9 +224,9 @@
 | `regressionprobe-final-console.log` | 2026-11-21 08:07 | 否 | 320 | 最终回归完整输出；8 项 PASS，含 OSTY 与 legacy | 是 |
 | `regressionprobe2-stdout.log` | 2026-11-21 07:17 | 否 | 311 | 中间回归输出；6 项 PASS | 是 |
 | `regressionprobe2-game.log` | 2026-11-21 07:17 | 否 | 1 | 同一回归探针的游戏日志 | 是 |
-| `palebluedot-audit-1b-console.log` | 2026-11-21 08:05 | 否 | 450 | 最终普通版 PaleBlueDot；`PALE_BLUE_DOT`、mapSource 正确 | 是 |
+| `palebluedot-final1b-console.log` | 2026-11-21 08:12 | 否 | 450 | 最终 DLL 普通版 PaleBlueDot；`PALE_BLUE_DOT`、mapSource 正确；遗物抽牌已排除 | 是 |
 | `palebluedot-1c-stdout.log` | 2026-11-21 07:18 | 否 | 451 | 中间普通版探针 | 是 |
-| `palebluedot-audit-2-console.log` | 2026-11-21 08:06 | 否 | 450 | 最终升级版 PaleBlueDot；`firstDrawn=2`、mapSource 正确 | 是 |
+| `palebluedot-final2-console.log` | 2026-11-21 08:11 | 否 | 450 | 最终 DLL 升级版 PaleBlueDot；`firstDrawn=2`、mapSource 正确 | 是 |
 | `palebluedot-2-stdout.log` | 2026-11-21 07:19 | 否 | 453 | 中间升级版探针 | 是 |
 | `ui-lifecycle-stdout.log` | 2026-11-21 07:19 | 否 | 313 | 弹窗 helper、直接 Esc、回放清空；RESULT PASS；未触发真实 OnSubmenuHidden | 是 |
 | `mapfix-152-stdout.log` | 2026-11-21 07:20 | 否 | 438 | 地图悬停清理；`[MapFixProbe] PASS` | 是 |
