@@ -148,45 +148,43 @@ public static class BeltBuckleContextGapPatch
 {
     private const string RelicId = "BELT_BUCKLE";
 
-    private static bool SetContext(BeltBuckle relic)
+    private static CombatTracker.AttributionContext CaptureContext(BeltBuckle relic)
     {
-        bool set = false;
+        var context = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             if (!CombatHistoryPatch.IsLocalPlayer(relic.Owner)) return;
             CombatTracker.Instance.SetActiveRelic(RelicId);
-            set = true;
         });
-        return set;
+        return context;
     }
 
-    private static void ClearContext(bool set)
+    private static void RestoreContext(CombatTracker.AttributionContext context)
     {
-        if (!set) return;
-        Safe.Run(() =>
-        {
-            if (CombatTracker.Instance.ActiveRelicId == RelicId)
-                CombatTracker.Instance.ClearActiveRelic();
-        });
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(context));
     }
 
     [HarmonyPatch(typeof(BeltBuckle), nameof(BeltBuckle.BeforeCombatStart))]
     [HarmonyPrefix]
-    public static void BeforeBeforeCombatStart(BeltBuckle __instance, out bool __state)
-        => __state = SetContext(__instance);
+    public static void BeforeBeforeCombatStart(BeltBuckle __instance,
+        out CombatTracker.AttributionContext __state)
+        => __state = CaptureContext(__instance);
 
     [HarmonyPatch(typeof(BeltBuckle), nameof(BeltBuckle.BeforeCombatStart))]
     [HarmonyPostfix]
-    public static void AfterBeforeCombatStart(bool __state) => ClearContext(__state);
+    public static void AfterBeforeCombatStart(CombatTracker.AttributionContext __state)
+        => RestoreContext(__state);
 
     [HarmonyPatch(typeof(BeltBuckle), nameof(BeltBuckle.AfterPotionDiscarded))]
     [HarmonyPrefix]
-    public static void BeforeAfterPotionDiscarded(BeltBuckle __instance, out bool __state)
-        => __state = SetContext(__instance);
+    public static void BeforeAfterPotionDiscarded(BeltBuckle __instance,
+        out CombatTracker.AttributionContext __state)
+        => __state = CaptureContext(__instance);
 
     [HarmonyPatch(typeof(BeltBuckle), nameof(BeltBuckle.AfterPotionDiscarded))]
     [HarmonyPostfix]
-    public static void AfterAfterPotionDiscarded(bool __state) => ClearContext(__state);
+    public static void AfterAfterPotionDiscarded(CombatTracker.AttributionContext __state)
+        => RestoreContext(__state);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -491,28 +489,22 @@ public static class BookmarkCostTagPatch
 
     [HarmonyPatch(typeof(Bookmark), nameof(Bookmark.AfterFlush))]
     [HarmonyPrefix]
-    public static void BeforeAfterFlush(Bookmark __instance, out bool __state)
+    public static void BeforeAfterFlush(Bookmark __instance,
+        out CombatTracker.AttributionContext __state)
     {
-        bool set = false;
+        __state = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             if (!CombatHistoryPatch.IsLocalPlayer(__instance.Owner)) return;
             CombatTracker.Instance.SetActiveRelic(RelicId);
-            set = true;
         });
-        __state = set;
     }
 
     [HarmonyPatch(typeof(Bookmark), nameof(Bookmark.AfterFlush))]
     [HarmonyPostfix]
-    public static void AfterAfterFlush(bool __state)
+    public static void AfterAfterFlush(CombatTracker.AttributionContext __state)
     {
-        if (!__state) return;
-        Safe.Run(() =>
-        {
-            if (CombatTracker.Instance.ActiveRelicId == RelicId)
-                CombatTracker.Instance.ClearActiveRelic();
-        });
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(__state));
     }
 
     [HarmonyPatch(typeof(CardEnergyCost), nameof(CardEnergyCost.AddUntilPlayed))]

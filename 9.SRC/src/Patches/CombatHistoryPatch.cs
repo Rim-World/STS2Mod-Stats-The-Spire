@@ -262,8 +262,10 @@ public static class CombatHistoryPatch
 /// </summary>
 public static class RelicHookContextPatcher
 {
-    public static void SetRelicContext(RelicModel __instance)
+    public static void SetRelicContext(RelicModel __instance,
+        out CombatTracker.AttributionContext __state)
     {
+        __state = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             // Multiplayer: only track relics owned by the local player.
@@ -279,15 +281,9 @@ public static class RelicHookContextPatcher
         });
     }
 
-    public static void ClearRelicContext()
+    public static void ClearRelicContext(CombatTracker.AttributionContext __state)
     {
-        Safe.Run(() =>
-        {
-            CombatTracker.Instance.ClearActiveRelic();
-            // One-shot cleanup: a relic hook that did not draw must not leak
-            // its pending draw attribution into a later draw.
-            CombatTracker.Instance.ClearPendingDrawSource();
-        });
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(__state));
     }
 
     public static void PatchAll(Harmony harmony)
@@ -686,8 +682,10 @@ public static class RelicHookContextPatcher
 /// </summary>
 public static class PowerHookContextPatcher
 {
-    public static void SetPowerContext(PowerModel __instance)
+    public static void SetPowerContext(PowerModel __instance,
+        out CombatTracker.AttributionContext __state)
     {
+        __state = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             var powerOwner = __instance.Owner;
@@ -727,11 +725,9 @@ public static class PowerHookContextPatcher
             }
             else
             {
-                // No known source — keep the legacy behaviour of caching the
-                // powerId so OnDamageDealt at least knows we're inside a
-                // power-hook context. _activePowerSourceId stays null →
-                // attribution falls through to whatever single-source
-                // resolver picks up next.
+                // No known source — cache the powerId for indirect damage
+                // classification. SetActivePowerSource clears any inherited
+                // source id when the map has no entry.
                 CombatTracker.Instance.SetActivePowerSource(powerId);
             }
 
@@ -742,15 +738,9 @@ public static class PowerHookContextPatcher
         });
     }
 
-    public static void ClearPowerContext()
+    public static void ClearPowerContext(CombatTracker.AttributionContext __state)
     {
-        Safe.Run(() =>
-        {
-            CombatTracker.Instance.ClearActivePowerSource();
-            // A power trigger that ends without drawing must not leave a
-            // pending draw source behind for the next draw.
-            CombatTracker.Instance.ClearPendingDrawSource();
-        });
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(__state));
     }
 
     public static void PatchAll(Harmony harmony)

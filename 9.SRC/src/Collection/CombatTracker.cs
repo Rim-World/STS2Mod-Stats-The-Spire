@@ -198,6 +198,34 @@ public sealed class CombatTracker
     /// </summary>
     public bool LiveCombatInProgress => _liveCombatInProgress;
 
+    /// <summary>
+    /// Snapshot of the non-card attribution contexts. A nested relic/power
+    /// hook saves this before setting its own context and restores it in the
+    /// postfix, so the outer hook's later effects keep their source.
+    /// </summary>
+    public readonly record struct AttributionContext(
+        string? RelicId,
+        string? PotionId,
+        string? PowerSourceId,
+        string? PowerSourceType,
+        string? PowerId);
+
+    public AttributionContext CaptureAttributionContext() => new(
+        _activeRelicId,
+        _activePotionId,
+        _activePowerSourceId,
+        _activePowerSourceType,
+        _activePowerId);
+
+    public void RestoreAttributionContext(AttributionContext context)
+    {
+        _activeRelicId = context.RelicId;
+        _activePotionId = context.PotionId;
+        _activePowerSourceId = context.PowerSourceId;
+        _activePowerSourceType = context.PowerSourceType;
+        _activePowerId = context.PowerId;
+    }
+
     // Public DPS accessors (PRD 3.7)
     public int TurnCount => _turnCount;
     public int TotalDamageDealt => _totalDamageDealt;

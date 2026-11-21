@@ -177,9 +177,10 @@ public static class FoolContentPatch
 
     // ── Power context ───────────────────────────────────────
 
-    public static void SetPowerContext(PowerModel __instance, out bool __state)
+    public static void SetPowerContext(PowerModel __instance,
+        out CombatTracker.AttributionContext __state)
     {
-        bool applied = false;
+        __state = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             if (!IsLocalPowerOwner(__instance)) return;
@@ -187,26 +188,23 @@ public static class FoolContentPatch
             var powerId = __instance.Id.Entry;
             if (string.IsNullOrEmpty(powerId)) return;
 
-            // SetActivePowerSource 在查不到来源时不会清除旧值；先清一次，
-            // 避免把本次 hook 的效果记到外层/上一次的 power 上。
-            CombatTracker.Instance.ClearActivePowerSource();
+            // 保存/恢复外层上下文；SetActivePowerSource 在来源未知时会清空
+            // 继承的 source id，避免记到上一次的 power。
             CombatTracker.Instance.SetActivePowerSource(powerId);
-            applied = true;
         });
-        __state = applied;
     }
 
-    public static void ClearPowerContext(bool __state)
+    public static void ClearPowerContext(CombatTracker.AttributionContext __state)
     {
-        if (!__state) return;
-        Safe.Run(() => CombatTracker.Instance.ClearActivePowerSource());
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(__state));
     }
 
     // ── Relic context ───────────────────────────────────────
 
-    public static void SetRelicContext(RelicModel __instance, out bool __state)
+    public static void SetRelicContext(RelicModel __instance,
+        out CombatTracker.AttributionContext __state)
     {
-        bool applied = false;
+        __state = CombatTracker.Instance.CaptureAttributionContext();
         Safe.Run(() =>
         {
             if (!CombatHistoryPatch.IsLocalPlayer(__instance.Owner)) return;
@@ -215,15 +213,12 @@ public static class FoolContentPatch
             if (string.IsNullOrEmpty(relicId)) return;
 
             CombatTracker.Instance.SetActiveRelic(relicId);
-            applied = true;
         });
-        __state = applied;
     }
 
-    public static void ClearRelicContext(bool __state)
+    public static void ClearRelicContext(CombatTracker.AttributionContext __state)
     {
-        if (!__state) return;
-        Safe.Run(() => CombatTracker.Instance.ClearActiveRelic());
+        Safe.Run(() => CombatTracker.Instance.RestoreAttributionContext(__state));
     }
 
     // ── Helpers ─────────────────────────────────────────────

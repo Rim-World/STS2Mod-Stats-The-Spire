@@ -49,7 +49,7 @@ public static class AttributionProbe
             CombatTracker.Instance.ForceResetAllContext();
             RunContributionAggregator.Instance.Reset();
 
-            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear();
+            all = ProbeFirstHeal() & ProbeForgeConsume() & ProbeUpgradeBlockSplit() & ProbePendingDrawClear() & ProbeContextRestore();
         }
         catch (Exception ex)
         {
@@ -148,6 +148,37 @@ public static class AttributionProbe
         catch (Exception ex)
         {
             GD.Print($"[AttributionProbe] upgrade-block FAIL {ex}");
+            return false;
+        }
+    }
+
+
+    private static bool ProbeContextRestore()
+    {
+        try
+        {
+            var tracker = CombatTracker.Instance;
+            tracker.ForceResetAllContext();
+            tracker.OnCombatStart("PROBE_CONTEXT_RESTORE", "normal", 1);
+
+            tracker.SetActiveRelic("OUTER_RELIC");
+            tracker.SetActivePowerSourceManual("OUTER_POWER", "OUTER_SOURCE", "power");
+            var outer = tracker.CaptureAttributionContext();
+
+            tracker.SetActiveRelic("INNER_RELIC");
+            tracker.SetActivePowerSourceManual("INNER_POWER", "INNER_SOURCE", "power");
+            tracker.RestoreAttributionContext(outer);
+
+            bool pass = tracker.ActiveRelicId == "OUTER_RELIC"
+                && tracker.ActivePowerSourceId == "OUTER_SOURCE"
+                && tracker.ActivePowerSourceType == "power";
+            GD.Print($"[AttributionProbe] context-restore relic={tracker.ActiveRelicId} power={tracker.ActivePowerSourceId} expect=OUTER_RELIC/OUTER_SOURCE {(pass ? "PASS" : "FAIL")}");
+            tracker.OnCombatEnd();
+            return pass;
+        }
+        catch (Exception ex)
+        {
+            GD.Print($"[AttributionProbe] context-restore FAIL {ex}");
             return false;
         }
     }

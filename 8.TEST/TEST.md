@@ -260,6 +260,7 @@
 | `attribution-probe-v111-4-stdout.log` | 2026-11-22 00:02 | 否 | 315 | 最终代码 v0.111.1 定向探针；4/4 PASS，RESULT PASS | 是 |
 | `attribution-probe-v111-5-stdout.log` | 2026-11-22 00:12 | 否 | 315 | 最终 DLL 定向探针；4/4 PASS；RESULT 后无头进程异常退出 | 是 |
 | `attribution-probe-v111-6-stdout.log` | 2026-11-22 00:25 | 否 | 315 | 审阅修正后最终 DLL 定向探针；4/4 PASS，EXIT=0 | 是 |
+| `attribution-probe-v111-7-stdout.log` | 2026-11-22 00:55 | 否 | 315 | 上下文保存/恢复改动后探针；5/5 PASS，EXIT=0 | 是 |
 | `attribution-probe-v111-2-stdout.log` | 2026-11-21 23:44 | 否 | 314 | 探针中间失败：锻造复合键读取错误；保留作失败记录 | 否 |
 | `attribution-probe-v111-stdout.log` | 2026-11-21 23:43 | 否 | 310 | 首次带 Ritsu/主 Mod 的探针尝试；无头资源加载崩溃，探针未执行 | 否 |
 | `attribution-probe-isolated-stdout.log` | 2026-11-21 23:45 | 否 | 14,509 | 隔离探针缺少主 DLL 依赖，FileNotFound 重复报错；保留作失败记录 | 否 |
