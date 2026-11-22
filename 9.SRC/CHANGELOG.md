@@ -2,6 +2,21 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.8.1] - 2026-11-23
+
+### Changed
+- Removed the left statistics window's close button. The right contribution window's close button now closes both windows. Esc and the dim layer still close both.
+- Both run-history windows now use the same width and height. At 1920×1080 they are 680×900 each, separated by 16 px and centered with 272 px side margins.
+- The right help and close buttons grew from 32×32 to 40×40 with 18 px text. They now use high-contrast fills, bright 2 px borders, white text, and a dark outline.
+- The left window's title is 30 px; its outer side margins are 18 px; section inner padding is 16 px; table column gaps are 16 px; numeric columns are at least 64 px wide.
+- `ContributionPanel.ShowRunReplay` now receives a close callback. The replay close button calls `RunHistoryPatch.CloseOpenPopup`; the live F8 panel still closes only itself.
+
+### Verification
+- v0.113.1 in-game layout probe: PASS. Use real 49-floor history `1795349355.run`. Left window `(272,90)` 680×900; right window `(968,90)` 680×900; gap 16; both side margins 272; width 71.7% and height 83.3%. Left has no close button; both right buttons are 40×40 with 2 px borders and 18 px text. Right close removed both windows. Left content height 799, no vertical scrolling.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 574,464 bytes with SHA-256 `12860ba0dd0b6c5931aa83ca2dac6945d1fdfe0476f68b9dc731fe3b161d554e`.
+- Version check `version-ok 1.8.1`; release gate `passes=12 failures=0`; installed v0.113.1 load showed one `v1.8.1 initializing` and registered F8.
+- User visual check not done.
+
 ## [1.8.0] - 2026-11-23
 
 ### Changed

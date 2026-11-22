@@ -16,6 +16,8 @@ namespace CommunityStats.Patches;
 /// 1.8.0: clicking 本局统计 now opens two windows side by side. The left
 /// window is the single-run statistics popup; the right window is the
 /// contribution replay panel. The old 查看贡献图表 button is gone.
+/// 1.8.1: both windows use the same size. The left close button is removed;
+/// the right close button closes both.
 ///
 /// Both windows are root-parented. The history overlay owns the dim layer
 /// and the left window. CloseOpenPopup() also hides the replay window.
@@ -240,7 +242,7 @@ public static class RunHistoryPatch
             BorderWidthLeft = 2, BorderWidthRight = 2,
             CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
-            ContentMarginLeft = 16, ContentMarginRight = 16,
+            ContentMarginLeft = 18, ContentMarginRight = 18,
             ContentMarginTop = 12, ContentMarginBottom = 12,
         };
         panel.AddThemeStyleboxOverride("panel", bgStyle);
@@ -260,27 +262,23 @@ public static class RunHistoryPatch
         body.AddThemeConstantOverride("separation", 8);
         panel.AddChild(body);
 
-        // Title bar with close button.
+        // Title bar. The left window has no close button; the right replay
+        // window owns the shared close action.
         var titleRow = new HBoxContainer
         {
+            CustomMinimumSize = new Vector2(0, 42),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
-        titleRow.AddThemeConstantOverride("separation", 8);
-        var titleLbl = new Label { Text = L.Get("run_hist_popup_title") };
-        titleLbl.AddThemeFontSizeOverride("font_size", 28);
+        var titleLbl = new Label
+        {
+            Text = L.Get("run_hist_popup_title"),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        titleLbl.AddThemeFontSizeOverride("font_size", 30);
         titleLbl.AddThemeColorOverride("font_color", new Color("#EFC851"));
         titleLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        titleLbl.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         titleRow.AddChild(titleLbl);
-
-        var closeBtn = new Button
-        {
-            Text = "✕",
-            CustomMinimumSize = new Vector2(40, 40),
-            MouseFilter = Control.MouseFilterEnum.Stop,
-        };
-        closeBtn.AddThemeFontSizeOverride("font_size", 22);
-        closeBtn.Pressed += () => CloseOpenPopup();
-        titleRow.AddChild(closeBtn);
         body.AddChild(titleRow);
 
         // Scrollable content area.
@@ -320,7 +318,8 @@ public static class RunHistoryPatch
             ?? new Dictionary<string, ContributionAccum>();
         int totalTurns = CountCombatTurns(history);
         ContributionPanel.ShowRunReplay(
-            summary, totalTurns, rightRect.Position, rightRect.Size);
+            summary, totalTurns, rightRect.Position, rightRect.Size,
+            () => { CloseOpenPopup(); });
         _replayWindowOpen = true;
 
         Safe.Info(
@@ -329,7 +328,7 @@ public static class RunHistoryPatch
 
     /// <summary>
     /// Compute the two side-by-side window rectangles. The base layout is
-    /// 570x900 + 16 gap + 660x900; both axes scale to keep a 48 px viewport
+    /// 680x900 + 16 gap + 680x900; both axes scale to keep a 48 px viewport
     /// margin, and the pair is centered. The windows never fill the screen.
     /// </summary>
     private static void ComputeWindowRects(
@@ -337,26 +336,24 @@ public static class RunHistoryPatch
         out Rect2 left,
         out Rect2 right)
     {
-        const float baseLeft = 570f;
-        const float baseRight = 660f;
+        const float baseWidth = 680f;
         const float baseGap = 16f;
         const float baseHeight = 900f;
 
         float availableW = Mathf.Max(640f, viewport.X - 48f);
         float availableH = Mathf.Max(420f, viewport.Y - 48f);
-        float widthScale = Mathf.Min(1f, availableW / (baseLeft + baseRight + baseGap));
+        float widthScale = Mathf.Min(1f, availableW / (baseWidth * 2f + baseGap));
         float heightScale = Mathf.Min(1f, availableH / baseHeight);
 
-        float leftW = baseLeft * widthScale;
-        float rightW = baseRight * widthScale;
+        float width = baseWidth * widthScale;
         float gap = baseGap * widthScale;
         float height = baseHeight * heightScale;
-        float totalW = leftW + gap + rightW;
+        float totalW = width * 2f + gap;
         float x = (viewport.X - totalW) / 2f;
         float y = (viewport.Y - height) / 2f;
 
-        left = new Rect2(x, y, leftW, height);
-        right = new Rect2(x + leftW + gap, y, rightW, height);
+        left = new Rect2(x, y, width, height);
+        right = new Rect2(x + width + gap, y, width, height);
     }
 
     private static int CountCombatTurns(RunHistory? history)

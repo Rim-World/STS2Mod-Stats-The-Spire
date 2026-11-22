@@ -223,7 +223,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         // visually. The leading "row label" column uses ExpandFill so the
         // metric labels claim the leftover horizontal space.
         var grid = new GridContainer { Columns = acts.Count + 1 };
-        grid.AddThemeConstantOverride("h_separation", 12);
+        grid.AddThemeConstantOverride("h_separation", 16);
         grid.AddThemeConstantOverride("v_separation", 2);
         grid.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
@@ -270,7 +270,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
             cell.HorizontalAlignment = HorizontalAlignment.Right;
             cell.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             cell.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            cell.CustomMinimumSize = new Vector2(56, 0);
+            cell.CustomMinimumSize = new Vector2(64, 0);
             grid.AddChild(cell);
         }
     }
@@ -446,8 +446,8 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     private static PanelContainer WrapInPanel()
     {
         // Round 9 round 51: brighter section panel matching CareerStatsSection
-        // (rounded blue-tinted dark panel). 1.8.0 reduces padding so the
-        // side-by-side window shows more rows without scrolling.
+        // (rounded blue-tinted dark panel). 1.8.1 uses the same window width as
+        // the contribution panel, so the extra width becomes horizontal padding.
         var panel = new PanelContainer();
         var style = new StyleBoxFlat
         {
@@ -457,7 +457,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
             BorderWidthTop = 2, BorderWidthBottom = 2,
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
             CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
-            ContentMarginLeft = 12, ContentMarginRight = 12,
+            ContentMarginLeft = 16, ContentMarginRight = 16,
             ContentMarginTop = 8, ContentMarginBottom = 8,
             ShadowColor = new Color(0f, 0f, 0f, 0.4f),
             ShadowSize = 3,

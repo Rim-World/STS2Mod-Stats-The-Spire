@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.8.0
+**Version**: 1.8.1
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -157,6 +157,7 @@ In **Run History details**, click the **Run Stats** button. Two windows open sid
 - Left: ancient relic picks
 - Left: boss damage taken
 - Right: contribution stats for every combat in this run
+- Both windows have equal width and are centered. The right close button closes both windows; Esc and the dim layer also close them.
 
 ### Card Library & Relic Collection Personal Stats
 
@@ -247,7 +248,7 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. 1.7.2 fixes Fool melody titles replaced by third-party localisation mods: names are resolved through SmartFormat and then converted to plain text. 1.7.3 records each "gain energy next turn" application separately, so `Ki Rest` energy is not credited to `Wah Ki`; run-history DPS uses the `.run` combat-turn total; ancient event names fall back to the `ancients` table. 1.8.0 opens the run-history statistics and contribution chart as side-by-side windows and removes the separate chart button. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. 1.7.2 fixes Fool melody titles replaced by third-party localisation mods: names are resolved through SmartFormat and then converted to plain text. 1.7.3 records each "gain energy next turn" application separately, so `Ki Rest` energy is not credited to `Wah Ki`; run-history DPS uses the `.run` combat-turn total; ancient event names fall back to the `ancients` table. 1.8.0 opens the run-history statistics and contribution chart as side-by-side windows and removes the separate chart button. 1.8.1 removes the left close button, makes the right close button close both windows, uses equal centered windows, and enlarges the help and close buttons with stronger contrast. Card/relic ID changes across game versions are handled automatically.
 
 ## License and authorization
 

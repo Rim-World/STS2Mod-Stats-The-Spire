@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-23 01:23 | `sts2_statsthespire_local.dll` | 1.8.1 | 574,464 字节 | 左窗删除关闭键；右窗关闭键同时关闭双窗；两窗均 680×900 并中心对称；右窗 `?`/`✕` 放大到 40×40 并提高对比度；左窗标题、外边距、分节内边距与表格列距调整；SHA-256 `12860ba0dd0b6c5931aa83ca2dac6945d1fdfe0476f68b9dc731fe3b161d554e`；v0.113.1 真实 49 层布局探针 PASS；双版本 Release 构建 0 错误；门禁 12/12；已安装并通过加载检查 |
 | 2026-11-23 01:00 | `sts2_statsthespire_local.dll` | 1.8.0 | 573,440 字节 | 跑局历史「本局统计」改为左右双窗：左单局数据、右贡献图表；删除「查看贡献图表」按钮；左窗去掉重复标题并压缩间距，真实 49 层内容无纵向滚动；回放窗口固定且不污染实时面板布局；SHA-256 `39cd24133b6d6cbcf8e455c1a24c36b40c927ef9bb432908acae4d8d5c64d59b`；v0.113.1 布局探针 PASS；双版本 Release 构建 0 错误；已安装并通过加载检查 |
 | 2026-11-23 00:10 | `sts2_statsthespire_local.dll` | 1.7.3 | 572,928 字节 | 修复历史回放 DPS 使用 `.run` 回合数；`EnergyNextTurnPower` 按每次施加来源分摊；`VAKUU`/`PAEL` 等先古事件名称回退 `ancients` 表；SHA-256 `7749d2e3549a270b58ea9b10882d620a6f6a15ac8fef9168b0acbd14181d7e56`；v0.113.1 定向探针 4/4；双版本 Release 构建 0 错误 |
 | 2026-11-22 21:57 | `sts2_statsthespire_local.dll` | 1.7.2 | 571,392 字节 | 修复 `FoolMelodyReplacer` 替换愚者旋律标题时的占位符显示：`NameLookup` 先经 SmartFormat 解析，再转纯文本；中英文旋律短名跟随 Mod 语言；SHA-256 `7047d66f744c11c60dddbbe71d6f05b550b410d2d563b3c8065785b66b277457`；v0.113.1 CN/EN 探针各 7/7、Release 包 14/14；双版本 Release 构建 0 错误；已安装并通过 1.7.2 加载检查 |
@@ -22,6 +23,8 @@
 注：1.7.2 输出包包含 MIT `LICENSE`、1.7.2 README、`manifest.json` 与 `settings.cfg`；无头加载一次 `v1.7.2 initializing`；用户实机视觉未做。
 
 注：1.7.3 输出包包含 MIT `LICENSE`、1.7.3 README、`manifest.json` 与 `settings.cfg`；Release 包探针 4/4 PASS；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
+
+注：1.8.1 输出包包含 MIT `LICENSE`、1.8.1 README、`manifest.json`、`settings.cfg` 与 DLL；v0.113.1 布局探针 PASS；门禁 12/12；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
 
 注：1.8.0 输出包包含 MIT `LICENSE`、1.8.0 README、`manifest.json` 与 `settings.cfg`；Release 包布局探针 PASS；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
 

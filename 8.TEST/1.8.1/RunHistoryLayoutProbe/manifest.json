@@ -1,0 +1,14 @@
+{
+  "id": "sts2_layout_probe_181",
+  "name": "StatsTheSpire RunHistory Layout Probe 1.8.1",
+  "author": "test",
+  "description": "Test-only probe for equal side-by-side run-history windows and the merged close button.",
+  "version": "1.8.1",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.8.1" }
+  ]
+}

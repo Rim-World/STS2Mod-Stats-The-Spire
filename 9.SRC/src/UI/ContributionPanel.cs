@@ -31,6 +31,8 @@ public partial class ContributionPanel : PanelContainer
     private HBoxContainer? _header;
     private HBoxContainer? _resizeRow;
     private PanelContainer? _helpPanel;
+    /// <summary>Non-null while replay mode must close the history popup too.</summary>
+    private static Action? _replayCloseAction;
 
     /// <summary>
     /// Meta flag used while the panel is a fixed run-history replay window.
@@ -89,6 +91,7 @@ public partial class ContributionPanel : PanelContainer
         // Header row with title + help + close button (draggable handle)
         var header = new HBoxContainer();
         header.MouseFilter = MouseFilterEnum.Stop; // ensure it receives drag input
+        header.AddThemeConstantOverride("separation", 6);
         vbox.AddChild(header);
         panel._header = header;
 
@@ -104,16 +107,40 @@ public partial class ContributionPanel : PanelContainer
         var helpBtn = new Button
         {
             Text = "?",
-            CustomMinimumSize = new Vector2(32, 32),
+            CustomMinimumSize = new Vector2(40, 40),
+            MouseDefaultCursorShape = CursorShape.PointingHand,
             TooltipText = L.Get("contrib.help_body"),
         };
-        helpBtn.AddThemeFontSizeOverride("font_size", 14);
+        helpBtn.AddThemeFontSizeOverride("font_size", 18);
+        StyleHeaderButton(
+            helpBtn,
+            new Color(0.12f, 0.26f, 0.46f, 1f),
+            new Color(0.18f, 0.38f, 0.62f, 1f),
+            new Color(0.08f, 0.18f, 0.32f, 1f),
+            new Color(0.55f, 0.78f, 1.00f, 1f));
         helpBtn.Pressed += () => panel.ToggleHelpPanel();
         header.AddChild(helpBtn);
 
-        var closeBtn = new Button { Text = "✕", CustomMinimumSize = new Vector2(32, 32) };
-        closeBtn.AddThemeFontSizeOverride("font_size", 14);
-        closeBtn.Pressed += () => Hide();
+        var closeBtn = new Button
+        {
+            Text = "✕",
+            CustomMinimumSize = new Vector2(40, 40),
+            MouseDefaultCursorShape = CursorShape.PointingHand,
+        };
+        closeBtn.AddThemeFontSizeOverride("font_size", 18);
+        StyleHeaderButton(
+            closeBtn,
+            new Color(0.52f, 0.14f, 0.16f, 1f),
+            new Color(0.72f, 0.20f, 0.22f, 1f),
+            new Color(0.38f, 0.08f, 0.10f, 1f),
+            new Color(1.00f, 0.62f, 0.62f, 1f));
+        closeBtn.Pressed += () =>
+        {
+            if (panel.HasMeta(ReplayWindowMeta) && _replayCloseAction != null)
+                _replayCloseAction();
+            else
+                Hide();
+        };
         header.AddChild(closeBtn);
 
         // DPS row (PRD 3.7) — below header
@@ -460,13 +487,15 @@ public partial class ContributionPanel : PanelContainer
         IReadOnlyDictionary<string, ContributionAccum>? runSummary,
         int totalTurns,
         Vector2 position,
-        Vector2 size)
+        Vector2 size,
+        Action? closeAction = null)
     {
         // Round 9 round 33: ContributionPanel toggle now only gates the
         // auto-open after combat. Run-history replay must always work.
         if (runSummary == null) return;
 
         var panel = Instance;
+        _replayCloseAction = closeAction;
         _replayTurns = Math.Max(0, totalTurns);
         _replayDamage = SumRunDamage(runSummary);
         RefreshTabsRunOnly(runSummary);
@@ -545,6 +574,7 @@ public partial class ContributionPanel : PanelContainer
     /// </summary>
     private static void ClearReplayWindow()
     {
+        _replayCloseAction = null;
         if (_instance == null || !_instance.HasMeta(ReplayWindowMeta)) return;
 
         _instance.RemoveMeta(ReplayWindowMeta);
@@ -778,6 +808,49 @@ public partial class ContributionPanel : PanelContainer
         lbl.SizeFlagsVertical = SizeFlags.ExpandFill;
         container.AddChild(lbl);
         return container;
+    }
+
+    private static void StyleHeaderButton(
+        Button button,
+        Color background,
+        Color hoverBackground,
+        Color pressedBackground,
+        Color border)
+    {
+        button.AddThemeColorOverride("font_color", Colors.White);
+        button.AddThemeColorOverride("font_hover_color", Colors.White);
+        button.AddThemeColorOverride("font_pressed_color", new Color("#FFF6E2"));
+        button.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.85f));
+        button.AddThemeConstantOverride("outline_size", 1);
+        button.AddThemeStyleboxOverride("normal",
+            MakeHeaderButtonStyle(background, border, 2));
+        button.AddThemeStyleboxOverride("hover",
+            MakeHeaderButtonStyle(hoverBackground, border, 2));
+        button.AddThemeStyleboxOverride("pressed",
+            MakeHeaderButtonStyle(pressedBackground, border, 2));
+        button.AddThemeStyleboxOverride("focus",
+            MakeHeaderButtonStyle(background, border, 3));
+    }
+
+    private static StyleBoxFlat MakeHeaderButtonStyle(Color background, Color border, int borderWidth)
+    {
+        return new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            BorderWidthLeft = borderWidth,
+            BorderWidthRight = borderWidth,
+            BorderWidthTop = borderWidth,
+            BorderWidthBottom = borderWidth,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 4,
+            ContentMarginRight = 4,
+            ContentMarginTop = 2,
+            ContentMarginBottom = 2,
+        };
     }
 
     private static ScrollContainer WrapInScroll(Control content)
