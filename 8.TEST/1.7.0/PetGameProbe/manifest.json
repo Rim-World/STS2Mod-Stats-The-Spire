@@ -7,7 +7,7 @@
   "has_dll": true,
   "has_pck": false,
   "affects_gameplay": true,
-  "min_game_version": "0.113.1",
+  "min_game_version": "0.111.1",
   "dependencies": [
     {
       "id": "sts2_statsthespire_local",

@@ -21,8 +21,9 @@
 - v0.113.1 in-game probe: 51/51 PASS. Real Wuppy absorbed 3 HP and excluded 7 overkill; healed BoneShards used actual HP 20 (stack 10) and wrote `PetWasted=20`; Sacrifice used actual HP 12 (stack 7) and wrote `PetWasted=12`; `EffectiveBlock` stayed 0. Damage rows, sub-cost bars, UI rows, and colors passed; log `8.TEST/1.7.0/petgame-live-15211-58d43131.log`.
 - Final low-residual fixes: standalone self-damage rows keep the source name; `PetWasted` always writes to the top-level killer-card bucket so generated/potion cards cannot disappear as orphan sub-entries.
 - Focused re-test: 34/34 PASS for standalone self-damage name, generated-card top-level waste, damage rows, sub-cost split, and bar scale; log `8.TEST/1.7.0/petgame-focused-f25f0778.log`.
+- v0.111.1 runtime: UI-only 34/34; first-combat probe 53/53. Real Osty absorbed 4 HP; BoneShards used actual HP 20 (stack 16) and wrote `PetWasted=20`; Sacrifice used actual HP 12 (stack 7) and wrote `PetWasted=12`. Wuppy is absent and was skipped; log `8.TEST/1.7.0/v111-petprobe-live-5c-stdout.log`.
 - Final DLL SHA-256 `f25f0778eb842c675f1aa72e9da7cda4b4270a58ea5600a88c613c32e5140e85`, 568,320 bytes.
-- Not verified: v0.111.1 runtime pet paths; manual visual acceptance.
+- Not verified: natural Necrobinder run on v0.111.1 (probe character was Defect and injected Osty); manual visual acceptance.
 
 ## [1.6.1] - 2026-11-22
 

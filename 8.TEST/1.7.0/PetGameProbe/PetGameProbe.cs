@@ -22,7 +22,6 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.ValueProps;
-using WuppyRelic = MegaCrit.Sts2.Core.Models.Relics.Wuppy;
 
 namespace StatsTheSpire.PetGameProbe;
 
@@ -562,7 +561,10 @@ public static class PetGameProbe
             var me = LocalContext.GetMe(state.Players);
             Check("live-player", me != null, me?.Character.Id.Entry ?? "null");
             if (me == null) return;
-            Check("live-character-necrobinder", me.Character.Id.Entry.Contains("NECROBINDER"), me.Character.Id.Entry);
+            // Pet accounting is character-independent. On v0.111.1 Necrobinder
+            // may still be locked; the probe injects Osty through real commands.
+            Check("live-character-pet-path", true,
+                me.Character.Id.Entry + (me.Character.Id.Entry.Contains("NECROBINDER") ? " natural" : " injected"));
 
             if (!await WaitUntil(() => me.PlayerCombatState?.Phase == PlayerTurnPhase.Play, 15000))
             {
@@ -571,27 +573,75 @@ public static class PetGameProbe
             }
             Check("live-play-phase", true, "play");
 
-            // ── Wuppy redirect with overkill ────────────────────────────
-            if (!me.Relics.OfType<WuppyRelic>().Any())
-                await RelicCmd.Obtain(ModelDb.Relic<WuppyRelic>().ToMutable(), me);
-            var wuppyRelic = me.Relics.OfType<WuppyRelic>().FirstOrDefault();
-            bool wuppyReady = await WaitUntil(() => wuppyRelic?.CombatWuppy is { IsAlive: true }, 5000);
-            Check("live-wuppy-summoned", wuppyReady, $"wuppy={wuppyRelic?.CombatWuppy?.CurrentHp}");
-            if (wuppyReady)
+            // ── Osty absorption with real damage ────────────────────────
+            int PetTotal() => CombatTracker.Instance.GetCurrentCombatData().Values.Sum(a => a.PetAbsorbed);
+            var ostyCtx = new ThrowingPlayerChoiceContext();
+            if (!me.IsOstyAlive)
+                await OstyCmd.Summon(ostyCtx, me, 10m, null);
+            bool ostyAbsorbReady = await WaitUntil(() => me.IsOstyAlive, 5000);
+            Check("live-osty-absorb-ready", ostyAbsorbReady, $"ostyHp={me.Osty?.CurrentHp}");
+            if (ostyAbsorbReady)
             {
-                var wc = wuppyRelic!.CombatWuppy!;
-                await CreatureCmd.SetCurrentHp(wc, 3m);
-                int petBefore = Pet("WUPPY");
-                var dealer = state.Enemies.FirstOrDefault(e => e.IsAlive);
-                Check("live-wuppy-dealer", dealer != null, dealer?.Monster?.Id.Entry ?? "null");
-                if (dealer != null)
+                await CreatureCmd.LoseBlock(ostyCtx, me.Creature, me.Creature.Block, null);
+                int petBefore = PetTotal();
+                var absorber = state.Enemies.FirstOrDefault(e => e.IsAlive);
+                Check("live-osty-absorption-dealer", absorber != null, absorber?.Monster?.Id.Entry ?? "null");
+                if (absorber != null)
                 {
-                    await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(), me.Creature, 10m,
-                        ValueProp.Move, dealer, null, null);
-                    int delta = Pet("WUPPY") - petBefore;
-                    Check("live-wuppy-redirect-absorption", delta == 3, $"delta={delta} expected=3 (hp was 3, damage 10)");
-                    Check("live-wuppy-overkill-excluded", delta != 10, $"delta={delta} should exclude 7 overkill");
-                    Check("live-wuppy-hp-zero", !wc.IsAlive, $"hp={wc.CurrentHp}");
+                    await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(), me.Creature, 4m,
+                        ValueProp.Move, absorber, null, null);
+                    int delta = PetTotal() - petBefore;
+                    Check("live-osty-absorption", delta == 4, $"delta={delta} expected=4 hpBefore=10");
+                    Check("live-osty-no-negative-block",
+                        CombatTracker.Instance.GetCurrentCombatData().Values.All(a => a.EffectiveBlock >= 0),
+                        string.Join(",", CombatTracker.Instance.GetCurrentCombatData().Values.Select(a => $"{a.SourceId}:{a.EffectiveBlock}")));
+                }
+            }
+
+            // ── Wuppy redirect with overkill (v0.113+ only) ─────────────
+            var wuppyType = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("MegaCrit.Sts2.Core.Models.Relics.Wuppy", throwOnError: false))
+                .FirstOrDefault(t => t != null);
+            if (wuppyType == null)
+            {
+                Check("live-wuppy-skip", true, "Wuppy absent in this game version");
+            }
+            else
+            {
+                var wuppyCanonical = ModelDb.AllRelics.FirstOrDefault(r => wuppyType.IsInstanceOfType(r));
+                if (wuppyCanonical == null)
+                {
+                    Check("live-wuppy-model", false, "canonical Wuppy missing");
+                }
+                else
+                {
+                    var wuppyRelic = me.Relics.FirstOrDefault(r => wuppyType.IsInstanceOfType(r));
+                    if (wuppyRelic == null)
+                    {
+                        await RelicCmd.Obtain(wuppyCanonical.ToMutable(), me);
+                        wuppyRelic = me.Relics.FirstOrDefault(r => wuppyType.IsInstanceOfType(r));
+                    }
+                    var wuppyProp = wuppyType.GetProperty("CombatWuppy", BindingFlags.Public | BindingFlags.Instance);
+                    Creature? WuppyCreature() => wuppyProp?.GetValue(wuppyRelic) as Creature;
+                    bool wuppyReady = await WaitUntil(() => WuppyCreature() is { IsAlive: true }, 5000);
+                    Check("live-wuppy-summoned", wuppyReady, $"wuppy={WuppyCreature()?.CurrentHp}");
+                    if (wuppyReady)
+                    {
+                        var wc = WuppyCreature()!;
+                        await CreatureCmd.SetCurrentHp(wc, 3m);
+                        int petBefore = Pet("WUPPY");
+                        var dealer = state.Enemies.FirstOrDefault(e => e.IsAlive);
+                        Check("live-wuppy-dealer", dealer != null, dealer?.Monster?.Id.Entry ?? "null");
+                        if (dealer != null)
+                        {
+                            await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(), me.Creature, 10m,
+                                ValueProp.Move, dealer, null, null);
+                            int delta = Pet("WUPPY") - petBefore;
+                            Check("live-wuppy-redirect-absorption", delta == 3, $"delta={delta} expected=3 (hp was 3, damage 10)");
+                            Check("live-wuppy-overkill-excluded", delta != 10, $"delta={delta} should exclude 7 overkill");
+                            Check("live-wuppy-hp-zero", !wc.IsAlive, $"hp={wc.CurrentHp}");
+                        }
+                    }
                 }
             }
 
