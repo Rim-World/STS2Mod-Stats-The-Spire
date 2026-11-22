@@ -10,7 +10,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.8.2";
+    public const string ModVersion = "1.8.3";
 
     // User preferences
     public static string Language { get; set; } = "CN"; // "CN" | "EN"
@@ -29,8 +29,8 @@ public static class ModConfig
     // Intent state machine scale
     public static float IntentPanelScale { get; set; } = 0.8f;
 
-    // Contribution panel hotkey (stable F-key token; RitsuLib parses it)
-    public static string ContributionPanelHotkey { get; set; } = "F8";
+    // Contribution panel hotkey (stable key token; RitsuLib parses it)
+    public static string ContributionPanelHotkey { get; set; } = "Ctrl+F8";
 
     // "My Data" filter
     public static bool UseMyDataOnly { get; set; }

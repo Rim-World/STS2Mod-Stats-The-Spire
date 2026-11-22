@@ -573,7 +573,7 @@ public partial class ContributionPanel : PanelContainer
 
     /// <summary>
     /// Remove replay-only layout state. Restore the live panel anchors,
-    /// saved size and saved position so a later F8 open does not inherit the
+    /// saved size and saved position so a later hotkey open does not inherit the
     /// run-history side-by-side geometry.
     /// </summary>
     private static void ClearReplayWindow()

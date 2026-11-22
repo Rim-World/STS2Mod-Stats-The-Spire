@@ -80,7 +80,7 @@ public static class L
         ["settings.page_description"] = "Language, interface scale, feature toggles, and the contribution-panel hotkey.",
         ["settings.section_general"] = "General",
         ["settings.contribution_hotkey"] = "Contribution panel hotkey",
-        ["settings.contribution_hotkey_desc"] = "Click to record a shortcut. The default is F8. Text input and the developer console suppress this hotkey.",
+        ["settings.contribution_hotkey_desc"] = "Click to record a shortcut. The default is Ctrl+F8. Text input and the developer console suppress this hotkey.",
         ["settings.section_basic"] = "Basic Settings",
         ["settings.auto_asc"] = "Auto-match my Ascension",
         ["settings.min_asc"] = "Min Ascension:",
@@ -198,7 +198,7 @@ public static class L
         // ContributionPanel v2 (§3.7, §4.5)
         ["contrib.dps"] = "Avg Damage per Turn:",
         ["contrib.help_title"] = "Stats the Spire — Help",
-        ["contrib.help_body"] = "Bar colors: Cards (blue), Relics (gold), Potions (green)\nHotkey: F8 by default; rebind it in the RitsuLib mod settings.\nDrag title bar to reposition.",
+        ["contrib.help_body"] = "Bar colors: Cards (blue), Relics (gold), Potions (green)\nHotkey: Ctrl+F8 by default; rebind it in the RitsuLib mod settings.\nDrag title bar to reposition.",
         ["contrib.help_section_colors"] = "Bar Color Legend",
         ["contrib.help_section_metrics"] = "Metric Definitions",
         ["contrib.help_color_card"] = "Card source",
@@ -228,7 +228,7 @@ public static class L
         ["contrib.help_source"] = "Data: live CombatTracker (this combat) + RunContributionAggregator (run summary)",
         ["source.untracked"] = "Unattributed",
         ["contrib.resize_hint"] = "Drag to resize",
-        ["contrib.help_hotkeys"] = "Hotkey: F8 by default (rebind in RitsuLib settings); drag title bar to reposition",
+        ["contrib.help_hotkeys"] = "Hotkey: Ctrl+F8 by default (rebind in RitsuLib settings); drag title bar to reposition",
 
         // Probability panels (§3.8, §3.9, §3.16, §3.17)
         ["prob.unknown_title"] = "Next [?] Room",
@@ -414,7 +414,7 @@ public static class L
         ["settings.page_description"] = "语言、界面缩放、功能开关，以及贡献面板快捷键。",
         ["settings.section_general"] = "通用",
         ["settings.contribution_hotkey"] = "贡献面板快捷键",
-        ["settings.contribution_hotkey_desc"] = "点击后录制快捷键。默认 F8。文本输入框和开发者控制台会抑制此热键。",
+        ["settings.contribution_hotkey_desc"] = "点击后录制快捷键。默认 Ctrl+F8。文本输入框和开发者控制台会抑制此热键。",
         ["settings.section_basic"] = "基础设置",
         ["settings.auto_asc"] = "自动匹配我的进阶",
         ["settings.min_asc"] = "最低进阶:",
@@ -532,7 +532,7 @@ public static class L
         // ContributionPanel v2 (§3.7, §4.5)
         ["contrib.dps"] = "每回合平均伤害:",
         ["contrib.help_title"] = "Stats the Spire — 帮助",
-        ["contrib.help_body"] = "柱状图颜色: 卡牌(蓝)、遗物(金)、药水(绿)\n打开/关闭快捷键默认 F8，可在 RitsuLib 模组设置中重绑定。",
+        ["contrib.help_body"] = "柱状图颜色: 卡牌(蓝)、遗物(金)、药水(绿)\n打开/关闭快捷键默认 Ctrl+F8，可在 RitsuLib 模组设置中重绑定。",
         ["contrib.help_section_colors"] = "条状图颜色图例",
         ["contrib.help_section_metrics"] = "贡献指标说明",
         ["contrib.help_color_card"] = "卡牌来源",
@@ -562,7 +562,7 @@ public static class L
         ["contrib.help_source"] = "数据来源：实时 CombatTracker（本场战斗）+ RunContributionAggregator（本局汇总）",
         ["source.untracked"] = "未归因",
         ["contrib.resize_hint"] = "拖动以调整面板大小",
-        ["contrib.help_hotkeys"] = "打开/关闭快捷键默认 F8（可在 RitsuLib 设置中重绑定）",
+        ["contrib.help_hotkeys"] = "打开/关闭快捷键默认 Ctrl+F8（可在 RitsuLib 设置中重绑定）",
 
         // Probability panels (§3.8, §3.9, §3.16, §3.17)
         ["prob.unknown_title"] = "下一个 [?] 房间",

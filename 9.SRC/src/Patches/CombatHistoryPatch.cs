@@ -202,7 +202,7 @@ public static class CombatHistoryPatch
             // Round 9 round 53: fire real-time UI refresh when the player
             // takes damage. Without this, out-of-turn enemy attacks (intent
             // fires between turns or mid-action) updated the tracker's block
-            // / mitigation data but the F8 panel stayed stale until the next
+            // / mitigation data but the contribution panel stayed stale until the next
             // card play. Only fire on player receiver to avoid spamming the
             // event for every enemy-damaged-enemy hit.
             if (isPlayerReceiver)
@@ -225,7 +225,7 @@ public static class CombatHistoryPatch
 
             // Round 9 round 33: block gained outside a card play (relic
             // BeforeTurnEnd / AfterBlockCleared, power tick, etc.) wasn't
-            // triggering the F8 panel auto-refresh. CardPlayFinished already
+            // triggering the contribution panel auto-refresh. CardPlayFinished already
             // covers the in-card path, so only fire here when cardPlay is null
             // to avoid double-refreshing during normal card plays.
             if (cardPlay == null)
@@ -1913,7 +1913,7 @@ public static class PotionUsedPatch
             CombatTracker.Instance.ClearActivePotion();
 
             // Round 9 round 32: real-time UI refresh after potion use, mirroring
-            // CardPlayFinished. Without this, F8 panel stayed stale until the
+            // CardPlayFinished. Without this, contribution panel stayed stale until the
             // next card play.
             CombatTracker.Instance.NotifyCombatDataUpdated();
         });

@@ -2,6 +2,20 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.8.3] - 2026-11-23
+
+### Changed
+- The default contribution-panel hotkey is now `Ctrl+F8`, reducing collisions with other mods that use plain `F8`.
+- Missing or invalid bindings fall back to `Ctrl+F8`. Existing `mod_prefs.json` values are not migrated automatically; only the local profile was changed on request.
+- The settings hint, in-panel help, READMEs, and SPEC now describe `Ctrl+F8` as the default.
+
+### Verification
+- v0.113.1 load: PASS. `v1.8.3 initializing` appeared once; the mod registered `Ctrl+F8`; no `F8` registration for StatsTheSpire.
+- v0.111.1 and v0.113.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 574,464 bytes with SHA-256 `25d96a33077dabc9bca32ae7953ebf5cc585099537f7f0edfe09b7112e517b93`.
+- Local `mod_prefs.json`: `contribution_panel_hotkey` is `Ctrl+F8`; all other fields unchanged. Backup: `TMP/1.8.3/mod_prefs.before-1.8.3.json`.
+- Release gate: 12/12 PASS; installed DLL hash matches `10.OUTPUT/1.8.3/`.
+- User physical `Ctrl+F8`: not done.
+
 ## [1.8.2] - 2026-11-23
 
 ### Changed

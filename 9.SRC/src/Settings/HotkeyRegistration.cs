@@ -16,7 +16,7 @@ namespace CommunityStats.Settings;
 public static class HotkeyRegistration
 {
     public const string HotkeyId = "sts2_statsthespire_local.toggle_contribution_panel";
-    public const string DefaultBinding = "F8";
+    public const string DefaultBinding = "Ctrl+F8";
 
     private static IRuntimeHotkeyHandle? _handle;
     private static bool _initialized;
