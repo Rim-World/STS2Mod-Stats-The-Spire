@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using CommunityStats.Config;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Localization;
@@ -120,7 +121,7 @@ public static class NameLookup
             if (L.Current == L.Lang.EN)
             {
                 if (enFallback != null && enFallback.TryGetValue(id, out var en))
-                    return en;
+                    return ToDisplayText(en);
 
                 try
                 {
@@ -128,19 +129,104 @@ public static class NameLookup
                     var fallbackTable = Traverse.Create(locTable)
                         .Field("_fallback").GetValue<LocTable>();
                     if (fallbackTable != null && fallbackTable.HasEntry(key))
-                        return fallbackTable.GetRawText(key);
+                        return ToDisplayText(fallbackTable.GetRawText(key));
                 }
                 catch { /* reflection failed — fall through to current-lang text */ }
             }
 
-            return LocManager.Instance.GetTable(table).GetRawText(key);
+            // Titles now go through SmartFormat instead of GetRawText. Other
+            // localisation mods (for example FoolMelodyReplacer) store
+            // placeholders such as {MelodyWaText} in raw card titles and
+            // resolve them in a SmartFormat source. Our labels do not parse
+            // BBCode, so resolve the placeholders first and strip the tags.
+            var formatted = FormatDisplayText(table, key);
+            if (formatted != null) return formatted;
+
+            return ToDisplayText(LocManager.Instance.GetTable(table).GetRawText(key));
         }
         catch (Exception)
         {
             if (enFallback != null && enFallback.TryGetValue(id, out var en))
-                return en;
+                return ToDisplayText(en);
             return null;
         }
+    }
+
+    // BBCode is used by the game and by localisation mods to embed icons,
+    // colours, and melody symbols. A plain Godot Label must never receive it.
+    private static readonly Regex BbCodeTag = new(@"\[[^\[\]]*\]", RegexOptions.Compiled);
+    private static readonly Regex ImageTag = new(@"\[img\][^\[\]]*?\[/img\]",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex MelodyToken = new(@"\{Melody(Wa|Cho|Ki)(?:Text)?\}",
+        RegexOptions.Compiled);
+
+    /// <summary>
+    /// Resolves a LocString through SmartFormat, then converts the result to
+    /// plain label text. Returns null when the formatted text is unusable so
+    /// the caller can fall back to the raw string.
+    /// </summary>
+    private static string? FormatDisplayText(string table, string key)
+    {
+        try
+        {
+            var loc = new LocString(table, key);
+            var raw = loc.GetRawText();
+            var display = ToDisplayText(loc.GetFormattedText());
+            var token = MelodyToken.Match(raw);
+
+            if (token.Success)
+            {
+                var rawTail = MelodyToken.Replace(raw, "");
+                var tail = rawTail.Trim();
+
+                // Image-only display modes (FoolMelodyReplacer's "Replace")
+                // resolve the title to an image plus the untouched suffix.
+                // Because the suffix is the whole visible text, rebuild the
+                // title from the raw text instead of guessing one melody word;
+                // this also handles titles with two melody tokens. "Alongside"
+                // already includes the word after the image, so its display
+                // does not start with the raw suffix.
+                if (string.IsNullOrEmpty(display)
+                    || (!string.IsNullOrEmpty(tail)
+                        && display.StartsWith(tail, StringComparison.OrdinalIgnoreCase)))
+                {
+                    display = ToDisplayText(raw);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(display)) return display;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Converts formatted localisation text to plain label text, replacing
+    /// melody placeholders with their localised short names.
+    /// </summary>
+    private static string ToDisplayText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        text = ImageTag.Replace(text, "");
+        text = text.Replace("[lb]", "[").Replace("[rb]", "]");
+        text = BbCodeTag.Replace(text, "");
+        text = MelodyToken.Replace(text, m => MelodyShortName(m.Groups[1].Value));
+        return text.Trim();
+    }
+
+    /// <summary>
+    /// Short melody name used when an image-only display cannot supply text.
+    /// Follow the mod's own language setting so an English UI never mixes in
+    /// Chinese names from the game's localisation table.
+    /// </summary>
+    private static string MelodyShortName(string tag)
+    {
+        if (L.Current == L.Lang.CN)
+            return tag switch { "Wa" => "哇", "Cho" => "啾", "Ki" => "叽", _ => "♪" };
+        return tag switch { "Wa" => "Wah", "Cho" => "Cho", "Ki" => "Ki", _ => "♪" };
     }
 
     // ═══════════════════════════════════════════════════════════

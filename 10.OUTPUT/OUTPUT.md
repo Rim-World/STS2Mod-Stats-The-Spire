@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-22 21:57 | `sts2_statsthespire_local.dll` | 1.7.2 | 571,392 字节 | 修复 `FoolMelodyReplacer` 替换愚者旋律标题时的占位符显示：`NameLookup` 先经 SmartFormat 解析，再转纯文本；中英文旋律短名跟随 Mod 语言；SHA-256 `7047d66f744c11c60dddbbe71d6f05b550b410d2d563b3c8065785b66b277457`；v0.113.1 CN/EN 探针各 7/7、Release 包 14/14；双版本 Release 构建 0 错误；已安装并通过 1.7.2 加载检查 |
 | 2026-11-22 19:46 | `sts2_statsthespire_local.dll` | 1.7.1 | 569,856 字节 | 修复地图悬停面板：`MouseExited` 与 `NMapScreen._Input` 在鼠标离开时清理；连续悬停只保留当前面板；SHA-256 `6b9af528fd5c1429dfdd731281fcf076258d02b46a223cbb4d62fc756cc88f6c`；v0.113.1 探针 4/4 PASS；双版本 Release 构建 0 错误；已安装并通过 1.7.1 加载检查 |
 | 2026-11-22 08:58 | `sts2_statsthespire_local.dll` | 1.7.0 | 568,320 字节 | 新增 `PetAbsorbed` 与 `PetWasted`：奥斯提/瓦皮 HP 吸收独立统计，碎骨/牺牲剩余 HP 损耗独立显示；旧 `osty` 数据迁移；修复非防御分节行回归、实际 Osty HP、损耗条形比例、独立自伤来源名与生成卡损耗可见性；SHA-256 `f25f0778eb842c675f1aa72e9da7cda4b4270a58ea5600a88c613c32e5140e85`；双版本 Release 构建 0 错误；v0.113.1 游戏内探针 51/51 PASS（实际治疗后 HP、Wuppy、碎骨/牺牲、UI 与子条比例） |
 | 2026-11-22 07:28 | `sts2_statsthespire_local.dll` | 1.6.1 | 564,736 字节 | 无奖励事件战斗保存兜底、敌方宠物伤害过滤、Ennui 额外手抽记录；SHA-256 `b3e2f74ff6191ac43ddc8cec1d8b0813b5a44c5918d137fce04c356e55b2ee15`；v0.113.1 Fool 注入局与标准局 `UNTRACKED`=0；v0.113.1 与 v0.111.1 Release 构建 0 错误；安装后 v1.6.1 加载通过 |
@@ -15,6 +16,8 @@
 注：1.7.0 输出包于 2026-11-22 19:10 加入 MIT `LICENSE`，README 改为 MIT 表述；DLL、`manifest.json` 与 `settings.cfg` 未变。
 
 注：1.7.1 输出包包含 MIT `LICENSE`、1.7.1 README、`manifest.json` 与 `settings.cfg`；源码版本、DLL 版本和输出目录一致。
+
+注：1.7.2 输出包包含 MIT `LICENSE`、1.7.2 README、`manifest.json` 与 `settings.cfg`；无头加载一次 `v1.7.2 initializing`；用户实机视觉未做。
 
 注：1.4.4、1.5.0、1.5.1 的二进制包含构建机源码路径，已从当前目录与重写后 Git 历史移除；用户决定 GitHub 旧对象等待平台自动清除；备份在 `TMP/1.5.2/privacy-backup/old-output/`。1.4.0 至 1.4.3 的历史归档仍在各自 `TMP` 版本目录。
 

@@ -1,0 +1,14 @@
+{
+  "id": "sts2_name_probe_172",
+  "name": "StatsTheSpire Name Probe 1.7.2",
+  "author": "test",
+  "description": "Test-only probe: resolve Fool melody card titles with FoolMelodyReplacer active.",
+  "version": "1.7.2",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.7.1" }
+  ]
+}

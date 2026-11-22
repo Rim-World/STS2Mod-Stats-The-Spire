@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.7.1
+**Version**: 1.7.2
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -247,7 +247,7 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. Card/relic ID changes across game versions are handled automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. 1.7.2 fixes Fool melody titles replaced by third-party localisation mods: names are resolved through SmartFormat and then converted to plain text. Card/relic ID changes across game versions are handled automatically.
 
 ## License and authorization
 

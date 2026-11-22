@@ -65,6 +65,7 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the 
 - 1.6.1 修复无奖励事件战斗保存、敌方宠物伤害误记与 Ennui 额外手抽；双版本兼容构建通过。
 - 1.7.0 新增 `PetAbsorbed` 与 `PetWasted`：奥斯提/瓦皮吸收独立统计，碎骨/牺牲的剩余 HP 损耗独立显示；旧 `osty` 数据自动迁移。
 - 1.7.1 修复地图悬停面板：鼠标移开时删除；连续悬停不同地图点时只保留当前面板。
+- 1.7.2 修复第三方本地化模组替换愚者旋律标题时的显示：名称先经 SmartFormat 解析，再转为纯文本；不再显示 `{MelodyWaText}` 等占位符。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

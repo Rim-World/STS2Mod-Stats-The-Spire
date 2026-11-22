@@ -2,6 +2,17 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.7.2] - 2026-11-22
+
+### Fixed
+- Contribution labels, career names, run-history names, shop names, and other `NameLookup` call sites no longer show raw localisation placeholders such as `{MelodyWaText}` when a third-party mod rewrites card titles.
+- Display names now use SmartFormat first, then a plain-text conversion that removes images and BBCode. If a mod uses image-only melody titles, the raw title is rebuilt with the correct CN/EN melody short name.
+- English UI no longer mixes Chinese melody names from the game's current language table.
+
+### Verification
+- v0.113.1 probe with `FoolMelodyReplacer` 0.3.2: CN 7/7 PASS, EN 7/7 PASS; `NameLookup.Card` returned `哇 交响乐`, `啾 就绪`, `哇 叽`, `Wah Symphony`, `Cho Ready`, and `Wah Ki` with no placeholders or BBCode.
+- Raw titles still contain `{MelodyWaText}` before formatting, which proves the probe exercised the third-party rewrite path.
+
 ## [1.7.1] - 2026-11-22
 
 ### Fixed
