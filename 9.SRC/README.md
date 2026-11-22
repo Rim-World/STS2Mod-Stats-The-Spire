@@ -63,6 +63,7 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the 
 - 1.5.2 删除四个无消费者补丁与 PaleBlueDot 错误钩子，修复 PaleBlueDot 来源捕获、UI 生命周期、原子写、损坏隔离、写盘防抖、生成卡重复计数、Boss 白兽雕像、路径购买、死亡来源与角色筛选 bundle；发布构建不嵌入本机源码路径。
 - 1.6.0 修复战斗归因并补齐愚者内容；v0.113.1 完成标准完整局、愚者实机与上下文检查；v0.111.1 完成定向探针 10/10。
 - 1.6.1 修复无奖励事件战斗保存、敌方宠物伤害误记与 Ennui 额外手抽；双版本兼容构建通过。
+- 1.7.0 新增 `PetAbsorbed` 与 `PetWasted`：奥斯提/瓦皮吸收独立统计，碎骨/牺牲的剩余 HP 损耗独立显示；旧 `osty` 数据自动迁移。
 - 不承诺与原 Workshop 包同时安装。
 
 ## 许可证与来源

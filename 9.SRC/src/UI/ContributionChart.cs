@@ -17,7 +17,8 @@ public partial class ContributionChart : VBoxContainer
     private static readonly Color CardBarColor    = new(0.36f, 0.58f, 0.95f); // sky blue
     private static readonly Color RelicBarColor   = new(0.95f, 0.78f, 0.30f); // saturated gold
     private static readonly Color PotionBarColor  = new(0.25f, 0.85f, 0.65f); // teal
-    private static readonly Color OstyBarColor    = new(0.55f, 0.85f, 0.55f); // light green (Osty)
+    private static readonly Color PetBarColor     = new(0.55f, 0.85f, 0.55f); // light green (Osty/Wuppy)
+    private static readonly Color PetWasteBarColor = new(0.75f, 0.28f, 0.28f); // dark red (wasted pet HP)
     private static readonly Color AttrBarColor    = new(0.55f, 0.78f, 1.00f); // pale blue
     private static readonly Color ModifierBarColor= new(0.74f, 0.55f, 0.95f); // lavender
     private static readonly Color MitigateBarColor= new(0.40f, 0.82f, 0.55f); // emerald
@@ -51,14 +52,13 @@ public partial class ContributionChart : VBoxContainer
 
     /// <summary>
     /// Controls how a single row renders for entries that carry both a
-    /// positive defensive contribution AND a self-damage cost (e.g.
-    /// CRIMSON_MANTLE, BLOOD_WALL, OFFERING). In <see cref="Normal"/> mode the
-    /// row mixes both into one bar. When the split-self-damage visual is
-    /// requested the same entry is emitted twice: first as
-    /// <see cref="PositiveOnly"/> (block bar, no self-damage), then as
-    /// <see cref="NegativeOnly"/> (self-damage bar only, labelled "自伤").
+    /// positive defensive contribution AND a cost (self-damage or wasted pet
+    /// HP). In <see cref="Normal"/> mode the row can mix values; when split,
+    /// the positive row uses <see cref="PositiveOnly"/>, followed by
+    /// <see cref="NegativeOnly"/> (self-damage) or
+    /// <see cref="NegativePetWasted"/> (pet-waste).
     /// </summary>
-    private enum RowMode { Normal, PositiveOnly, NegativeOnly }
+    private enum RowMode { Normal, PositiveOnly, NegativeOnly, NegativePetWasted }
 
     // Shared expand/collapse state across chart rebuilds, keyed by parent source id.
     // Default: expanded.
@@ -70,8 +70,11 @@ public partial class ContributionChart : VBoxContainer
     /// split onto its own row.
     /// </summary>
     private static int PositiveDefense(ContributionAccum a)
-        => a.EffectiveBlock + a.ModifierBlock + a.MitigatedByDebuff
+        => a.EffectiveBlock + a.PetAbsorbed + a.ModifierBlock + a.MitigatedByDebuff
          + a.MitigatedByBuff + a.MitigatedByStrReduction + a.UpgradeBlock;
+
+    private static bool IsNegativeRow(RowMode mode)
+        => mode == RowMode.NegativeOnly || mode == RowMode.NegativePetWasted;
 
     public static ContributionChart Create(
         IReadOnlyDictionary<string, ContributionAccum> data,
@@ -152,7 +155,8 @@ public partial class ContributionChart : VBoxContainer
 
             if (accum.OriginSourceId != null)
             {
-                if (value <= 0 && !(category == Category.Defense && accum.SelfDamage > 0)) continue;
+                if (value <= 0 && !(category == Category.Defense
+                    && (accum.SelfDamage > 0 || accum.PetWasted > 0))) continue;
                 if (!subEntries.TryGetValue(accum.OriginSourceId, out var list))
                 {
                     list = new List<(ContributionAccum, int)>();
@@ -169,10 +173,11 @@ public partial class ContributionChart : VBoxContainer
 
         // Include parent entries that have sub-entries even if own value is 0
         // Remove top-level entries with 0 value AND no sub-entries
-        // For Defense: keep entries with SelfDamage (they have negative value)
+        // For Defense: keep entries with SelfDamage or PetWasted (negative value)
         topLevel.RemoveAll(x => x.value <= 0
             && !subEntries.ContainsKey(x.accum.SourceId)
-            && !(category == Category.Defense && x.accum.SelfDamage > 0));
+            && !(category == Category.Defense
+                && (x.accum.SelfDamage > 0 || x.accum.PetWasted > 0)));
 
         // Also add sub-entry values to their parent's total for sorting (use abs for negative defense)
         var sorted = topLevel
@@ -202,8 +207,22 @@ public partial class ContributionChart : VBoxContainer
             return;
         }
 
-        var maxVal = sorted.Max(x => Math.Abs(x.value) + (subEntries.TryGetValue(x.accum.SourceId, out var s)
-            ? s.Sum(sub => Math.Abs(sub.value)) : 0));
+        var maxVal = sorted.Max(x =>
+        {
+            int own = category == Category.Defense
+                ? Math.Max(
+                    Math.Max(Math.Abs(x.value), PositiveDefense(x.accum)),
+                    Math.Max(x.accum.SelfDamage, x.accum.PetWasted))
+                : Math.Abs(x.value);
+            int subsMax = subEntries.TryGetValue(x.accum.SourceId, out var s)
+                ? s.Sum(sub => category == Category.Defense
+                    ? Math.Max(
+                        Math.Max(Math.Abs(sub.value), PositiveDefense(sub.accum)),
+                        Math.Max(sub.accum.SelfDamage, sub.accum.PetWasted))
+                    : Math.Abs(sub.value))
+                : 0;
+            return own + subsMax;
+        });
 
         // PRD §4.5 round 6 fix: defense % was using `TotalDefense` which already
         // subtracts self-damage, so an Offering self-hit could push the
@@ -217,7 +236,7 @@ public partial class ContributionChart : VBoxContainer
             int posSum = 0;
             foreach (var a in data.Values)
             {
-                int v = a.EffectiveBlock + a.ModifierBlock + a.MitigatedByDebuff
+                int v = a.EffectiveBlock + a.PetAbsorbed + a.ModifierBlock + a.MitigatedByDebuff
                       + a.MitigatedByBuff + a.MitigatedByStrReduction + a.UpgradeBlock;
                 if (v > 0) posSum += v;
             }
@@ -239,23 +258,33 @@ public partial class ContributionChart : VBoxContainer
         foreach (var (accum, value) in sorted)
         {
             bool hasSubs = subEntries.TryGetValue(accum.SourceId, out var subs);
+            bool isDefense = category == Category.Defense;
+            // Defense needs PositiveDefense because TotalDefense already
+            // subtracts costs. Other sections must use their own value; using
+            // PositiveDefense there would drop every damage/draw/energy row.
+            bool hasPositive = isDefense ? PositiveDefense(accum) > 0 : value > 0;
 
-            // Split self-damage onto its own row for Defense entries that
-            // carry both a positive block contribution AND an HP cost (e.g.
-            // CRIMSON_MANTLE, BLOOD_WALL, OFFERING). The mixed row looked
-            // noisy and made sorting / percentage interpretation ambiguous.
-            bool splitSelfDamage = category == Category.Defense
+            // Split both negative costs onto their own rows. A card can carry
+            // real block and a pet-kill cost at the same time (BoneShards,
+            // Sacrifice); the positive bar must not absorb the negative value.
+            bool splitSelfDamage = isDefense
                                 && accum.SelfDamage > 0
-                                && PositiveDefense(accum) > 0;
+                                && hasPositive;
+            bool splitPetWasted = isDefense
+                               && accum.PetWasted > 0
+                               && hasPositive;
+            bool splitCosts = splitSelfDamage || splitPetWasted;
 
-            if (splitSelfDamage)
+            if (hasPositive)
             {
-                int posValue = PositiveDefense(accum);
-                BuildEntryRow(accum, posValue, maxVal, totalVal, category, false, hasSubs, RowMode.PositiveOnly);
+                BuildEntryRow(accum, splitCosts ? PositiveDefense(accum) : value, maxVal, totalVal,
+                    category, false, hasSubs, splitCosts ? RowMode.PositiveOnly : RowMode.Normal);
             }
-            else
+            else if (hasSubs)
             {
-                BuildEntryRow(accum, value, maxVal, totalVal, category, false, hasSubs, RowMode.Normal);
+                // Keep a zero-value parent row so its sub-bars can still be
+                // collapsed/expanded.
+                BuildEntryRow(accum, 0, maxVal, totalVal, category, false, true, RowMode.Normal);
             }
 
             // Render sub-bars if this entry has children AND not collapsed
@@ -263,22 +292,50 @@ public partial class ContributionChart : VBoxContainer
             {
                 foreach (var (subAccum, subValue) in subs!.OrderByDescending(x => x.value))
                 {
-                    BuildEntryRow(subAccum, subValue, maxVal, totalVal, category, true, false, RowMode.Normal);
+                    bool subPositive = isDefense ? PositiveDefense(subAccum) > 0 : subValue > 0;
+                    bool subSplitCosts = isDefense
+                        && (subAccum.SelfDamage > 0 || subAccum.PetWasted > 0)
+                        && subPositive;
+
+                    if (subPositive)
+                    {
+                        BuildEntryRow(subAccum, subSplitCosts ? PositiveDefense(subAccum) : subValue,
+                            maxVal, totalVal, category, true, false,
+                            subSplitCosts ? RowMode.PositiveOnly : RowMode.Normal);
+                    }
+                    if (isDefense && subAccum.SelfDamage > 0)
+                    {
+                        BuildEntryRow(subAccum, -subAccum.SelfDamage, maxVal, totalVal,
+                            category, true, false, RowMode.NegativeOnly,
+                            includeSourceName: !subPositive);
+                    }
+                    if (isDefense && subAccum.PetWasted > 0)
+                    {
+                        BuildEntryRow(subAccum, -subAccum.PetWasted, maxVal, totalVal,
+                            category, true, false, RowMode.NegativePetWasted);
+                    }
                 }
             }
 
-            // Emit the dedicated self-damage row AFTER sub-entries so it sits
-            // directly under the parent's positive row (sub-entries visually
-            // belong between them only when present, which is rare).
-            if (splitSelfDamage)
+            // Emit cost rows only in Defense. Damage/draw/energy/stars/healing
+            // must not inherit self-damage or pet-waste rows.
+            if (isDefense && accum.SelfDamage > 0)
             {
-                BuildEntryRow(accum, -accum.SelfDamage, maxVal, totalVal, category, false, false, RowMode.NegativeOnly);
+                BuildEntryRow(accum, -accum.SelfDamage, maxVal, totalVal,
+                    category, false, false, RowMode.NegativeOnly,
+                    includeSourceName: !hasPositive && !hasSubs);
+            }
+            if (isDefense && accum.PetWasted > 0)
+            {
+                BuildEntryRow(accum, -accum.PetWasted, maxVal, totalVal,
+                    category, false, false, RowMode.NegativePetWasted);
             }
         }
     }
 
     private void BuildEntryRow(ContributionAccum accum, int value, int maxVal, int totalVal,
-        Category category, bool isSub, bool hasSubs = false, RowMode rowMode = RowMode.Normal)
+        Category category, bool isSub, bool hasSubs = false, RowMode rowMode = RowMode.Normal,
+        bool includeSourceName = false)
     {
         var rowWrap = new PanelContainer();
         var rowStyle = new StyleBoxFlat
@@ -326,10 +383,10 @@ public partial class ContributionChart : VBoxContainer
 
         // Source name
         string prefix;
-        if (rowMode == RowMode.NegativeOnly)
+        if (IsNegativeRow(rowMode))
         {
-            // Dedicated self-damage row — indent like a sub-entry so it
-            // visually hangs off the positive parent row.
+            // Dedicated cost row — indent like a sub-entry so it visually
+            // hangs off the positive parent row.
             prefix = "  \u2514 ";
         }
         else
@@ -338,7 +395,7 @@ public partial class ContributionChart : VBoxContainer
             {
                 "relic" => "[R] ",
                 "potion" => "[P] ",
-                "osty" => "[O] ",
+                "pet" or "osty" => L.Get("source.pet_prefix"),
                 "rest" or "merchant" or "floor_regen" => "",
                 "event" => L.Get("source.event_prefix"),
                 _ => ""
@@ -346,14 +403,20 @@ public partial class ContributionChart : VBoxContainer
         }
         var displayName = GetLocalizedName(accum.SourceId, accum.SourceType);
         if (rowMode == RowMode.NegativeOnly)
-            displayName = L.Get("chart.self_damage_suffix");
-        bool indentLike = isSub || rowMode == RowMode.NegativeOnly;
+        {
+            var label = L.Get("chart.self_damage_suffix");
+            displayName = includeSourceName ? $"{label} {displayName}" : label;
+        }
+        else if (rowMode == RowMode.NegativePetWasted)
+            displayName = $"{L.Get("chart.pet_wasted_suffix")} {displayName}";
+        bool indentLike = isSub || IsNegativeRow(rowMode);
         var nameLabel = new Label
         {
             Text = $"{prefix}{displayName}",
             CustomMinimumSize = new Vector2(indentLike ? 100 : 110, BarHeight)
         };
         nameLabel.AddThemeColorOverride("font_color",
+            rowMode == RowMode.NegativePetWasted ? PetWasteBarColor :
             rowMode == RowMode.NegativeOnly ? SelfDmgBarColor :
             isSub ? new Color(0.7f, 0.7f, 0.8f) : new Color(0.9f, 0.9f, 0.9f));
         nameLabel.AddThemeFontSizeOverride("font_size", indentLike ? 11 : 12);
@@ -363,7 +426,7 @@ public partial class ContributionChart : VBoxContainer
         // Times played (for cards) — omit on the dedicated self-damage row
         // to avoid a misleading double count (the play count already showed
         // on the positive row).
-        if (accum.SourceType == "card" && accum.TimesPlayed > 0 && rowMode != RowMode.NegativeOnly)
+        if (accum.SourceType == "card" && accum.TimesPlayed > 0 && !IsNegativeRow(rowMode))
         {
             var playLabel = new Label
             {
@@ -407,9 +470,9 @@ public partial class ContributionChart : VBoxContainer
 
         // Value + percentage (PRD AC-15: 1 decimal place)
         string valText;
-        if (rowMode == RowMode.NegativeOnly)
+        if (IsNegativeRow(rowMode))
         {
-            // Self-damage on its own row: show the raw HP cost, no percentage
+            // HP costs on their own rows: show the raw value, no percentage
             // (denominators are computed from positive contributions).
             valText = $"{value}";
         }
@@ -419,8 +482,8 @@ public partial class ContributionChart : VBoxContainer
             valText = value < 0 ? $"{value}" : $"{value}  ({pct:F1}%)";
         }
         var valLabel = new Label { Text = valText };
-        var valColor = (rowMode == RowMode.NegativeOnly || value < 0)
-            ? SelfDmgBarColor  // red for negative
+        var valColor = rowMode == RowMode.NegativePetWasted ? PetWasteBarColor
+            : (rowMode == RowMode.NegativeOnly || value < 0) ? SelfDmgBarColor
             : isSub ? new Color(0.5f, 0.5f, 0.6f) : new Color(0.7f, 0.7f, 0.7f);
         valLabel.AddThemeColorOverride("font_color", valColor);
         valLabel.AddThemeFontSizeOverride("font_size", indentLike ? 11 : 12);
@@ -433,7 +496,7 @@ public partial class ContributionChart : VBoxContainer
     {
         "relic" => RelicBarColor,
         "potion" => PotionBarColor,
-        "osty" => OstyBarColor,
+        "pet" or "osty" => PetBarColor,
         _ => CardBarColor
     };
 
@@ -507,10 +570,36 @@ public partial class ContributionChart : VBoxContainer
             return;
         }
 
+        // NegativePetWasted: render just the wasted-pet-HP bar.
+        if (rowMode == RowMode.NegativePetWasted)
+        {
+            if (accum.PetWasted > 0)
+            {
+                var w = maxVal > 0 ? (float)accum.PetWasted / maxVal * MaxBarWidth : MaxBarWidth * 0.2f;
+                var bar = CreateBar(w, BarHeight, PetWasteBarColor);
+                bar.Position = new Vector2(0, 0);
+                container.AddChild(bar);
+            }
+            else
+            {
+                container.AddChild(CreateBar(0, BarHeight, PetWasteBarColor));
+            }
+            return;
+        }
+
         if (accum.EffectiveBlock > 0)
         {
             var w = maxVal > 0 ? (float)accum.EffectiveBlock / maxVal * MaxBarWidth : 0;
             var bar = CreateBar(w, BarHeight, baseColor);
+            bar.Position = new Vector2(offset, 0);
+            container.AddChild(bar);
+            offset += w;
+        }
+
+        if (accum.PetAbsorbed > 0)
+        {
+            var w = maxVal > 0 ? (float)accum.PetAbsorbed / maxVal * MaxBarWidth : 0;
+            var bar = CreateBar(w, BarHeight, PetBarColor);
             bar.Position = new Vector2(offset, 0);
             container.AddChild(bar);
             offset += w;
@@ -563,7 +652,7 @@ public partial class ContributionChart : VBoxContainer
             container.AddChild(bar);
         }
 
-        if (PositiveDefense(accum) <= 0 && accum.SelfDamage <= 0)
+        if (PositiveDefense(accum) <= 0 && accum.SelfDamage <= 0 && accum.PetWasted <= 0)
             container.AddChild(CreateBar(0, BarHeight, baseColor));
     }
 
@@ -678,6 +767,7 @@ public partial class ContributionChart : VBoxContainer
                 "relic" => Util.NameLookup.Relic(id),
                 "potion" => Util.NameLookup.Potion(id),
                 "event" => Util.NameLookup.Event(id),
+                "pet" or "osty" => Util.NameLookup.Monster(id),
                 _ => Util.NameLookup.Card(id)
             };
             if (!string.IsNullOrEmpty(name) && name != id)

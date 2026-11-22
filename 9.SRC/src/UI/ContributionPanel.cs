@@ -288,7 +288,7 @@ public partial class ContributionPanel : PanelContainer
         v.AddChild(NewColorRow(new Color(0.36f, 0.58f, 0.95f), L.Get("contrib.help_color_card")));
         v.AddChild(NewColorRow(new Color(0.95f, 0.78f, 0.30f), L.Get("contrib.help_color_relic")));
         v.AddChild(NewColorRow(new Color(0.25f, 0.85f, 0.65f), L.Get("contrib.help_color_potion")));
-        v.AddChild(NewColorRow(new Color(0.55f, 0.85f, 0.55f), L.Get("contrib.help_color_osty")));
+        v.AddChild(NewColorRow(new Color(0.55f, 0.85f, 0.55f), L.Get("contrib.help_color_pet")));
         v.AddChild(NewColorRow(new Color(0.74f, 0.55f, 0.95f), L.Get("contrib.help_color_modifier")));
         v.AddChild(NewColorRow(new Color(0.55f, 0.78f, 1.00f), L.Get("contrib.help_color_attributed")));
         v.AddChild(NewColorRow(new Color(0.40f, 0.82f, 0.55f), L.Get("contrib.help_color_mitigate")));
@@ -306,6 +306,8 @@ public partial class ContributionPanel : PanelContainer
         v.AddChild(NewLabel(L.Get("contrib.help_mitigated"),  Cream, 11));
         v.AddChild(NewLabel(L.Get("contrib.help_str_reduce"), Cream, 11));
         v.AddChild(NewLabel(L.Get("contrib.help_self"),       Cream, 11));
+        v.AddChild(NewLabel(L.Get("contrib.help_pet"),        Cream, 11));
+        v.AddChild(NewLabel(L.Get("contrib.help_pet_waste"),  Cream, 11));
         v.AddChild(NewLabel(L.Get("contrib.help_energy"),     Cream, 11));
         v.AddChild(NewLabel(L.Get("contrib.help_heal"),       Cream, 11));
         v.AddChild(NewLabel(L.Get("contrib.help_draw"),       Cream, 11));

@@ -453,6 +453,8 @@ public static class ContributionPersistence
         ModifierDamage = a.ModifierDamage,
         UpgradeDamage = a.UpgradeDamage,
         EffectiveBlock = a.EffectiveBlock,
+        PetAbsorbed = a.PetAbsorbed,
+        PetWasted = a.PetWasted,
         ModifierBlock = a.ModifierBlock,
         UpgradeBlock = a.UpgradeBlock,
         MitigatedByDebuff = a.MitigatedByDebuff,
@@ -466,28 +468,58 @@ public static class ContributionPersistence
         OriginSourceId = a.OriginSourceId,
     };
 
-    private static ContributionAccum FromDto(SourceDto d) => new()
+    private static ContributionAccum FromDto(SourceDto d)
     {
-        SourceId = d.SourceId,
-        SourceType = d.SourceType,
-        TimesPlayed = d.TimesPlayed,
-        DirectDamage = d.DirectDamage,
-        AttributedDamage = d.AttributedDamage,
-        ModifierDamage = d.ModifierDamage,
-        UpgradeDamage = d.UpgradeDamage,
-        EffectiveBlock = d.EffectiveBlock,
-        ModifierBlock = d.ModifierBlock,
-        UpgradeBlock = d.UpgradeBlock,
-        MitigatedByDebuff = d.MitigatedByDebuff,
-        MitigatedByBuff = d.MitigatedByBuff,
-        MitigatedByStrReduction = d.MitigatedByStrReduction,
-        SelfDamage = d.SelfDamage,
-        CardsDrawn = d.CardsDrawn,
-        EnergyGained = d.EnergyGained,
-        HpHealed = d.HpHealed,
-        StarsContribution = d.StarsContribution,
-        OriginSourceId = d.OriginSourceId,
-    };
+        // New writes use "pet" for both Osty and Wuppy. Legacy files use
+        // "osty" for the Osty parent. Normalize the label, but keep SourceId
+        // so the display still resolves OSTY to 奥斯提.
+        bool legacyOstyType = d.SourceType == "osty";
+        string sourceType = legacyOstyType ? "pet" : d.SourceType;
+        int effectiveBlock = d.EffectiveBlock;
+        int petAbsorbed = d.PetAbsorbed;
+        int petWasted = d.PetWasted;
+
+        // Old Osty absorption lived in EffectiveBlock. Move it to the new
+        // field without double-counting on repeated reads.
+        if (legacyOstyType || d.OriginSourceId == "OSTY")
+        {
+            petAbsorbed += effectiveBlock;
+            effectiveBlock = 0;
+        }
+
+        // Old active-kill penalty lived as a negative EffectiveBlock on the
+        // killer card. Move the identifiable negative remainder to PetWasted.
+        if (petWasted == 0 && effectiveBlock < 0)
+        {
+            petWasted = -effectiveBlock;
+            effectiveBlock = 0;
+        }
+
+        return new()
+        {
+            SourceId = d.SourceId,
+            SourceType = sourceType,
+            TimesPlayed = d.TimesPlayed,
+            DirectDamage = d.DirectDamage,
+            AttributedDamage = d.AttributedDamage,
+            ModifierDamage = d.ModifierDamage,
+            UpgradeDamage = d.UpgradeDamage,
+            EffectiveBlock = effectiveBlock,
+            PetAbsorbed = petAbsorbed,
+            PetWasted = petWasted,
+            ModifierBlock = d.ModifierBlock,
+            UpgradeBlock = d.UpgradeBlock,
+            MitigatedByDebuff = d.MitigatedByDebuff,
+            MitigatedByBuff = d.MitigatedByBuff,
+            MitigatedByStrReduction = d.MitigatedByStrReduction,
+            SelfDamage = d.SelfDamage,
+            CardsDrawn = d.CardsDrawn,
+            EnergyGained = d.EnergyGained,
+            HpHealed = d.HpHealed,
+            StarsContribution = d.StarsContribution,
+            OriginSourceId = d.OriginSourceId,
+        };
+    }
 
     // ── Wire format ─────────────────────────────────────────
 
@@ -557,6 +589,8 @@ public static class ContributionPersistence
         public int ModifierDamage { get; set; }
         public int UpgradeDamage { get; set; }
         public int EffectiveBlock { get; set; }
+        public int PetAbsorbed { get; set; }
+        public int PetWasted { get; set; }
         public int ModifierBlock { get; set; }
         public int UpgradeBlock { get; set; }
         public int MitigatedByDebuff { get; set; }

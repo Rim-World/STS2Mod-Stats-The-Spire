@@ -110,6 +110,8 @@ public sealed class RunContributionAggregator
             mem.ModifierDamage       = Math.Max(mem.ModifierDamage, disk.ModifierDamage);
             mem.UpgradeDamage        = Math.Max(mem.UpgradeDamage, disk.UpgradeDamage);
             mem.EffectiveBlock       = Math.Max(mem.EffectiveBlock, disk.EffectiveBlock);
+            mem.PetAbsorbed          = Math.Max(mem.PetAbsorbed, disk.PetAbsorbed);
+            mem.PetWasted            = Math.Max(mem.PetWasted, disk.PetWasted);
             mem.ModifierBlock        = Math.Max(mem.ModifierBlock, disk.ModifierBlock);
             mem.UpgradeBlock         = Math.Max(mem.UpgradeBlock, disk.UpgradeBlock);
             mem.MitigatedByDebuff    = Math.Max(mem.MitigatedByDebuff, disk.MitigatedByDebuff);
@@ -133,6 +135,8 @@ public sealed class RunContributionAggregator
         ModifierDamage          = src.ModifierDamage,
         UpgradeDamage           = src.UpgradeDamage,
         EffectiveBlock          = src.EffectiveBlock,
+        PetAbsorbed             = src.PetAbsorbed,
+        PetWasted               = src.PetWasted,
         ModifierBlock           = src.ModifierBlock,
         UpgradeBlock            = src.UpgradeBlock,
         MitigatedByDebuff       = src.MitigatedByDebuff,
@@ -184,6 +188,8 @@ public sealed class RunContributionAggregator
                 AttributedDamage = src.AttributedDamage,
                 ModifierDamage = src.ModifierDamage,
                 EffectiveBlock = src.EffectiveBlock,
+                PetAbsorbed = src.PetAbsorbed,
+                PetWasted = src.PetWasted,
                 ModifierBlock = src.ModifierBlock,
                 MitigatedByDebuff = src.MitigatedByDebuff,
                 MitigatedByBuff = src.MitigatedByBuff,

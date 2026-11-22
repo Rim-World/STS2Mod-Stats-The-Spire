@@ -1,0 +1,17 @@
+{
+  "id": "sts2_pet_probe_170",
+  "name": "StatsTheSpire Pet Probe 1.7.0",
+  "author": "test",
+  "description": "Test-only probe for 1.7.0 pet accounting: synthetic tracker/JSON/UI checks plus live Wuppy redirect and BoneShards/Sacrifice kills.",
+  "version": "1.7.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.113.1",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.7.0"
+    }
+  ]
+}

@@ -2,6 +2,38 @@
 
 本文件登记开发过程中的测试工具、日志与测试数据。版本目录为 `8.TEST/<version>/`。
 
+## 1.7.0
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `build-v113-170.log` | 2026-11-22 08:32 | 否 | 4 | v0.113.1 1.7.0 Release 构建；0 错误、7 既有警告 | 是 |
+| `build-v111-170b.log` | 2026-11-22 08:33 | 否 | 4 | v0.111.1 1.7.0 Release 构建；0 错误、7 既有警告 | 是 |
+| `migration-probe.log` | 2026-11-22 08:12 | 否 | 1 | 旧 `osty` 类型、旧吸收、旧负值和幂等迁移 5/5 PASS | 是 |
+| `tracker-probe-owner-guard.log` | 2026-11-22 08:29 | 否 | 1 | 奥斯提 LIFO、碎骨/牺牲损耗、玩家死亡守卫、瓦皮和 TotalDefense PASS | 是 |
+| `tracker-probe-callback.log` | 2026-11-22 08:18 | 否 | 1 | `OnDamageDealt` 的 Osty/Wuppy 实际 HP 损失路径 PASS | 是 |
+| `pet-verify-console.log` | 2026-11-22 08:27 | 否 | 4 | 独立子代理数据逻辑、JSON 读写、聚合、文件加载与迁移 71/71 PASS | 是 |
+| `static-source-checks.log` | 2026-11-22 08:27 | 否 | 5 | 静态检查 `EffectiveBlock`、`OnOstyKilled`、`PetAbsorbed`、`PetWasted` 与 `TotalDefense` | 是 |
+| `PetGameProbe/` | 2026-11-22 08:31 | 否 | 189 | 游戏内合成/界面/真实瓦皮/碎骨/牺牲探针工程（测试专用） | 是 |
+| `build-pet-game-probe.log` | 2026-11-22 08:37 | 否 | 1 | 游戏内宠物探针构建记录 | 是 |
+| `petgame-live-15211-attempt3-stdout.log` | 2026-11-22 08:38 | 否 | 453 | 游戏内探针 44/44 PASS；真实瓦皮溢出、碎骨/牺牲损耗与 UI 行 | 是 |
+| `petgame-live-15211-attempt4-ui.log` | 2026-11-22 08:41 | 否 | 458 | UI 分节回归失败证据：非防御行丢失、损耗行泄漏 | 是 |
+| `petgame-ui-rerun-6a23097c.log` | 2026-11-22 08:44 | 否 | 294 | 只修非防御分节后的 UI 探针 30/30 PASS | 是 |
+| `build-v113-reviewfix.log` | 2026-11-22 08:44 | 否 | 4 | 审阅修复后 v0.113.1 构建；0 错误 | 是 |
+| `build-v111-reviewfix.log` | 2026-11-22 08:44 | 否 | 4 | 审阅修复后 v0.111.1 构建；0 错误 | 是 |
+| `tracker-probe-reviewfix.log` | 2026-11-22 08:44 | 否 | 1 | 实际 Osty HP 损耗与回调路径复测 PASS | 是 |
+| `build-v113-final2.log` | 2026-11-22 08:49 | 否 | 4 | 低风险复审修复后 v0.113.1 构建；0 错误 | 是 |
+| `build-v111-final2.log` | 2026-11-22 08:49 | 否 | 4 | 低风险复审修复后 v0.111.1 构建；0 错误 | 是 |
+| `tracker-probe-final2.log` | 2026-11-22 08:49 | 否 | 1 | 实际 Osty HP、独立自伤名称、生成卡顶层损耗 PASS | 是 |
+| `petgame-live-15211-58d43131.log` | 2026-11-22 08:46 | 否 | 451 | 58d DLL 51/51 PASS；真实治疗后 HP、Wuppy、碎骨/牺牲与 UI 回归 | 是 |
+| `build-pet-game-probe-58d43131.log` | 2026-11-22 08:46 | 否 | 1 | 游戏内探针构建记录 | 是 |
+| `petgame-focused-f25f0778.log` | 2026-11-22 08:58 | 否 | 295 | 最终 f25 DLL 聚焦复测 34/34 PASS；低风险修复与 UI 回归 | 是 |
+| `build-pet-game-probe-f25f0778.log` | 2026-11-22 08:57 | 否 | 1 | 最终 f25 游戏内探针构建记录 | 是 |
+| `install-load-1.7.0-stdout.log` | 2026-11-22 08:45 | 否 | 320 | 安装后 v1.7.0 无头加载；初始化与 815 条补丁绑定；超时结束 | 是 |
+| `check-release-f25.log` | 2026-11-22 08:58 | 否 | 1 | 最终输出包版本、源码、密钥、路径门禁 12/12 PASS | 是 |
+| `restored-installed-hashes.log` | 2026-11-22 08:38 | 否 | 1 | 测试后安装目录文件哈希记录 | 是 |
+| `installed-backup-hashes.log` | 2026-11-22 08:31 | 否 | 1 | 测试部署前的安装目录哈希记录 | 是 |
+| `check-release.log` | 2026-11-22 08:34 | 否 | 1 | 中间输出包门禁 12/12 PASS；保留历史 | 是 |
+
 ## 1.4.0
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |

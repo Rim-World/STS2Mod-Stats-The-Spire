@@ -129,17 +129,21 @@ public static class CombatHistoryPatch
             var isPlayerReceiver = receiver.IsPlayer;
             var cardSourceId = cardSource?.Id.Entry;
 
-            // Detect Osty as dealer or receiver
+            // Detect Osty as dealer or receiver. Wuppy is matched by model ID
+            // so v0.111.1 never references the v0.113-only Wuppy type.
             bool isOstyDealer = dealer != null && dealer.Monster is Osty;
             bool isOstyReceiver = receiver.Monster is Osty;
+            bool isWuppyReceiver = receiver.Monster?.Id.Entry == "WUPPY";
+            bool isWuppyRedirect = isWuppyReceiver
+                && dealer?.Side == CombatSide.Enemy
+                && IsLocalPlayer(receiver.PetOwner);
 
             // Enemy-vs-enemy and enemy-vs-pet damage is not player contribution.
-            // Wuppy is the common case: Wuppy's Loyalty redirects enemy attacks
-            // to the pet, and the old code counted those hits as player damage
-            // under UNTRACKED. Osty is exempt because its absorb path is a
-            // deliberate defense contribution.
+            // Wuppy is the exception when its Loyalty redirects a local player's
+            // incoming attack; that HP loss is pet absorption. Osty is exempt
+            // because its absorb path is a deliberate defense contribution.
             if (dealer != null && dealer.Side == CombatSide.Enemy
-                && !isPlayerReceiver && !isOstyReceiver)
+                && !isPlayerReceiver && !isOstyReceiver && !isWuppyRedirect)
                 return;
 
             // Mark this result as processed so KillingBlowPatcher won't double-count
@@ -162,7 +166,8 @@ public static class CombatHistoryPatch
                 dealer?.GetHashCode() ?? 0,
                 isOstyDealer: isOstyDealer,
                 isOstyReceiver: isOstyReceiver,
-                skipEnemyDamageAttribution: invincible);
+                skipEnemyDamageAttribution: invincible,
+                isWuppyReceiver: isWuppyRedirect);
 
             if (isPlayerReceiver && result.WasTargetKilled)
                 CombatTracker.Instance.OnPlayerDied();
@@ -3292,7 +3297,8 @@ public static class DoomKillPatch
 // ═══════════════════════════════════════════════════════════
 // Osty death tracking
 // When Osty is killed (BoneShards sacrifice, Sacrifice card, combat death),
-// clears LIFO HP stack and subtracts remaining HP from killer card's defense.
+// clears the LIFO HP stack. BoneShards/Sacrifice record wasted HP separately;
+// player-death cleanup records nothing.
 // ═══════════════════════════════════════════════════════════
 
 [HarmonyPatch]
@@ -3348,7 +3354,10 @@ public static class OstyDeathPatch
                 // Multiplayer: only the local player's Osty HP pool belongs
                 // to the local contribution ledger.
                 if (!CombatHistoryPatch.IsLocalPlayer(creature.PetOwner)) continue;
-                CombatTracker.Instance.OnOstyKilled();
+                // Player-death cleanup kills Osty after the owner dies. That
+                // is not an intentional BoneShards/Sacrifice kill.
+                bool ownerAlive = creature.PetOwner?.Creature is { IsDead: false };
+                CombatTracker.Instance.OnOstyKilled((int)creature.CurrentHp, ownerAlive);
                 return;
             }
         });

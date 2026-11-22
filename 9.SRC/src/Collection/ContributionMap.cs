@@ -12,6 +12,8 @@ public class ContributionAccum
     public int AttributedDamage { get; set; }   // indirect (poison, vuln bonus, etc.)
     public int ModifierDamage { get; set; }      // from additive/multiplicative modifiers (Strength, etc.)
     public int EffectiveBlock { get; set; }      // actual damage mitigated by block
+    public int PetAbsorbed { get; set; }         // HP lost by Osty/Wuppy to absorb damage for the player
+    public int PetWasted { get; set; }           // remaining Osty HP destroyed by an intentional kill
     public int ModifierBlock { get; set; }       // from additive/multiplicative block modifiers (Dexterity, etc.)
     public int MitigatedByDebuff { get; set; }   // damage prevented by Weak/etc on enemies
     public int MitigatedByBuff { get; set; }     // damage prevented by Buffer/Intangible
@@ -30,7 +32,7 @@ public class ContributionAccum
     public int UpgradeBlock { get; set; }
 
     public int TotalDamage => DirectDamage + AttributedDamage + ModifierDamage + UpgradeDamage;
-    public int TotalDefense => EffectiveBlock + ModifierBlock + MitigatedByDebuff + MitigatedByBuff + MitigatedByStrReduction + UpgradeBlock - SelfDamage;
+    public int TotalDefense => EffectiveBlock + PetAbsorbed + ModifierBlock + MitigatedByDebuff + MitigatedByBuff + MitigatedByStrReduction + UpgradeBlock - SelfDamage - PetWasted;
 
     public void MergeFrom(ContributionAccum other)
     {
@@ -39,6 +41,8 @@ public class ContributionAccum
         AttributedDamage += other.AttributedDamage;
         ModifierDamage += other.ModifierDamage;
         EffectiveBlock += other.EffectiveBlock;
+        PetAbsorbed += other.PetAbsorbed;
+        PetWasted += other.PetWasted;
         ModifierBlock += other.ModifierBlock;
         MitigatedByDebuff += other.MitigatedByDebuff;
         MitigatedByBuff += other.MitigatedByBuff;

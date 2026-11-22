@@ -593,5 +593,7 @@ public static class NameLookup
         // Only entries where KB has a non-empty English name are listed.
         // For KB entries with empty name.en, the raw ID is returned as
         // a last-resort fallback (still better than Chinese text).
+        {"OSTY", "Osty"},
+        {"WUPPY", "Wuppy"},
     };
 }

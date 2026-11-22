@@ -2,6 +2,28 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.7.0] - 2026-11-22
+
+### Added
+- `PetAbsorbed`: actual HP lost by Osty or Wuppy while absorbing damage for the player. Osty absorption still uses the LIFO summon-source stack; Wuppy absorption is attributed to the `WUPPY` parent row.
+- `PetWasted`: remaining Osty HP destroyed by Bone Shards or Sacrifice. It is shown as a separate red `宠物损耗` row and subtracted from total defense.
+- Legacy data migration: `SourceType: "osty"` becomes `pet`; old Osty `EffectiveBlock` moves to `PetAbsorbed`; identifiable negative `EffectiveBlock` moves to `PetWasted`.
+
+### Changed
+- `EffectiveBlock` now means real block only. Osty HP absorption no longer enters it.
+- The old deferred Osty-death negative-defense path is removed. Player-death cleanup and non-BoneShards/Sacrifice deaths produce no `PetWasted`.
+- Pet rows share `[宠]`, pet color, and the existing defense section; Osty keeps summon-card sub-bars, Wuppy has a parent row only.
+
+### Verified
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; logs `8.TEST/1.7.0/build-v113-final2.log`, `build-v111-final2.log`.
+- Offline migration probe: 5/5 PASS; log `8.TEST/1.7.0/migration-probe.log`.
+- Tracker probe: Osty LIFO, BoneShards/Sacrifice waste, player-death guard, Wuppy callback, and TotalDefense PASS; logs `8.TEST/1.7.0/tracker-probe-owner-guard.log`, `tracker-probe-callback.log`.
+- v0.113.1 in-game probe: 51/51 PASS. Real Wuppy absorbed 3 HP and excluded 7 overkill; healed BoneShards used actual HP 20 (stack 10) and wrote `PetWasted=20`; Sacrifice used actual HP 12 (stack 7) and wrote `PetWasted=12`; `EffectiveBlock` stayed 0. Damage rows, sub-cost bars, UI rows, and colors passed; log `8.TEST/1.7.0/petgame-live-15211-58d43131.log`.
+- Final low-residual fixes: standalone self-damage rows keep the source name; `PetWasted` always writes to the top-level killer-card bucket so generated/potion cards cannot disappear as orphan sub-entries.
+- Focused re-test: 34/34 PASS for standalone self-damage name, generated-card top-level waste, damage rows, sub-cost split, and bar scale; log `8.TEST/1.7.0/petgame-focused-f25f0778.log`.
+- Final DLL SHA-256 `f25f0778eb842c675f1aa72e9da7cda4b4270a58ea5600a88c613c32e5140e85`, 568,320 bytes.
+- Not verified: v0.111.1 runtime pet paths; manual visual acceptance.
+
 ## [1.6.1] - 2026-11-22
 
 ### Fixed

@@ -146,8 +146,13 @@ public sealed class CombatTracker
         set => _pendingUpgradeSourceOriginAL.Value = value;
     }
 
-    // H3: Deferred Osty death negative defense — only applied when enemy next attacks player
-    private (string sourceId, string sourceType, int amount)? _pendingOstyDeathDefense;
+    // Only these cards intentionally kill Osty. Other Kill paths (player
+    // death cleanup, future effects) must not create PetWasted.
+    private static readonly HashSet<string> OstyActiveKillCards = new(StringComparer.Ordinal)
+    {
+        "BONE_SHARDS",
+        "SACRIFICE",
+    };
 
     // R2: Regal Pillow's +15 rest-site heal is part of the same Heal event.
     // Split the recorded amount without adding a second full heal.
@@ -388,7 +393,6 @@ public sealed class CombatTracker
         _totalDamageDealt = 0;
         _playerDied = false;
         _floor = floor;
-        _pendingOstyDeathDefense = null;
         _pendingRestHealBonus = null;
         _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
@@ -585,7 +589,6 @@ public sealed class CombatTracker
         _handDrawCount = 0;
         _cardContextStackAL.Value = null;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
-        _pendingOstyDeathDefense = null;
         _ostyDeathHandled = false;
         _pendingUpgradeDamageDelta = 0;
         _pendingUpgradeBlockDelta = 0;
@@ -673,13 +676,19 @@ public sealed class CombatTracker
     public void OnDamageDealt(int totalDamage, int blockedDamage, string? cardSourceId,
         bool isPlayerReceiver, int targetHash, int dealerHash,
         bool isOstyDealer = false, bool isOstyReceiver = false,
-        bool skipEnemyDamageAttribution = false)
+        bool skipEnemyDamageAttribution = false, bool isWuppyReceiver = false)
     {
-        // Osty receiving damage = absorbing for player → defense contribution
+        // Pet receiving damage = absorbing for the player. Use only the HP
+        // actually lost; blocked or overkill damage is not pet absorption.
+        int petHpLost = Math.Max(0, totalDamage - blockedDamage);
         if (isOstyReceiver && !isPlayerReceiver)
         {
-            int hpLost = totalDamage; // totalDamage on Osty = HP lost by Osty
-            OnOstyAbsorbedDamage(hpLost);
+            OnOstyAbsorbedDamage(petHpLost);
+            return;
+        }
+        if (isWuppyReceiver && !isPlayerReceiver)
+        {
+            OnWuppyAbsorbedDamage(petHpLost);
             return;
         }
 
@@ -692,14 +701,6 @@ public sealed class CombatTracker
 
         if (isPlayerReceiver)
         {
-            // H3: Apply deferred Osty death negative defense on first enemy damage to player
-            if (_pendingOstyDeathDefense != null && dealerHash != targetHash)
-            {
-                var (ostySourceId, ostySourceType, ostyAmount) = _pendingOstyDeathDefense.Value;
-                GetOrCreate(ostySourceId, ostySourceType).EffectiveBlock -= ostyAmount;
-                _pendingOstyDeathDefense = null;
-            }
-
             _damageTakenByPlayer += totalDamage;
 
             // Self-damage: player dealing damage to themselves via a card (Bloodletting, Offering, etc.)
@@ -1541,7 +1542,7 @@ public sealed class CombatTracker
         if (totalDamage <= 0 || string.IsNullOrEmpty(cardSourceId)) return;
 
         // Ensure OSTY parent entry exists
-        GetOrCreate(OstyParentId, "osty");
+        GetOrCreate(OstyParentId, "pet");
 
         // Attribute damage to the specific card, using the same composite
         // key that persistence will later reconstruct.
@@ -1569,14 +1570,14 @@ public sealed class CombatTracker
         if (damage <= 0) return;
 
         // Ensure OSTY parent entry exists
-        GetOrCreate(OstyParentId, "osty");
+        GetOrCreate(OstyParentId, "pet");
 
         // Consume from LIFO stack to find which summon sources contributed
         var consumed = ContributionMap.Instance.ConsumeOstyHp(damage);
         foreach (var (sourceId, sourceType, amount) in consumed)
         {
             var accum = GetOrCreate(sourceId, sourceType, OstyParentId);
-            accum.EffectiveBlock += amount;
+            accum.PetAbsorbed += amount;
         }
 
         // If stack was insufficient (shouldn't normally happen), attribute remainder to OSTY itself
@@ -1585,8 +1586,18 @@ public sealed class CombatTracker
         int remainder = damage - totalConsumed;
         if (remainder > 0)
         {
-            GetOrCreate(OstyParentId, "osty").EffectiveBlock += remainder;
+            GetOrCreate(OstyParentId, "pet").PetAbsorbed += remainder;
         }
+    }
+
+    // ── Wuppy Defense (HP absorption) ───────────────────────
+    // Wuppy redirects enemy powered attacks from the player to itself.
+    // Only the HP Wuppy actually loses counts; block and overkill do not.
+
+    public void OnWuppyAbsorbedDamage(int damage)
+    {
+        if (damage <= 0) return;
+        GetOrCreate("WUPPY", "pet").PetAbsorbed += damage;
     }
 
     // ── Osty Summon Tracking ────────────────────────────────
@@ -1599,23 +1610,32 @@ public sealed class CombatTracker
     }
 
     /// <summary>
-    /// Called when Osty is killed (BoneShards sacrifice, Sacrifice card, etc.).
-    /// Subtracts remaining Osty HP from the killer card's defense contribution
-    /// (killing Osty destroys its HP pool, removing that defensive resource).
-    /// Then clears the LIFO stack.
+    /// Called when Osty dies. BoneShards and Sacrifice intentionally destroy
+    /// the remaining HP pool; record that lost HP on the killing card as
+    /// PetWasted. Other Kill paths (player death cleanup) do not record it.
     /// Idempotent: nested/duplicated Kill prefixes for the same death are ignored.
+    /// The bool overload is kept for deterministic probes and legacy callers;
+    /// production passes Osty.CurrentHp through the int overload.
     /// </summary>
-    public void OnOstyKilled()
+    public void OnOstyKilled(bool allowPetWasted = true)
+        => OnOstyKilled(ContributionMap.Instance.GetRemainingOstyHpTotal(), allowPetWasted);
+
+    public void OnOstyKilled(int remainingHp, bool allowPetWasted = true)
     {
         if (_ostyDeathHandled) return;
         _ostyDeathHandled = true;
 
-        int remainingHp = ContributionMap.Instance.GetRemainingOstyHpTotal();
+        string? killerCardId = _activeCardId;
 
-        if (remainingHp > 0 && _activeCardId != null)
+        if (allowPetWasted
+            && remainingHp > 0
+            && killerCardId != null
+            && OstyActiveKillCards.Contains(killerCardId))
         {
-            // H3: Defer negative defense until next enemy attack hits player
-            _pendingOstyDeathDefense = (_activeCardId, "card", remainingHp);
+            // Keep the cost on the visible top-level card row. A generated
+            // BoneShards/Sacrifice may have an origin with no accumulator;
+            // storing the cost there would make the row disappear.
+            GetOrCreateAtOrigin(killerCardId, "card", null).PetWasted += remainingHp;
         }
 
         ContributionMap.Instance.ClearOstyHpStack();
@@ -1846,8 +1866,10 @@ public sealed class CombatTracker
     }
 
     private ContributionAccum GetOrCreate(string sourceId, string sourceType, string? originOverride = null)
+        => GetOrCreateAtOrigin(sourceId, sourceType, originOverride ?? ResolveOriginFor(sourceId));
+
+    private ContributionAccum GetOrCreateAtOrigin(string sourceId, string sourceType, string? originId)
     {
-        string? originId = originOverride ?? ResolveOriginFor(sourceId);
         string key = MakeBucketKey(sourceId, originId);
         if (!_currentCombat.TryGetValue(key, out var accum))
         {
