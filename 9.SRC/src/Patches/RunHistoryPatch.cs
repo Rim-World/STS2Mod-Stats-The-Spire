@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using CommunityStats.Collection;
 using CommunityStats.Config;
 using CommunityStats.UI;
 using CommunityStats.Util;
@@ -11,21 +13,19 @@ namespace CommunityStats.Patches;
 /// <summary>
 /// Round 9 round 51 (rev 2): button + root-parented overlay.
 ///
-/// The previous attempt parented the overlay to NRunHistory's Control which
-/// turned out to share input/z-order state with the screen's tween system,
-/// trapping input after close. ContributionPanel is parented to GetTree().Root
-/// — to layer cleanly with it (and to avoid any NRunHistory internals), our
-/// overlay is now also parented to root.
+/// 1.8.0: clicking 本局统计 now opens two windows side by side. The left
+/// window is the single-run statistics popup; the right window is the
+/// contribution replay panel. The old 查看贡献图表 button is gone.
 ///
-/// On 查看贡献图表 click, RunHistoryStatsSection invokes a callback that
-/// frees this overlay, so the contribution panel pops on top of an empty
-/// background instead of fighting our overlay for z-order.
+/// Both windows are root-parented. The history overlay owns the dim layer
+/// and the left window. CloseOpenPopup() also hides the replay window.
 /// </summary>
 [HarmonyPatch]
 public static class RunHistoryPatch
 {
     private const string ButtonMeta  = "sts_run_hist_button";
     private const string PopupName   = "ModRunHistoryStatsPopup";
+    private static bool _replayWindowOpen;
 
     [HarmonyPatch(typeof(NRunHistory), "SelectPlayer")]
     [HarmonyPostfix]
@@ -158,6 +158,12 @@ public static class RunHistoryPatch
     /// </summary>
     public static bool CloseOpenPopup()
     {
+        if (_replayWindowOpen)
+        {
+            _replayWindowOpen = false;
+            if (ContributionPanel.IsVisible) ContributionPanel.Hide();
+        }
+
         var tree = (Godot.Engine.GetMainLoop() as SceneTree);
         var root = tree?.Root;
         if (root == null) return false;
@@ -190,10 +196,7 @@ public static class RunHistoryPatch
         CloseOpenPopup();
 
         var viewport = root.GetVisibleRect().Size;
-        int popupW = (int)System.MathF.Min(1000f, viewport.X * 0.75f);
-        int popupH = (int)System.MathF.Min(780f, viewport.Y * 0.88f);
-        if (popupW < 520) popupW = 520;
-        if (popupH < 400) popupH = 400;
+        ComputeWindowRects(viewport, out var leftRect, out var rightRect);
 
         // Top-level Control overlay parented to root. Must explicitly fill
         // the viewport via anchors since root has no layout enforcement.
@@ -205,7 +208,7 @@ public static class RunHistoryPatch
         };
         overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
-        // Dim background — clicking it closes the popup.
+        // Dim background — clicking it closes both windows.
         var dim = new ColorRect
         {
             Name = "Dim",
@@ -222,11 +225,11 @@ public static class RunHistoryPatch
             }
         };
 
-        // Centered panel.
+        // Left window: single-run statistics.
         var panel = new PanelContainer
         {
             Name = "PopupPanel",
-            CustomMinimumSize = new Vector2(popupW, popupH),
+            CustomMinimumSize = new Vector2(420, 480),
             MouseFilter = Control.MouseFilterEnum.Stop,
         };
         var bgStyle = new StyleBoxFlat
@@ -237,16 +240,16 @@ public static class RunHistoryPatch
             BorderWidthLeft = 2, BorderWidthRight = 2,
             CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
-            ContentMarginLeft = 18, ContentMarginRight = 18,
-            ContentMarginTop = 14, ContentMarginBottom = 14,
+            ContentMarginLeft = 16, ContentMarginRight = 16,
+            ContentMarginTop = 12, ContentMarginBottom = 12,
         };
         panel.AddThemeStyleboxOverride("panel", bgStyle);
-        panel.AnchorLeft = 0.5f; panel.AnchorRight = 0.5f;
-        panel.AnchorTop = 0.5f; panel.AnchorBottom = 0.5f;
-        panel.OffsetLeft = -popupW / 2f;
-        panel.OffsetRight = popupW / 2f;
-        panel.OffsetTop = -popupH / 2f;
-        panel.OffsetBottom = popupH / 2f;
+        panel.AnchorLeft = 0f; panel.AnchorRight = 0f;
+        panel.AnchorTop = 0f; panel.AnchorBottom = 0f;
+        panel.OffsetLeft = leftRect.Position.X;
+        panel.OffsetRight = leftRect.Position.X + leftRect.Size.X;
+        panel.OffsetTop = leftRect.Position.Y;
+        panel.OffsetBottom = leftRect.Position.Y + leftRect.Size.Y;
         overlay.AddChild(panel);
 
         var body = new VBoxContainer
@@ -264,7 +267,7 @@ public static class RunHistoryPatch
         };
         titleRow.AddThemeConstantOverride("separation", 8);
         var titleLbl = new Label { Text = L.Get("run_hist_popup_title") };
-        titleLbl.AddThemeFontSizeOverride("font_size", 30);
+        titleLbl.AddThemeFontSizeOverride("font_size", 28);
         titleLbl.AddThemeColorOverride("font_color", new Color("#EFC851"));
         titleLbl.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         titleRow.AddChild(titleLbl);
@@ -308,6 +311,72 @@ public static class RunHistoryPatch
         overlay.AddChild(escHandler);
 
         root.AddChild(overlay);
+
+        // Right window: contribution replay. It is root-level, so open it
+        // after the overlay and move it to the front. CloseOpenPopup() owns
+        // its lifetime.
+        var identity = RunIdentity.FromHistory(history);
+        var summary = ContributionPersistence.LoadRunSummary(identity)
+            ?? new Dictionary<string, ContributionAccum>();
+        int totalTurns = CountCombatTurns(history);
+        ContributionPanel.ShowRunReplay(
+            summary, totalTurns, rightRect.Position, rightRect.Size);
+        _replayWindowOpen = true;
+
+        Safe.Info(
+            $"[RunHistoryPatch] layout viewport={viewport} left={leftRect} right={rightRect} replay={_replayWindowOpen}");
+    }
+
+    /// <summary>
+    /// Compute the two side-by-side window rectangles. The base layout is
+    /// 570x900 + 16 gap + 660x900; both axes scale to keep a 48 px viewport
+    /// margin, and the pair is centered. The windows never fill the screen.
+    /// </summary>
+    private static void ComputeWindowRects(
+        Vector2 viewport,
+        out Rect2 left,
+        out Rect2 right)
+    {
+        const float baseLeft = 570f;
+        const float baseRight = 660f;
+        const float baseGap = 16f;
+        const float baseHeight = 900f;
+
+        float availableW = Mathf.Max(640f, viewport.X - 48f);
+        float availableH = Mathf.Max(420f, viewport.Y - 48f);
+        float widthScale = Mathf.Min(1f, availableW / (baseLeft + baseRight + baseGap));
+        float heightScale = Mathf.Min(1f, availableH / baseHeight);
+
+        float leftW = baseLeft * widthScale;
+        float rightW = baseRight * widthScale;
+        float gap = baseGap * widthScale;
+        float height = baseHeight * heightScale;
+        float totalW = leftW + gap + rightW;
+        float x = (viewport.X - totalW) / 2f;
+        float y = (viewport.Y - height) / 2f;
+
+        left = new Rect2(x, y, leftW, height);
+        right = new Rect2(x + leftW + gap, y, rightW, height);
+    }
+
+    private static int CountCombatTurns(RunHistory? history)
+    {
+        if (history?.MapPointHistory == null) return 0;
+        int total = 0;
+        foreach (var act in history.MapPointHistory)
+        {
+            if (act == null) continue;
+            foreach (var floor in act)
+            {
+                if (floor?.Rooms == null) continue;
+                foreach (var room in floor.Rooms)
+                {
+                    if (room != null && room.TurnsTaken > 0)
+                        total += room.TurnsTaken;
+                }
+            }
+        }
+        return total;
     }
 
     private static Node? FindChildByMeta(Node parent, string meta)

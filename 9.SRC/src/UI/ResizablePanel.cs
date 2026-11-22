@@ -23,6 +23,9 @@ public static class ResizablePanel
 
     private static void HandleInput(Control panel, Control handle, InputEvent input, Vector2 minimumSize)
     {
+        // Run-history replay windows are positioned by RunHistoryPatch.
+        if (panel.HasMeta(ContributionPanel.ReplayWindowMeta)) return;
+
         if (input is InputEventMouseButton button && button.ButtonIndex == MouseButton.Left)
         {
             if (button.Pressed)

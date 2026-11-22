@@ -14,13 +14,15 @@ namespace CommunityStats.UI;
 /// 百科大全 → 历史记录 detail screen (PRD §3.12 round 5).
 ///
 /// Layout (from top to bottom):
-///   1. Title row (character / ascension / floors / win-loss)
+///   1. Run summary row (character / ascension / floors / win-loss)
 ///   2. **Deck Construction** table — 4 metrics × Acts
 ///   3. **Path Stats** table — 4 metrics × Acts
 ///   4. **Ancient picks** chronological list ("第N幕  先古之民  遗物")
 ///   5. **Boss damage** list (one row per boss with HP lost)
-///   6. **View contribution** button (opens ContributionPanel showing
-///      ONLY the run-summary tab — never the live combat tab)
+///
+/// The outer popup title is the only "本局统计" heading. This section does
+/// not create the contribution entry button; RunHistoryPatch opens the
+/// contribution replay window beside this section.
 ///
 /// All section panels are color-coded so the user can scan quickly. Path
 /// stats and Deck construction were previously merged in a single ugly
@@ -59,9 +61,8 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
 
     // Round 9 round 51: bumped from 16/13/12 to match the popup viewing
     // distance and the existing CareerStatsSection sizes.
-    private const int TitleSize    = 30;
-    private const int SubtitleSize = 24;
-    private const int LabelSize    = 22;
+    private const int SubtitleSize = 22;
+    private const int LabelSize    = 20;
 
     private SingleRunStatsData? _data;
     private RunHistory? _history;
@@ -74,7 +75,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         {
             Name = "ModRunHistoryStatsSection",
         };
-        s.AddThemeConstantOverride("separation", 14);
+        s.AddThemeConstantOverride("separation", 6);
         s.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         s.MouseFilter = MouseFilterEnum.Pass;
 
@@ -86,37 +87,36 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
 
     private void Build()
     {
-        AddChild(BuildHeader());
+        AddChild(BuildRunSummary());
         AddChild(BuildDeckTable());
         AddChild(BuildPathTable());
         AddChild(BuildAncientPicks());
         AddChild(BuildBossDamage());
-        AddChild(BuildReplayButton());
     }
 
-    // ── Header ──────────────────────────────────────────────
+    // ── Run summary ─────────────────────────────────────────
 
-    private Control BuildHeader()
+    private Control BuildRunSummary()
     {
         var panel = WrapInPanel();
         var v = new VBoxContainer();
-        v.AddThemeConstantOverride("separation", 4);
+        v.AddThemeConstantOverride("separation", 2);
         panel.AddChild(v);
 
-        v.AddChild(MakeLabel(L.Get("runhist.section_title"), Gold, TitleSize));
-
-        if (_data != null)
+        if (_data == null)
         {
-            string winText = _data.Win ? L.Get("runhist.victory") : L.Get("runhist.defeat");
-            var color = _data.Win ? Green : Red;
-            var charName = ResolveCharacterName(_data.Character);
-            var ascText = string.Format(L.Get("career.ascension_n"), _data.Ascension);
-            var floorText = string.Format(L.Get("runhist.floors_n"), _data.FloorReached);
-            var sub = MakeLabel(
-                $"{charName} · {ascText} · {floorText} · {winText}",
-                color, SubtitleSize);
-            v.AddChild(sub);
+            v.AddChild(MakeLabel(L.Get("career.no_data_short"), Gray, LabelSize));
+            return panel;
         }
+
+        string winText = _data.Win ? L.Get("runhist.victory") : L.Get("runhist.defeat");
+        var color = _data.Win ? Green : Red;
+        var charName = ResolveCharacterName(_data.Character);
+        var ascText = string.Format(L.Get("career.ascension_n"), _data.Ascension);
+        var floorText = string.Format(L.Get("runhist.floors_n"), _data.FloorReached);
+        v.AddChild(MakeLabel(
+            $"{charName} · {ascText} · {floorText} · {winText}",
+            color, SubtitleSize));
 
         return panel;
     }
@@ -154,7 +154,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     {
         var panel = WrapInPanel();
         var v = new VBoxContainer();
-        v.AddThemeConstantOverride("separation", 3);
+        v.AddThemeConstantOverride("separation", 2);
         panel.AddChild(v);
 
         v.AddChild(MakeLabel(L.Get("career.deck_section"), Gold, SubtitleSize));
@@ -187,7 +187,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     {
         var panel = WrapInPanel();
         var v = new VBoxContainer();
-        v.AddThemeConstantOverride("separation", 3);
+        v.AddThemeConstantOverride("separation", 2);
         panel.AddChild(v);
 
         v.AddChild(MakeLabel(L.Get("career.path_section"), Gold, SubtitleSize));
@@ -310,7 +310,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     {
         var panel = WrapInPanel();
         var v = new VBoxContainer();
-        v.AddThemeConstantOverride("separation", 3);
+        v.AddThemeConstantOverride("separation", 2);
         panel.AddChild(v);
 
         v.AddChild(MakeLabel(L.Get("runhist.ancient_picks"), Gold, SubtitleSize));
@@ -400,7 +400,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     {
         var panel = WrapInPanel();
         var v = new VBoxContainer();
-        v.AddThemeConstantOverride("separation", 3);
+        v.AddThemeConstantOverride("separation", 2);
         panel.AddChild(v);
 
         v.AddChild(MakeLabel(L.Get("career.boss_title"), Gold, SubtitleSize));
@@ -432,75 +432,6 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         return panel;
     }
 
-    // ── Replay button ───────────────────────────────────────
-
-    private Control BuildReplayButton()
-    {
-        var panel = WrapInPanel();
-        var h = new HBoxContainer();
-        h.AddThemeConstantOverride("separation", 8);
-        panel.AddChild(h);
-
-        var btn = new Button { Text = L.Get("runhist.view_contrib") };
-        btn.AddThemeFontSizeOverride("font_size", LabelSize);
-        h.AddChild(btn);
-
-        var identity = _data == null
-            ? new RunIdentity(0, "")
-            : new RunIdentity(_data.StartTime, _data.Seed);
-        int totalTurns = CountCombatTurns(_history);
-        btn.Pressed += () => OnReplayPressed(identity, totalTurns);
-
-        if (!identity.IsValid)
-        {
-            btn.Disabled = true;
-        }
-        else
-        {
-            var summary = ContributionPersistence.LoadRunSummary(identity);
-            if (summary == null) btn.Disabled = true;
-        }
-
-        return panel;
-    }
-
-    private static int CountCombatTurns(RunHistory? history)
-    {
-        if (history?.MapPointHistory == null) return 0;
-        int total = 0;
-        foreach (var act in history.MapPointHistory)
-        {
-            if (act == null) continue;
-            foreach (var floor in act)
-            {
-                if (floor?.Rooms == null) continue;
-                foreach (var room in floor.Rooms)
-                {
-                    if (room != null && room.TurnsTaken > 0)
-                        total += room.TurnsTaken;
-                }
-            }
-        }
-        return total;
-    }
-
-    private static void OnReplayPressed(RunIdentity identity, int totalTurns)
-    {
-        Safe.Run(() =>
-        {
-            var summary = ContributionPersistence.LoadRunSummary(identity);
-            if (summary == null) return;
-            // Round 9 round 51: close our popup overlay before opening the
-            // contribution panel. ContributionPanel is parented to the scene
-            // root and would otherwise render BEHIND our popup (which is also
-            // root-level but added later). Closing avoids the z-order fight.
-            CommunityStats.Patches.RunHistoryPatch.CloseOpenPopup();
-            // Round 5 fix: only the 本局汇总 tab should be shown when replaying
-            // a historical run — there's no live combat to display.
-            ContributionPanel.ShowRunReplay(summary, totalTurns);
-        });
-    }
-
     // ── UI helpers ──────────────────────────────────────────
 
     private static Label MakeLabel(string text, Color color, int size)
@@ -515,7 +446,8 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
     private static PanelContainer WrapInPanel()
     {
         // Round 9 round 51: brighter section panel matching CareerStatsSection
-        // (rounded blue-tinted dark panel with 18/14 padding).
+        // (rounded blue-tinted dark panel). 1.8.0 reduces padding so the
+        // side-by-side window shows more rows without scrolling.
         var panel = new PanelContainer();
         var style = new StyleBoxFlat
         {
@@ -525,10 +457,10 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
             BorderWidthTop = 2, BorderWidthBottom = 2,
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
             CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
-            ContentMarginLeft = 18, ContentMarginRight = 18,
-            ContentMarginTop = 14, ContentMarginBottom = 14,
+            ContentMarginLeft = 12, ContentMarginRight = 12,
+            ContentMarginTop = 8, ContentMarginBottom = 8,
             ShadowColor = new Color(0f, 0f, 0f, 0.4f),
-            ShadowSize = 4,
+            ShadowSize = 3,
         };
         panel.AddThemeStyleboxOverride("panel", style);
         panel.SizeFlagsHorizontal = SizeFlags.ExpandFill;

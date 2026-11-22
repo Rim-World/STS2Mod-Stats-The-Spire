@@ -105,7 +105,7 @@ public static class UiLifecycleProbe
             {
                 ["TEST_CARD"] = new ContributionAccum { SourceId = "TEST_CARD", SourceType = "card", DirectDamage = 7 },
             };
-            ContributionPanel.ShowRunReplay(replay);
+            ContributionPanel.ShowRunReplay(replay, 0, new Vector2(10, 10), new Vector2(660, 900));
             bool visible = panel.Visible;
             ContributionPanel.Toggle();
             bool hidden = !panel.Visible;

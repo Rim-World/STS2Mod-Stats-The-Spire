@@ -31,6 +31,9 @@ public static class DraggablePanel
 
     private static void HandleInput(Control panel, InputEvent @event)
     {
+        // Run-history replay windows are positioned by RunHistoryPatch.
+        if (panel.HasMeta(ContributionPanel.ReplayWindowMeta)) return;
+
         if (@event is InputEventMouseButton mb)
         {
             if (mb.ButtonIndex == MouseButton.Left)

@@ -147,7 +147,7 @@ public static class IssueProbe
                     DirectDamage = 4118,
                 },
             };
-            ContributionPanel.ShowRunReplay(summary, 114);
+            ContributionPanel.ShowRunReplay(summary, 114, new Vector2(100, 100), new Vector2(660, 900));
             var field = typeof(ContributionPanel).GetField(
                 "_dpsLabel", BindingFlags.NonPublic | BindingFlags.Instance);
             var label = field?.GetValue(ContributionPanel.Instance) as Label;

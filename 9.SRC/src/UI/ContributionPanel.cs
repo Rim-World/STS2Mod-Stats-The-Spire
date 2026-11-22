@@ -29,7 +29,15 @@ public partial class ContributionPanel : PanelContainer
     private Label? _dpsLabel;
     private Label? _titleLabel;
     private HBoxContainer? _header;
+    private HBoxContainer? _resizeRow;
     private PanelContainer? _helpPanel;
+
+    /// <summary>
+    /// Meta flag used while the panel is a fixed run-history replay window.
+    /// Drag and resize handlers ignore panels with this flag so replay layout
+    /// never overwrites the live panel position or size.
+    /// </summary>
+    internal const string ReplayWindowMeta = "sts_replay_window";
 
     /// <summary>Non-null when showing run-history replay data.</summary>
     private static IReadOnlyDictionary<string, ContributionAccum>? _replayRunData;
@@ -160,6 +168,7 @@ public partial class ContributionPanel : PanelContainer
         resizeHandle.AddThemeFontSizeOverride("font_size", 17);
         resizeRow.AddChild(resizeHandle);
         vbox.AddChild(resizeRow);
+        panel._resizeRow = resizeRow;
         ResizablePanel.Attach(panel, resizeHandle, minimumPanelSize);
 
         // Enable drag via title bar (PRD 4.5)
@@ -239,7 +248,15 @@ public partial class ContributionPanel : PanelContainer
             _helpPanel = BuildHelpPanel();
             AddChild(_helpPanel);
             _helpPanel.ZIndex = 1000;
-            _helpPanel.GlobalPosition = GlobalPosition + new Vector2(Size.X + 8f, 0f);
+
+            var viewport = GetViewportRect().Size;
+            const float helpWidth = 460f;
+            float x = GlobalPosition.X + Size.X + 8f;
+            float maxX = Mathf.Max(8f, viewport.X - helpWidth - 8f);
+            if (x > maxX)
+                x = Mathf.Clamp(GlobalPosition.X + 8f, 8f, maxX);
+            float y = Mathf.Clamp(GlobalPosition.Y, 8f, Mathf.Max(8f, viewport.Y - 320f));
+            _helpPanel.GlobalPosition = new Vector2(x, y);
         });
     }
 
@@ -421,6 +438,7 @@ public partial class ContributionPanel : PanelContainer
         // A combat result always replaces run-history replay data. Without
         // this, the 本局汇总 tab keeps the old replay while the combat tab
         // shows the new fight.
+        ClearReplayWindow();
         _replayRunData = null;
         _replayTurns = 0;
         _replayDamage = 0;
@@ -431,26 +449,46 @@ public partial class ContributionPanel : PanelContainer
     }
 
     /// <summary>
-    /// Replay mode for the Run History "查看贡献图表" button. Shows ONLY the
-    /// 本局汇总 tab populated with the persisted run summary; the live combat
-    /// tab is hidden because there is no current combat to display
-    /// (PRD §3.12 round 5).
+    /// Replay mode for the run-history screen. Shows ONLY the 本局汇总 tab
+    /// populated with the persisted run summary, and positions the panel as
+    /// the right-hand window beside the single-run statistics popup.
+    ///
+    /// The panel uses top-left anchors while in replay mode. Hide() restores
+    /// the live-panel layout and removes the replay meta flag.
     /// </summary>
     public static void ShowRunReplay(
         IReadOnlyDictionary<string, ContributionAccum>? runSummary,
-        int totalTurns)
+        int totalTurns,
+        Vector2 position,
+        Vector2 size)
     {
         // Round 9 round 33: ContributionPanel toggle now only gates the
-        // auto-open after combat. Run-history replay button must always work.
-        if (runSummary == null || runSummary.Count == 0) return;
+        // auto-open after combat. Run-history replay must always work.
+        if (runSummary == null) return;
 
         var panel = Instance;
         _replayTurns = Math.Max(0, totalTurns);
         _replayDamage = SumRunDamage(runSummary);
         RefreshTabsRunOnly(runSummary);
+
+        var clampedSize = new Vector2(
+            Mathf.Max(480f, size.X),
+            Mathf.Max(300f, size.Y));
+        var clampedPos = new Vector2(
+            Mathf.Max(0f, position.X),
+            Mathf.Max(0f, position.Y));
+
+        panel.AnchorLeft = 0f;
+        panel.AnchorTop = 0f;
+        panel.AnchorRight = 0f;
+        panel.AnchorBottom = 0f;
+        panel.Position = clampedPos;
+        panel.Size = clampedSize;
+        panel.SetMeta(ReplayWindowMeta, true);
+        if (panel._resizeRow != null) panel._resizeRow.Visible = false;
         panel.UpdateDps();
         panel.Visible = true;
-        panel.ApplyAvoidanceOffset();
+        panel.MoveToFront();
     }
 
     private static int SumRunDamage(IReadOnlyDictionary<string, ContributionAccum> data)
@@ -483,6 +521,7 @@ public partial class ContributionPanel : PanelContainer
             Hide();
         else
         {
+            ClearReplayWindow();
             RefreshTabs(SelectCombatTabData());
             panel.UpdateDps();
             panel.Visible = true;
@@ -492,8 +531,40 @@ public partial class ContributionPanel : PanelContainer
     public new static void Hide()
     {
         if (_instance != null)
+        {
             _instance.Visible = false;
+            ClearReplayWindow();
+        }
         _replayRunData = null;
+    }
+
+    /// <summary>
+    /// Remove replay-only layout state. Restore the live panel anchors,
+    /// saved size and saved position so a later F8 open does not inherit the
+    /// run-history side-by-side geometry.
+    /// </summary>
+    private static void ClearReplayWindow()
+    {
+        if (_instance == null || !_instance.HasMeta(ReplayWindowMeta)) return;
+
+        _instance.RemoveMeta(ReplayWindowMeta);
+        if (_instance._resizeRow != null) _instance._resizeRow.Visible = true;
+        _instance.AnchorLeft = 0f;
+        _instance.AnchorRight = 0f;
+        _instance.AnchorTop = 0.25f;
+        _instance.AnchorBottom = 0.75f;
+        _instance.OffsetLeft = 10f;
+        _instance.OffsetRight = 580f;
+        _instance.OffsetTop = 0f;
+        _instance.OffsetBottom = 0f;
+
+        var minimum = new Vector2(480, 300);
+        var viewport = _instance.GetViewportRect().Size;
+        ResizablePanel.RestoreSize(
+            _instance,
+            new Vector2(660, Mathf.Max(minimum.Y, viewport.Y * 0.5f)),
+            minimum);
+        DraggablePanel.RestorePosition(_instance, _instance.GlobalPosition);
     }
 
     /// <summary>Hide the panel only when it is currently visible.</summary>
@@ -685,8 +756,11 @@ public partial class ContributionPanel : PanelContainer
             child.QueueFree();
         }
 
-        var scroll = WrapInScroll(ContributionChart.Create(
-            runData, L.Get("contrib.run_summary"), isRunLevel: true));
+        var content = runData.Count > 0
+            ? (Control)ContributionChart.Create(
+                runData, L.Get("contrib.run_summary"), isRunLevel: true)
+            : EmptyPlaceholder(L.Get("contrib.empty_run"));
+        var scroll = WrapInScroll(content);
         tabs.AddChild(scroll);
         tabs.SetTabTitle(0, L.Get("contrib.run_summary"));
     }

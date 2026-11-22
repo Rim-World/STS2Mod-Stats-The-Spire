@@ -2,6 +2,21 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.8.0] - 2026-11-23
+
+### Changed
+- The run-history 「本局统计」 entry now opens two side-by-side windows: single-run statistics on the left and the contribution chart on the right.
+- Removed the 「查看贡献图表」 button. The contribution window opens automatically with the statistics window.
+- The left window no longer repeats the 「本局统计」 title. Section padding, row gaps, and font sizes are tighter, so a 49-floor run's sections fit without vertical scrolling at 1920×1080.
+- The replay window is fixed in place. Drag and resize handlers ignore it, and closing it restores the live F8 panel's anchors, saved size, and saved position.
+- Runs without a persisted contribution summary show the right window with the existing empty-state message.
+
+### Verification
+- v0.113.1 in-game layout probe: PASS. At 1920×1080, left 570×900 at (337,90), right 679×900 at (923,90), gap 16, total width 65.9%, height 83.3%; no duplicate title; no chart button; right window above the dim layer; left content height 799 = scroll page 799.
+- Probe also confirmed: closing the right window keeps the left window; closing the left window hides both; replay meta and anchors are cleared; live panel height returns to 540; a run without a summary still opens the empty right window.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings.
+- User visual check not done.
+
 ## [1.7.3] - 2026-11-23
 
 ### Fixed

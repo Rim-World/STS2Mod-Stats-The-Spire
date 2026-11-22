@@ -354,12 +354,9 @@ public static class L
         ["card_lib.buy_rate"] = "Buy Rate",
 
         // Run History (§3.12)
-        ["runhist.section_title"] = "Run Statistics",
-        ["runhist.act_label"] = "Act {0}:",
         ["runhist.ancient_relic"] = "Ancient Relic:",
         ["runhist.ancient_picks"] = "Ancient Picks",
         ["runhist.boss_damage"] = "Boss Damage:",
-        ["runhist.view_contrib"] = "View Contribution Chart",
         ["runhist.victory"] = "VICTORY",
         ["runhist.defeat"] = "DEFEAT",
         ["runhist.floors_n"] = "{0} floors",
@@ -691,12 +688,9 @@ public static class L
         ["card_lib.buy_rate"] = "购买率",
 
         // Run History (§3.12)
-        ["runhist.section_title"] = "本局统计",
-        ["runhist.act_label"] = "第{0}幕：",
         ["runhist.ancient_relic"] = "先古遗物:",
         ["runhist.ancient_picks"] = "先古遗物选取",
         ["runhist.boss_damage"] = "Boss 战损:",
-        ["runhist.view_contrib"] = "查看贡献图表",
         ["runhist.victory"] = "胜利",
         ["runhist.defeat"] = "失败",
         ["runhist.floors_n"] = "第{0}层",
