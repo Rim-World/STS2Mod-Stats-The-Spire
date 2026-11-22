@@ -1,0 +1,14 @@
+{
+  "id": "sts2_hotkey_probe_182",
+  "name": "StatsTheSpire RunHistory Hotkey Probe 1.8.2",
+  "author": "test",
+  "description": "Test-only probe for ignoring the contribution hotkey while the run-history dual window is open.",
+  "version": "1.8.2",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.8.2" }
+  ]
+}

@@ -2,6 +2,17 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.8.2] - 2026-11-23
+
+### Changed
+- The contribution hotkey (F8 by default) is now ignored while the paired run-history windows are open. The replay windows stay visible, keep their geometry, and keep `sts_replay_window`.
+- The live contribution panel still opens and closes with the same hotkey after the run-history windows are closed. The replay close button, Esc, and the dim layer still close both windows.
+
+### Verification
+- v0.113.1 in-game probe: PASS. Real 49-floor run `1795349355` opened both windows at left 680×900 and right 680×900. Calling the registered hotkey callback kept popup, left, right, `sts_replay_window`, size, and position unchanged. Right close then removed both windows. After close, the live panel opened and closed normally.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 574,464 bytes with SHA-256 `2c151dec7342b4065254e392e8f7b11499e138d89ee63a1deab4ffb245a969b9`.
+- Installed v0.113.1 load: one `v1.8.2 initializing`; F8 registered. User physical F8 check: not done.
+
 ## [1.8.1] - 2026-11-23
 
 ### Changed

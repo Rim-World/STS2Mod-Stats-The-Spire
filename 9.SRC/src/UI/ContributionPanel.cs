@@ -546,6 +546,10 @@ public partial class ContributionPanel : PanelContainer
         // The configured hotkey ignores the toggle (which now only
         // controls post-combat auto-open).
         var panel = Instance;
+        // Replay mode owns a paired left/right window. Toggling the live
+        // panel here would hide the right window and leave the left orphaned.
+        if (panel.HasMeta(ReplayWindowMeta))
+            return;
         if (panel.Visible)
             Hide();
         else
