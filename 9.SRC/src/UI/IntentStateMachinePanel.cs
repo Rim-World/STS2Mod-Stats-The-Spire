@@ -102,7 +102,7 @@ public static class IntentStateMachinePanel
                 spawned.FollowUpStateId = ResolveWrigglerFollowUp(owner.SlotName);
         }
 
-        var displayName = TryName(monster, monsterId);
+        var displayName = TryName(monsterId);
         var panel = InfoModPanel.Create(displayName, Config.L.Get("intent.subtitle"));
 
         // Scale the whole panel from the RitsuLib settings page.
@@ -1499,14 +1499,8 @@ public static class IntentStateMachinePanel
         return null;
     }
 
-    private static string TryName(MegaCrit.Sts2.Core.Models.MonsterModel monster, string fallback)
+    private static string TryName(string fallback)
     {
-        // When the mod is in English, prefer NameLookup (which respects
-        // L.Current) over the game's Title (which follows the game's
-        // display language and may still be Chinese).
-        if (Config.L.Current == Config.L.Lang.EN)
-            return Util.NameLookup.Monster(fallback);
-        try { return monster.Title?.GetFormattedText() ?? fallback; }
-        catch { return fallback; }
+        return Util.NameLookup.Monster(fallback);
     }
 }

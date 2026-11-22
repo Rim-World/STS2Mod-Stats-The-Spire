@@ -759,9 +759,7 @@ public partial class ContributionChart : VBoxContainer
 
         try
         {
-            // Use NameLookup so the display name respects the mod's
-            // language setting (L.Current) rather than the game's
-            // display language.
+            // NameLookup follows the game's current localization table.
             var name = sourceType switch
             {
                 "relic" => Util.NameLookup.Relic(id),

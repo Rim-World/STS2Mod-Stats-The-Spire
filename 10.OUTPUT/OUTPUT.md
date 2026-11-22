@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-23 03:18 | `sts2_statsthespire_local.dll` | 1.9.0 | 518,656 字节 | Mod 界面自动跟随游戏语言；`zhs`/`zht` 使用简体中文 UI，其他语言使用英文 UI；游戏术语名称只读当前官方词表，删除英文优先与英文兜底；删除 RitsuLib 语言项与旧 `language` 读写；SHA-256 `a6ffcd0b03db6f017be57341d75966c17cec17c48ea9ba8fb807fe4667fd06fb`；四种语言探针通过；双版本 Release 构建 0 错误；门禁 12/12；已安装并通过加载检查 |
 | 2026-11-23 02:21 | `sts2_statsthespire_local.dll` | 1.8.3 | 574,464 字节 | 默认贡献面板热键改为 `Ctrl+F8`，降低与单键 F8 模组冲突；非法绑定回退同步；本地设置只迁移 hotkey，其他设置保持；SHA-256 `25d96a33077dabc9bca32ae7953ebf5cc585099537f7f0edfe09b7112e517b93`；v0.113.1 启动注册 `Ctrl+F8`；双版本 Release 构建 0 错误；已安装并通过加载检查 |
 | 2026-11-23 01:53 | `sts2_statsthespire_local.dll` | 1.8.2 | 574,464 字节 | 双窗回放期间忽略贡献面板热键，避免隐藏右窗、留下左窗或重开实时面板；双窗关闭后 F8 正常开关实时面板；SHA-256 `2c151dec7342b4065254e392e8f7b11499e138d89ee63a1deab4ffb245a969b9`；v0.113.1 真实 49 层历史热键探针 PASS；双版本 Release 构建 0 错误；已安装并通过加载检查 |
 | 2026-11-23 01:23 | `sts2_statsthespire_local.dll` | 1.8.1 | 574,464 字节 | 左窗删除关闭键；右窗关闭键同时关闭双窗；两窗均 680×900 并中心对称；右窗 `?`/`✕` 放大到 40×40 并提高对比度；左窗标题、外边距、分节内边距与表格列距调整；SHA-256 `12860ba0dd0b6c5931aa83ca2dac6945d1fdfe0476f68b9dc731fe3b161d554e`；v0.113.1 真实 49 层布局探针 PASS；双版本 Release 构建 0 错误；门禁 12/12；已安装并通过加载检查 |
@@ -31,6 +32,8 @@
 注：1.8.2 输出包包含 MIT `LICENSE`、1.8.2 README、`manifest.json`、`settings.cfg` 与 DLL；v0.113.1 热键探针 PASS；已安装，安装目录 DLL 哈希与输出包一致；用户物理 F8 未验证。
 
 注：1.8.1 输出包包含 MIT `LICENSE`、1.8.1 README、`manifest.json`、`settings.cfg` 与 DLL；v0.113.1 布局探针 PASS；门禁 12/12；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
+
+注：1.9.0 输出包包含 MIT `LICENSE`、1.9.0 README、`manifest.json`、`settings.cfg` 与 DLL；四种语言探针通过；最终加载一次 `v1.9.0 initializing`；已安装，安装目录 DLL 哈希与输出包一致；图形界面视觉与 v0.111.1 运行未做。
 
 注：1.8.0 输出包包含 MIT `LICENSE`、1.8.0 README、`manifest.json` 与 `settings.cfg`；Release 包布局探针 PASS；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
 

@@ -2,6 +2,22 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.0] - 2026-11-23
+
+### Changed
+- The mod UI language now follows the game language. `zhs` and `zht` use the simplified Chinese UI; all other languages use the English UI.
+- Game term names always use the game's current official localization table. English name tables and English-first fallback logic were removed.
+- The RitsuLib language setting was removed. `mod_prefs.json` `language` is ignored and is dropped on the next settings save.
+- README and the settings page now state that the game must be restarted after a language change.
+
+### Verification
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; DLL 518,656 bytes, SHA-256 `a6ffcd0b03db6f017be57341d75966c17cec17c48ea9ba8fb807fe4667fd06fb`.
+- Language probe: `zhs` UI CN / `打击` / `瓦库`; `zht` UI CN / `打擊` / `瓦庫`; `eng` UI EN / `Strike` / `Vakuu`; `jpn` UI EN / `ストライク` / `ヴァクー`.
+- `mod_prefs.json` still contained `language=CN` during `eng` and `jpn` runs; both displayed English, so the old value is ignored.
+- Final v0.113.1 load: one `v1.9.0 initializing`; `Ctrl+F8` registered; no language probe string in the release DLL.
+- Release gate: 12/12 PASS.
+- Graphical UI inspection and v0.111.1 runtime: not done.
+
 ## [1.8.3] - 2026-11-23
 
 ### Changed

@@ -10,10 +10,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.8.3";
-
-    // User preferences
-    public static string Language { get; set; } = "CN"; // "CN" | "EN"
+    public const string ModVersion = "1.9.0";
 
     // Feature toggles
     public static FeatureToggles Toggles { get; set; } = new();
@@ -111,9 +108,6 @@ public static class ModConfig
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("language", out var lang))
-                Language = lang.GetString() ?? Language;
-
             if (root.TryGetProperty("feature_toggles", out var toggles))
             {
                 try
@@ -177,7 +171,6 @@ public static class ModConfig
         {
             var data = new Dictionary<string, object?>
             {
-                ["language"] = Language,
                 ["feature_toggles"] = Toggles,
                 ["use_my_data_only"] = UseMyDataOnly,
                 ["intent_panel_scale"] = IntentPanelScale,

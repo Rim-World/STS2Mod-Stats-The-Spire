@@ -1,6 +1,6 @@
 # Stats the Spire (Local Edition) — STS2 Data Analysis Mod
 
-**Version**: 1.8.3
+**Version**: 1.9.0
 **For**: Slay the Spire 2 v0.111.1 and v0.113.1
 **Dependency**: A complete `STS2-RitsuLib 0.6.14` or newer compatible installation is required
 **Dependency note**: RitsuLib may send its own telemetry to its author; this mod makes no network requests. Manage telemetry in the RitsuLib settings.
@@ -179,7 +179,7 @@ RitsuLib provides the settings page. Open it from the main menu, run pause, or c
 
 | Setting | Description |
 |--------|-------------|
-| **Language** | 中文 / English |
+| **Language** | Follows the game: Chinese (simplified or traditional) uses the Chinese UI; other languages use the English UI. Restart the game after changing its language. |
 | **Intent panel scale** | 0.5× to 1.25× |
 | **Feature Toggles** | Enable/disable 8 sub-features |
 | **Contribution panel hotkey** | Default Ctrl+F8; click to record a new shortcut; text input and the developer console suppress it |
@@ -248,7 +248,7 @@ A: You may not have enough run history yet. Play more runs and the data will acc
 
 ## Version Compatibility
 
-This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. 1.7.2 fixes Fool melody titles replaced by third-party localisation mods: names are resolved through SmartFormat and then converted to plain text. 1.7.3 records each "gain energy next turn" application separately, so `Ki Rest` energy is not credited to `Wah Ki`; run-history DPS uses the `.run` combat-turn total; ancient event names fall back to the `ancients` table. 1.8.0 opens the run-history statistics and contribution chart as side-by-side windows and removes the separate chart button. 1.8.1 removes the left close button, makes the right close button close both windows, uses equal centered windows, and enlarges the help and close buttons with stronger contrast. Card/relic ID changes across game versions are handled automatically. 1.8.2 ignores the contribution hotkey while the paired run-history windows are open, so it cannot hide the right window or leave the left window orphaned. 1.8.3 changes the default hotkey to Ctrl+F8 to reduce conflicts with mods that use plain F8; existing local settings are not overwritten automatically.
+This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate pet absorption and pet-waste accounting: Osty and Wuppy HP loss is recorded as `PetAbsorbed`, while remaining Osty HP destroyed by Bone Shards or Sacrifice appears as a separate red `PetWasted` row; legacy `osty` data migrates automatically. 1.7.1 fixes map hover panels: the panel is removed when the pointer leaves, and only the current map point keeps a panel. 1.7.2 fixes Fool melody titles replaced by third-party localisation mods: names are resolved through SmartFormat and then converted to plain text. 1.7.3 records each "gain energy next turn" application separately, so `Ki Rest` energy is not credited to `Wah Ki`; run-history DPS uses the `.run` combat-turn total; ancient event names fall back to the `ancients` table. 1.8.0 opens the run-history statistics and contribution chart as side-by-side windows and removes the separate chart button. 1.8.1 removes the left close button, makes the right close button close both windows, uses equal centered windows, and enlarges the help and close buttons with stronger contrast. Card/relic ID changes across game versions are handled automatically. 1.8.2 ignores the contribution hotkey while the paired run-history windows are open, so it cannot hide the right window or leave the left window orphaned. 1.8.3 changes the default hotkey to Ctrl+F8 to reduce conflicts with mods that use plain F8; existing local settings are not overwritten automatically. 1.9.0 makes the mod UI follow the game language: simplified and traditional Chinese use the simplified Chinese UI; all other languages use the English UI. Game term names always use the game's current official localization table. The language setting was removed from the settings page; restart the game after changing its language.
 
 ## License and authorization
 

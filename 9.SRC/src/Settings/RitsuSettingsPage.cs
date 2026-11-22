@@ -1,7 +1,6 @@
 using System;
 using CommunityStats.Config;
 using CommunityStats.Patches;
-using CommunityStats.UI;
 using CommunityStats.Util;
 using STS2RitsuLib;
 using STS2RitsuLib.Settings;
@@ -36,23 +35,6 @@ public static class RitsuSettingsPage
                 page.AddSection("general", section =>
                 {
                     section.WithTitle(Text("settings.section_general"));
-
-                    section.AddChoice(
-                        "language",
-                        Text("settings.language"),
-                        Binding(
-                            "settings.language",
-                            () => ModConfig.Language,
-                            value =>
-                            {
-                                ModConfig.Language = value == "EN" ? "EN" : "CN";
-                                ApplySettingsChanged();
-                            }),
-                        [
-                            new ModSettingsChoiceOption<string>("CN", ModSettingsText.Literal("中文")),
-                            new ModSettingsChoiceOption<string>("EN", ModSettingsText.Literal("English")),
-                        ],
-                        presentation: ModSettingsChoicePresentation.Dropdown);
 
                     section.AddSlider(
                         "intent_panel_scale",
@@ -134,10 +116,8 @@ public static class RitsuSettingsPage
     {
         Safe.Run(() =>
         {
-            L.Current = ModConfig.Language == "EN" ? L.Lang.EN : L.Lang.CN;
             CombatUiOverlayPatch.RefreshVisibility();
             IntentHoverPatch.ForceHideAll();
-            ContributionPanel.RefreshText();
         });
     }
 

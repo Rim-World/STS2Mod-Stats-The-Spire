@@ -1,48 +1,48 @@
+using System;
 using Godot;
+using MegaCrit.Sts2.Core.Localization;
 
 namespace CommunityStats.Config;
 
 /// <summary>
-/// Simple i18n system for the mod. Supports English and Chinese.
-/// All UI strings go through L.Get("key") to support language switching.
+/// Simple i18n system for the mod. Supports English and Chinese UI text.
+/// The active language follows the game's current language; there is no
+/// independent mod language setting.
 /// </summary>
 public static class L
 {
     public enum Lang { EN, CN }
 
-    private static Lang _current = Lang.CN;
-    public static Lang Current
-    {
-        get => _current;
-        set
-        {
-            if (_current != value)
-            {
-                _current = value;
-                LanguageChanged?.Invoke();
-            }
-        }
-    }
-
     /// <summary>
-    /// Fires when Current changes (RitsuLib language setting). Subscribers
-    /// should re-render visible UI with the new language but do NOT
-    /// need to reload data — the numbers haven't changed.
+    /// UI language derived from the game language. Chinese (simplified or
+    /// traditional) uses the CN dictionary; all other languages use EN.
     /// </summary>
-    public static event Action? LanguageChanged;
+    public static Lang Current => IsChineseGame ? Lang.CN : Lang.EN;
 
-    public static string GetByGame(string key)
+    private static bool IsChineseGame
     {
-        try
+        get
         {
-            var locale = TranslationServer.GetLocale();
-            return locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase)
-                ? (CN.TryGetValue(key, out var cn) ? cn : key)
-                : (EN.TryGetValue(key, out var en) ? en : key);
-        }
-        catch
-        {
-            return Get(key);
+            try
+            {
+                var language = LocManager.Instance?.Language;
+                if (!string.IsNullOrEmpty(language))
+                    return language is "zhs" or "zht";
+            }
+            catch
+            {
+                // LocManager is not initialized during very early mod startup.
+            }
+
+            try
+            {
+                return TranslationServer.GetLocale()
+                    .StartsWith("zh", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -77,7 +77,7 @@ public static class L
 
         // RitsuLib settings page
         ["settings.title"] = "Stats the Spire — Settings",
-        ["settings.page_description"] = "Language, interface scale, feature toggles, and the contribution-panel hotkey.",
+        ["settings.page_description"] = "Interface scale, feature toggles, and the contribution-panel hotkey. Language follows the game; restart the game after changing its language.",
         ["settings.section_general"] = "General",
         ["settings.contribution_hotkey"] = "Contribution panel hotkey",
         ["settings.contribution_hotkey_desc"] = "Click to record a shortcut. The default is Ctrl+F8. Text input and the developer console suppress this hotkey.",
@@ -96,7 +96,6 @@ public static class L
         ["settings.apply"] = "Apply",
         ["settings.upload"] = "Upload run data",
         ["settings.auto_update"] = "Auto-update mod",
-        ["settings.language"] = "语言 / Language",
         // Auto-update
         ["update.found"] = "New version {0} available.\n\n(current: {1})\n\nClose the game and run update.bat\nto update to the latest version.",
         ["update.ok"] = "OK",
@@ -411,7 +410,7 @@ public static class L
 
         // RitsuLib 设置页
         ["settings.title"] = "Stats the Spire — 设置",
-        ["settings.page_description"] = "语言、界面缩放、功能开关，以及贡献面板快捷键。",
+        ["settings.page_description"] = "界面缩放、功能开关，以及贡献面板快捷键。语言自动跟随游戏语言；更改游戏语言后请重启游戏。",
         ["settings.section_general"] = "通用",
         ["settings.contribution_hotkey"] = "贡献面板快捷键",
         ["settings.contribution_hotkey_desc"] = "点击后录制快捷键。默认 Ctrl+F8。文本输入框和开发者控制台会抑制此热键。",
@@ -430,7 +429,6 @@ public static class L
         ["settings.apply"] = "应用",
         ["settings.upload"] = "上传游玩数据",
         ["settings.auto_update"] = "自动更新mod",
-        ["settings.language"] = "语言 / Language",
         // Auto-update
         ["update.found"] = "发现新版本 {0}。\n\n（当前版本：{1}）\n\n请关闭游戏后运行 update.bat\n更新到最新版本。",
         ["update.ok"] = "确定",

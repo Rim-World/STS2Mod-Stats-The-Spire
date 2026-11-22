@@ -1,0 +1,17 @@
+{
+  "id": "sts2_statsthespire_local",
+  "name": "Stats the Spire",
+  "author": "CommunityStatsDev",
+  "description": "Per-combat contribution charts, career stats, run history analysis, monster intent state machine, and in-run probability indicators - all local, no network. Requires STS2-RitsuLib. One build supports STS2 v0.111.1 and v0.113.1.",
+  "version": "1.9.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    {
+      "id": "STS2-RitsuLib",
+      "min_version": "0.6.14"
+    }
+  ]
+}

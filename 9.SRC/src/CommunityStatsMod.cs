@@ -23,11 +23,8 @@ public static class CommunityStatsMod
     {
         Safe.Info($"Stats the Spire (Local) v{ModConfig.ModVersion} initializing...");
 
-        // Load saved settings (feature toggles, language, etc.) from disk.
+        // Load saved settings (feature toggles, etc.) from disk.
         ModConfig.LoadOverrides();
-
-        // Sync language setting
-        L.Current = ModConfig.Language == "EN" ? L.Lang.EN : L.Lang.CN;
 
         // Register the RitsuLib settings page before the user can open it.
         RitsuSettingsPage.Register();
@@ -77,7 +74,7 @@ public static class CommunityStatsMod
 
         // Apply manual hook context patches. Each block is isolated so one
         // failed target does not prevent the remaining attribution hooks,
-        // metric hook, hotkeys, or language event from being installed.
+        // metric hook, or hotkey installation.
         TryInstall("relic hooks", () => RelicHookContextPatcher.PatchAll(_harmony));
         TryInstall("power hooks", () => PowerHookContextPatcher.PatchAll(_harmony));
         TryInstall("orb turn-end", () => OrbPassivePatch.PatchOrbTurnEndTriggers(_harmony));
@@ -94,13 +91,6 @@ public static class CommunityStatsMod
 
         // Register ModManager.OnMetricsUpload hook for run contribution saving
         RunLifecyclePatch.RegisterMetricsHook();
-
-        // Language-only changes: re-render all visible UI immediately.
-        Config.L.LanguageChanged += () =>
-        {
-            Safe.Info("[LangChanged] triggering immediate UI re-render");
-            Safe.Run(ContributionPanel.RefreshText);
-        };
 
         // Register hotkeys and attach UI panels to scene tree
         Safe.Run(() => RegisterHotkeys());
