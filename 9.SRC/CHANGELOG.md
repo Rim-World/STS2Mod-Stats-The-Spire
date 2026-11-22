@@ -22,8 +22,9 @@
 - Final low-residual fixes: standalone self-damage rows keep the source name; `PetWasted` always writes to the top-level killer-card bucket so generated/potion cards cannot disappear as orphan sub-entries.
 - Focused re-test: 34/34 PASS for standalone self-damage name, generated-card top-level waste, damage rows, sub-cost split, and bar scale; log `8.TEST/1.7.0/petgame-focused-f25f0778.log`.
 - v0.111.1 runtime: UI-only 34/34; first-combat probe 53/53. Real Osty absorbed 4 HP; BoneShards used actual HP 20 (stack 16) and wrote `PetWasted=20`; Sacrifice used actual HP 12 (stack 7) and wrote `PetWasted=12`. Wuppy is absent and was skipped; log `8.TEST/1.7.0/v111-petprobe-live-5c-stdout.log`.
+- v0.111.1 full run: 49 floors, 3 acts, 29 combat files matching 29 combat map points, no duplicates, 38 summary sources, `live` cleared, exit code 0. AutoSlay abandoned at the final boss, so the history is `win=false`; `UNTRACKED` block was 302 and needs Oracle comparison. Log `8.TEST/1.7.0/v111-autoslay-gated-62005-stdout.log`.
 - Final DLL SHA-256 `f25f0778eb842c675f1aa72e9da7cda4b4270a58ea5600a88c613c32e5140e85`, 568,320 bytes.
-- Not verified: natural Necrobinder run on v0.111.1 (probe character was Defect and injected Osty); manual visual acceptance.
+- Not verified: victory settlement on v0.111.1; event-stream Oracle comparison for v0.111.1; natural Necrobinder run on v0.111.1 (probe character was Defect and injected Osty); manual visual acceptance.
 
 ## [1.6.1] - 2026-11-22
 
