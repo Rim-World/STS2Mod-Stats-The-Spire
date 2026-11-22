@@ -35,6 +35,8 @@
 
 注：1.9.0 输出包包含 MIT `LICENSE`、1.9.0 README、`manifest.json`、`settings.cfg` 与 DLL；四种语言探针通过；最终加载一次 `v1.9.0 initializing`；已安装，安装目录 DLL 哈希与输出包一致；图形界面视觉与 v0.111.1 运行未做。
 
+注：1.9.0 输出包于 2026-11-23 04:51 更新 `LICENSE` 与 README：加入上游作者 `reddots1453` 署名、上游未声明许可证说明，以及 MIT 仅覆盖本维护仓库新增与修改代码的范围；DLL、`manifest.json` 与 `settings.cfg` 未变。
+
 注：1.8.0 输出包包含 MIT `LICENSE`、1.8.0 README、`manifest.json` 与 `settings.cfg`；Release 包布局探针 PASS；已安装，安装目录 DLL 哈希与输出包一致；用户实机视觉未做。
 
 注：1.4.4、1.5.0、1.5.1 的二进制包含构建机源码路径，已从当前目录与重写后 Git 历史移除；用户决定 GitHub 旧对象等待平台自动清除；备份在 `TMP/1.5.2/privacy-backup/old-output/`。1.4.0 至 1.4.3 的历史归档仍在各自 `TMP` 版本目录。

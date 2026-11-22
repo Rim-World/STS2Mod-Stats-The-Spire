@@ -44,4 +44,4 @@ dotnet build 9.SRC/sts2_statsthespire_local.csproj -c Debug
 
 ## 来源与授权
 
-源码基线：`https://github.com/reddots1453/STS2mod-Stats_the_Spire`。原作者为 `reddots1453`。本维护仓库按 MIT License 发布，许可证全文见 `LICENSE`。上游来源与作者署名保留。MIT 许可证覆盖本维护仓库新增与修改的代码。
+源码基线：`https://github.com/reddots1453/STS2mod-Stats_the_Spire`。原作者为 `reddots1453`。本维护仓库按 MIT License 发布，许可证全文见 `LICENSE`。上游仓库未声明许可证；`LICENSE` 的 MIT 授权只覆盖本维护仓库新增与修改的代码，不覆盖上游代码。上游来源与作者署名保留。

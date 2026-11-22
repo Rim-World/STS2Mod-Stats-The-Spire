@@ -517,6 +517,7 @@
 | `check-release-190-final2.log` | 2026-11-23 03:20 | 否 | 0 | 1.9.0 清理后最终发布门禁；12/12 PASS | 是 |
 | `check-release-190-final3.log` | 2026-11-23 03:22 | 否 | 0 | 1.9.0 最终源码发布门禁；12/12 PASS | 是 |
 | `check-release-190-post.log` | 2026-11-23 03:24 | 否 | 0 | 1.9.0 发布后门禁；12/12 PASS | 是 |
+| `check-release-license-190.log` | 2026-11-23 04:52 | 否 | 1 | 1.9.0 LICENSE 上游署名与 MIT 范围补充后的发布门禁；12/12 PASS | 是 |
 
 说明：语言探针临时加在主 Mod 的 `CommunityStatsMod.Initialize`，测试后删除；未部署独立测试 Mod。四种语言测试通过修改 `settings.save` 的 `language` 完成，测试后已恢复 `zhs`。日志由 `.gitignore` 排除。
 
