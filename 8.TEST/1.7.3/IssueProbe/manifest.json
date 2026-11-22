@@ -1,0 +1,14 @@
+{
+  "id": "sts2_issue_probe_173",
+  "name": "StatsTheSpire Issue Probe 1.7.3",
+  "author": "test",
+  "description": "Test-only probe: energy source layers, ancient event names, replay DPS.",
+  "version": "1.7.3",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.7.2" }
+  ]
+}

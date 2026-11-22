@@ -33,6 +33,8 @@ public partial class ContributionPanel : PanelContainer
 
     /// <summary>Non-null when showing run-history replay data.</summary>
     private static IReadOnlyDictionary<string, ContributionAccum>? _replayRunData;
+    private static int _replayTurns;
+    private static int _replayDamage;
 
     // Real-time refresh — round 6 dropped the debounce, see OnCombatDataUpdated.
 
@@ -382,7 +384,15 @@ public partial class ContributionPanel : PanelContainer
         int turns;
         int damage;
         int tabIdx = _tabs?.CurrentTab ?? 0;
-        if (tabIdx == 1)
+        if (_replayRunData != null)
+        {
+            // Run-history replay has no live CombatTracker state. Use the
+            // turn count read from the game's .run history and the damage
+            // already present in the persisted summary.
+            turns  = _replayTurns;
+            damage = _replayDamage;
+        }
+        else if (tabIdx == 1)
         {
             // 本局汇总
             var agg = RunContributionAggregator.Instance;
@@ -412,6 +422,8 @@ public partial class ContributionPanel : PanelContainer
         // this, the 本局汇总 tab keeps the old replay while the combat tab
         // shows the new fight.
         _replayRunData = null;
+        _replayTurns = 0;
+        _replayDamage = 0;
         RefreshTabs(combatData);
         panel.UpdateDps();
         panel.Visible = true;
@@ -424,17 +436,29 @@ public partial class ContributionPanel : PanelContainer
     /// tab is hidden because there is no current combat to display
     /// (PRD §3.12 round 5).
     /// </summary>
-    public static void ShowRunReplay(IReadOnlyDictionary<string, ContributionAccum>? runSummary)
+    public static void ShowRunReplay(
+        IReadOnlyDictionary<string, ContributionAccum>? runSummary,
+        int totalTurns)
     {
         // Round 9 round 33: ContributionPanel toggle now only gates the
         // auto-open after combat. Run-history replay button must always work.
         if (runSummary == null || runSummary.Count == 0) return;
 
         var panel = Instance;
+        _replayTurns = Math.Max(0, totalTurns);
+        _replayDamage = SumRunDamage(runSummary);
         RefreshTabsRunOnly(runSummary);
         panel.UpdateDps();
         panel.Visible = true;
         panel.ApplyAvoidanceOffset();
+    }
+
+    private static int SumRunDamage(IReadOnlyDictionary<string, ContributionAccum> data)
+    {
+        int sum = 0;
+        foreach (var a in data.Values)
+            sum += a.DirectDamage + a.ModifierDamage + a.AttributedDamage + a.UpgradeDamage;
+        return sum;
     }
 
     /// <summary>

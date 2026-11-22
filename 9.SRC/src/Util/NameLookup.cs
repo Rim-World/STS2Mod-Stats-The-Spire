@@ -20,7 +20,18 @@ namespace CommunityStats.Util;
 public static class NameLookup
 {
     public static string Encounter(string id) => Lookup("encounters", id, ".title", _encounterEN);
-    public static string Event(string id)     => Lookup("events", id, ".title", _eventEN);
+
+    /// <summary>
+    /// Resolves an event or ancient display name. Ancient events (PAEL,
+    /// VAKUU, ...) are stored in the <c>ancients</c> table, not always in
+    /// <c>events</c>; fall back to the ancient resolver for those IDs.
+    /// </summary>
+    public static string Event(string id)
+    {
+        var ev = TryLookup("events", id, ".title", _eventEN);
+        if (ev != null) return ev;
+        return Ancient(id);
+    }
     public static string Relic(string id)     => Lookup("relics", id, ".title", _relicEN);
     public static string Card(string id)      => Lookup("cards", id, ".title");
     public static string Monster(string id)   => Lookup("monsters", id, ".name", _monsterEN);

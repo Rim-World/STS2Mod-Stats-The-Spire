@@ -14,6 +14,21 @@ public sealed class CombatTracker
     // sourceId → accumulated contributions
     private readonly Dictionary<string, ContributionAccum> _currentCombat = new();
 
+    /// <summary>
+    /// One application of EnergyNextTurnPower. The game merges all stacks
+    /// into one power instance, so the global power-source table cannot tell
+    /// how much energy belongs to WahKi versus KiRest. Consume these layers
+    /// when the power pays out.
+    /// </summary>
+    private sealed class EnergyNextTurnLayer
+    {
+        public string SourceId = "";
+        public string SourceType = "card";
+        public int Amount;
+    }
+
+    private readonly List<EnergyNextTurnLayer> _energyNextTurnLayers = new();
+
     // ── P0 FIX: AsyncLocal-backed attribution context ───────────
     // Harmony Postfix on async hook methods fires at the first `await` inside the
     // method, not after completion. With plain fields this meant ClearActive* wiped
@@ -402,6 +417,7 @@ public sealed class CombatTracker
         _pendingUpgradeSourceOrigin = null;
         _processedDamageResults.Clear();
         _forgeLog.Clear();
+        _energyNextTurnLayers.Clear();
         _handDrawCount = 0;
         _cardContextStackAL.Value = null;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
@@ -431,6 +447,7 @@ public sealed class CombatTracker
             _currentCombat);
 
         _currentCombat.Clear();
+        _energyNextTurnLayers.Clear();
         _handDrawCount = 0;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
         ClearPendingDrawSource();
@@ -597,6 +614,7 @@ public sealed class CombatTracker
         _pendingUpgradeSourceOrigin = null;
         _processedDamageResults.Clear();
         _forgeLog.Clear();
+        _energyNextTurnLayers.Clear();
         _liveSaveDirty = false;
         ClearPendingPowerSource();
         ContributionMap.Instance.Clear();
@@ -1218,7 +1236,8 @@ public sealed class CombatTracker
         return true;
     }
 
-    public void OnPowerApplied(string powerId, decimal amount, int creatureHash, bool isPlayerTarget)
+    public void OnPowerApplied(string powerId, decimal amount, int creatureHash, bool isPlayerTarget,
+        bool isLocalOwner = true)
     {
         // Fix 3.6: power > relic > potion > card priority (see ResolveSource notes).
         string? sourceId = _activePowerSourceId ?? _activeRelicId ?? _activePotionId ?? _activeCardId;
@@ -1265,6 +1284,15 @@ public sealed class CombatTracker
             // positive-contribution table.
             if (intAmount > 0)
             {
+                if (isLocalOwner && powerId == "ENERGY_NEXT_TURN_POWER")
+                {
+                    _energyNextTurnLayers.Add(new EnergyNextTurnLayer
+                    {
+                        SourceId = sourceId,
+                        SourceType = sourceType,
+                        Amount = intAmount,
+                    });
+                }
                 ContributionMap.Instance.RecordPowerSource(powerId, sourceId, sourceType, intAmount);
                 ContributionMap.Instance.RecordPlayerBuffSource(powerId, sourceId, sourceType, intAmount);
             }
@@ -1396,9 +1424,51 @@ public sealed class CombatTracker
     {
         if (amount <= 0) return;
 
+        // EnergyNextTurnPower merges every card's stacks into one power.
+        // The generic source lookup returns only the first card, which made
+        // WahKi absorb KiRest's 5-energy stacks. Pay out from the per-card
+        // layer queue instead.
+        if (string.Equals(_activePowerId, "ENERGY_NEXT_TURN_POWER", StringComparison.Ordinal)
+            && TryConsumeEnergyNextTurnLayers(amount))
+            return;
+
         var (sourceId, sourceType) = ResolveSource(null);
         if (sourceId != null)
             GetOrCreate(sourceId, sourceType).EnergyGained += amount;
+    }
+
+    /// <summary>
+    /// Consume EnergyNextTurnPower application layers in play order. Returns
+    /// false when no layer exists, so callers fall back to normal attribution.
+    /// </summary>
+    private bool TryConsumeEnergyNextTurnLayers(int amount)
+    {
+        if (_energyNextTurnLayers.Count == 0) return false;
+
+        int remaining = amount;
+        for (int i = 0; i < _energyNextTurnLayers.Count && remaining > 0;)
+        {
+            var layer = _energyNextTurnLayers[i];
+            int take = Math.Min(layer.Amount, remaining);
+            if (take > 0)
+            {
+                GetOrCreate(layer.SourceId, layer.SourceType).EnergyGained += take;
+                layer.Amount -= take;
+                remaining -= take;
+            }
+            if (layer.Amount <= 0)
+                _energyNextTurnLayers.RemoveAt(i);
+            else
+                i++;
+        }
+
+        if (remaining > 0)
+        {
+            var (sourceId, sourceType) = ResolveSource(null);
+            if (sourceId != null)
+                GetOrCreate(sourceId, sourceType).EnergyGained += remaining;
+        }
+        return true;
     }
 
     /// <summary>

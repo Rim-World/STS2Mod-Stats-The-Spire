@@ -448,7 +448,8 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         var identity = _data == null
             ? new RunIdentity(0, "")
             : new RunIdentity(_data.StartTime, _data.Seed);
-        btn.Pressed += () => OnReplayPressed(identity);
+        int totalTurns = CountCombatTurns(_history);
+        btn.Pressed += () => OnReplayPressed(identity, totalTurns);
 
         if (!identity.IsValid)
         {
@@ -463,7 +464,27 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
         return panel;
     }
 
-    private static void OnReplayPressed(RunIdentity identity)
+    private static int CountCombatTurns(RunHistory? history)
+    {
+        if (history?.MapPointHistory == null) return 0;
+        int total = 0;
+        foreach (var act in history.MapPointHistory)
+        {
+            if (act == null) continue;
+            foreach (var floor in act)
+            {
+                if (floor?.Rooms == null) continue;
+                foreach (var room in floor.Rooms)
+                {
+                    if (room != null && room.TurnsTaken > 0)
+                        total += room.TurnsTaken;
+                }
+            }
+        }
+        return total;
+    }
+
+    private static void OnReplayPressed(RunIdentity identity, int totalTurns)
     {
         Safe.Run(() =>
         {
@@ -476,7 +497,7 @@ public sealed partial class RunHistoryStatsSection : VBoxContainer
             CommunityStats.Patches.RunHistoryPatch.CloseOpenPopup();
             // Round 5 fix: only the 本局汇总 tab should be shown when replaying
             // a historical run — there's no live combat to display.
-            ContributionPanel.ShowRunReplay(summary);
+            ContributionPanel.ShowRunReplay(summary, totalTurns);
         });
     }
 

@@ -1497,7 +1497,8 @@ public static class DebuffDurationPatch
                 // duration it actually contributed, so multi-source attribution
                 // splits proportionally instead of collapsing to one source.
                 int delta = amount - __state;
-                CombatTracker.Instance.OnPowerApplied(powerId, delta, creatureHash, isPlayer);
+                bool isLocalOwner = !isPlayer || CombatHistoryPatch.IsLocalCreature(owner);
+                CombatTracker.Instance.OnPowerApplied(powerId, delta, creatureHash, isPlayer, isLocalOwner);
             }
             else if (!isPlayer
                 && (powerId == "VULNERABLE_POWER" || powerId == "WEAK_POWER"

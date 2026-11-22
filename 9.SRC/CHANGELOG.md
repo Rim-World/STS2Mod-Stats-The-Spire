@@ -2,6 +2,18 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.7.3] - 2026-11-23
+
+### Fixed
+- History replay now shows average damage per turn. The panel uses the `.run` combat-turn total and the persisted damage summary instead of the empty live combat counter.
+- `EnergyNextTurnPower` energy is split by each card's application. `Wah Ki` no longer absorbs the energy applied by `Ki Rest` and other cards.
+- Ancient event sources such as `VAKUU` and `PAEL` now use the `ancients` localisation table and display `瓦库` / `佩尔` in Chinese and `Vakuu` / `Pael` in English.
+
+### Verification
+- v0.113.1 issue probe: 4/4 PASS. Energy layers `WAH_KI=1`, `KI_REST=5`; replay damage 4118 over 114 turns displayed `36.1`; CN/EN ancient names passed.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs share SHA-256 `7749d2e3549a270b58ea9b10882d620a6f6a15ac8fef9168b0acbd14181d7e56`.
+- User visual check not done.
+
 ## [1.7.2] - 2026-11-22
 
 ### Fixed
