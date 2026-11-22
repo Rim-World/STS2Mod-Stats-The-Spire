@@ -243,12 +243,22 @@ def check_output(version: str, output_arg: str | None) -> None:
 
     readme_zh = read_text(output / "README_ZH.md")
     readme_en = read_text(output / "README_EN.md")
+    license_path = output / "LICENSE"
+    license_text = read_text(license_path) if license_path.is_file() else ""
     if "许可证与授权" not in readme_zh:
         fail("output README_ZH.md missing license section")
     if "License and authorization" not in readme_en:
         fail("output README_EN.md missing license section")
-    if "许可证与授权" in readme_zh and "License and authorization" in readme_en:
-        ok("output READMEs record license status")
+    if not license_text.startswith("MIT License"):
+        fail("output LICENSE is not MIT")
+    if (
+        "许可证与授权" in readme_zh
+        and "License and authorization" in readme_en
+        and "MIT License" in readme_zh
+        and "MIT License" in readme_en
+        and license_text.startswith("MIT License")
+    ):
+        ok("output package includes MIT license")
 
 
 def main() -> int:

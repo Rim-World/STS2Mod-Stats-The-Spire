@@ -253,6 +253,5 @@ This build targets Slay the Spire 2 v0.111.1 and v0.113.1. 1.7.0 adds separate p
 
 - Source baseline: `https://github.com/reddots1453/STS2mod-Stats_the_Spire`.
 - Original author: `reddots1453`.
-- The original repository declares no license. This maintenance repository also declares no license.
-- Do not publicly redistribute this build or derived source before the original author gives explicit authorization.
-- This section records the authorization status only. It does not grant a license.
+- This maintenance repository is released under the MIT License. The full text is in `LICENSE`.
+- Upstream source and author attribution are retained. The MIT License covers code added or modified in this maintenance repository.

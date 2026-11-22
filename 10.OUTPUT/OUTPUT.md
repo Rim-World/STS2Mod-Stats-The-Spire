@@ -11,7 +11,9 @@
 
 注：1.6.0 包内 README 于 2026-11-22 02:26 补充许可证与授权段；DLL、`manifest.json`、`settings.cfg` 未变。
 
-注：1.4.4、1.5.0、1.5.1 的二进制包含构建机源码路径，已从当前目录与重写后 Git 历史移除；GitHub 旧对象清除待 Support；备份在 `TMP/1.5.2/privacy-backup/old-output/`。1.4.0 至 1.4.3 的历史归档仍在各自 `TMP` 版本目录。
+注：1.7.0 输出包于 2026-11-22 19:10 加入 MIT `LICENSE`，README 改为 MIT 表述；DLL、`manifest.json` 与 `settings.cfg` 未变。
+
+注：1.4.4、1.5.0、1.5.1 的二进制包含构建机源码路径，已从当前目录与重写后 Git 历史移除；用户决定 GitHub 旧对象等待平台自动清除；备份在 `TMP/1.5.2/privacy-backup/old-output/`。1.4.0 至 1.4.3 的历史归档仍在各自 `TMP` 版本目录。
 
 ## 目录约定
 
@@ -19,4 +21,5 @@
 - `10.OUTPUT/<version>/sts2_statsthespire_local.dll`
 - `10.OUTPUT/<version>/README_ZH.md`
 - `10.OUTPUT/<version>/README_EN.md`
+- `10.OUTPUT/<version>/LICENSE`
 - `10.OUTPUT/<version>/settings.cfg`

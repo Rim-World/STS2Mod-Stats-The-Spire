@@ -4,6 +4,9 @@
 
 ## [1.7.0] - 2026-11-22
 
+### License
+- The maintenance repository and the 1.7.0 output package are released under the MIT License. See `LICENSE`.
+
 ### Added
 - `PetAbsorbed`: actual HP lost by Osty or Wuppy while absorbing damage for the player. Osty absorption still uses the LIFO summon-source stack; Wuppy absorption is attributed to the `WUPPY` parent row.
 - `PetWasted`: remaining Osty HP destroyed by Bone Shards or Sacrifice. It is shown as a separate red `宠物损耗` row and subtracted from total defense.

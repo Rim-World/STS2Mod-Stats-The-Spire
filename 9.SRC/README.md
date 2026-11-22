@@ -2,7 +2,7 @@
 
 Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统计、怪物意图状态机、药水/卡牌掉落概率、问号房间概率与商店价格。
 
-本仓库是基于作者公开源码的维护分支。原仓库与本维护仓库都未声明许可证。同一 DLL 目标兼容游戏 v0.111.1 与 v0.113.1。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
+本仓库是基于作者公开源码的维护分支，按 MIT License 发布，许可证全文见 `LICENSE`。同一 DLL 目标兼容游戏 v0.111.1 与 v0.113.1。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
 
 ## 功能
 
@@ -68,4 +68,4 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the 
 
 ## 许可证与来源
 
-源码基线来自 `https://github.com/reddots1453/STS2mod-Stats_the_Spire`，原作者为 `reddots1453`。原仓库与本维护仓库都未声明许可证。在取得作者明确授权前，不得公开再分发本构建或衍生源码。本节只记录授权状态，不构成授权。
+源码基线来自 `https://github.com/reddots1453/STS2mod-Stats_the_Spire`，原作者为 `reddots1453`。本维护仓库按 MIT License 发布，许可证全文见 `LICENSE`。上游来源与作者署名保留。MIT 许可证覆盖本维护仓库新增与修改的代码。
