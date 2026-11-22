@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>sts2_map_hover_probe_171</AssemblyName>
+    <RootNamespace>StatsTheSpire.MapHoverProbe</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <STS2GameDir Condition="'$(STS2GameDir)' == ''">C:\Game\Steam\steamapps\common\Slay the Spire 2</STS2GameDir>
+    <MainDll Condition="'$(MainDll)' == ''">$(MSBuildProjectDirectory)\..\..\..\9.SRC\bin\Debug\sts2_statsthespire_local.dll</MainDll>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="sts2"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\sts2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GodotSharp"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\GodotSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="sts2_statsthespire_local"><HintPath>$(MainDll)</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

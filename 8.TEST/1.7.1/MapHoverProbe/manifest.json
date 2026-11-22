@@ -1,0 +1,14 @@
+{
+  "id": "sts2_map_hover_probe_171",
+  "name": "StatsTheSpire Map Hover Probe 1.7.1",
+  "author": "test",
+  "description": "Test-only probe: hover unknown map points, move to another point, then move to empty map space.",
+  "version": "1.7.1",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.7.0" }
+  ]
+}

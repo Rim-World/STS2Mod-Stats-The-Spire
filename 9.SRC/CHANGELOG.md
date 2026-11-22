@@ -2,6 +2,18 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.7.1] - 2026-11-22
+
+### Fixed
+- Map hover panels now disappear when the mouse leaves the map point. `NMapScreen._Input` checks the pointer on mouse motion, and `NMapPoint.MouseExited` removes the panel independently of Godot focus.
+- Showing a new map hover panel now closes every other map point panel, so consecutive hovers cannot accumulate.
+- Existing cleanup on map close, cleanup, reopen, and map replacement is retained.
+
+### Verification
+- v0.113.1 probe: first hover `1`, second hover `1` with the first removed, pointer leave `0`; 4/4 PASS.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings.
+- Installed v0.113.1 load check: one `Stats the Spire (Local) v1.7.1 initializing...`; `NMapScreen._Input` patch present.
+
 ## [1.7.0] - 2026-11-22
 
 ### License
