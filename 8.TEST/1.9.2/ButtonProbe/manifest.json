@@ -1,0 +1,14 @@
+{
+  "id": "sts2_button_probe_192",
+  "name": "StatsTheSpire Run History Button Probe 1.9.2",
+  "author": "test",
+  "description": "Test-only probe for the trimmed run-history statistics button.",
+  "version": "1.9.2",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    { "id": "sts2_statsthespire_local", "min_version": "1.9.1" }
+  ]
+}

@@ -2,6 +2,19 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.2] - 2026-11-25
+
+### Changed
+- The run-history "Run Stats" entry button is now `350×75`; height and font size 33 stay at 1.5x, while width is trimmed from 390 to reduce side padding.
+- The top-left position remains `(30, 210)`. The popup geometry and chart content are unchanged.
+
+### Verification
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 519,168 bytes with SHA-256 `6ed5214993ccf3ad0d0e68612cbb6e734cb77dc9dfe67965cd061b1490b1f3cf`.
+- v0.111.1 headless button probe: `pos=(30, 210)`, `size=(350, 75)`, `font=33`; `RESULT PASS`; popup and right window both opened.
+- Final v0.111.1 load: one `v1.9.2 initializing`; `Ctrl+F8` registered.
+- Installed DLL hash matches `10.OUTPUT/1.9.2/`.
+- Graphical visual check and v0.113.1 runtime: not done.
+
 ## [1.9.1] - 2026-11-25
 
 ### Changed

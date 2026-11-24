@@ -29,10 +29,10 @@ public static class RunHistoryPatch
     private const string PopupName   = "ModRunHistoryStatsPopup";
     private static bool _replayWindowOpen;
 
-    // 1.9.1: the run-history entry button is 1.5x the previous 260x50 button.
+    // 1.9.2: keep the 1.5x height and font, but trim the side padding.
     private const float EntryButtonLeft = 30f;
     private const float EntryButtonTop = 210f;
-    private const float EntryButtonWidth = 390f;
+    private const float EntryButtonWidth = 350f;
     private const float EntryButtonHeight = 75f;
     private const int EntryButtonFontSize = 33;
 
@@ -137,7 +137,7 @@ public static class RunHistoryPatch
 
     /// <summary>
     /// Build the run-history entry button. Kept separate so the layout probe
-    /// can verify the 1.9.1 1.5x size without opening the full history screen.
+    /// can verify the 1.9.2 width without opening the full history screen.
     /// </summary>
     private static Button CreateEntryButton()
     {
