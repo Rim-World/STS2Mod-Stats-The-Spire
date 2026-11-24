@@ -55,6 +55,29 @@ public static class RetentionProbe
             GD.Print($"[RetentionProbe] profileReady={SaveManager.Instance.IsProfileInitialized} settingDefault={ModConfig.AutoCleanupEnabled}");
             pass &= ModConfig.AutoCleanupEnabled;
 
+            string rawSaveDir = SaveManager.Instance.GetProfileScopedPath("saves");
+            string resolvedSaveDir = ContributionRetention.ResolveFileSystemPath(rawSaveDir);
+            bool savePathOk = !string.IsNullOrWhiteSpace(resolvedSaveDir) &&
+                              !resolvedSaveDir.StartsWith("user://", StringComparison.OrdinalIgnoreCase) &&
+                              Path.IsPathFullyQualified(resolvedSaveDir) &&
+                              Directory.Exists(resolvedSaveDir);
+            GD.Print($"[RetentionProbe] path raw={rawSaveDir} resolved={resolvedSaveDir} exists={Directory.Exists(resolvedSaveDir)} ok={savePathOk}");
+            pass &= savePathOk;
+
+            bool allProfilePathsOk = true;
+            for (int profileId = 1; profileId <= 3; profileId++)
+            {
+                string raw = UserDataPathProvider.GetProfileScopedPath(profileId, "saves");
+                string resolved = ContributionRetention.ResolveFileSystemPath(raw);
+                bool ok = !string.IsNullOrWhiteSpace(resolved) &&
+                          !resolved.StartsWith("user://", StringComparison.OrdinalIgnoreCase) &&
+                          Path.IsPathFullyQualified(resolved) &&
+                          Directory.Exists(resolved);
+                allProfilePathsOk &= ok;
+                GD.Print($"[RetentionProbe] profile{profileId} pathOk={ok} resolved={resolved}");
+            }
+            pass &= allProfilePathsOk;
+
             var state = ContributionRetention.ReadCurrentRunRefs();
             GD.Print($"[RetentionProbe] current profileReady={state.ProfileReady} hasSave={state.HasCurrentSave} parseFailed={state.ParseFailed} starts={state.StartTimes.Count} seeds={state.Seeds.Count}");
 
@@ -87,12 +110,15 @@ public static class RetentionProbe
             string oldDir = Path.Combine(temp, "1795000000_OLDSEED");
             string protectedDir = Path.Combine(temp, "1795000001_PROTECTED");
             string recentDir = Path.Combine(temp, "1795000002_RECENT");
+            string unknownDir = Path.Combine(temp, "NOT_A_RUN");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(protectedDir);
             Directory.CreateDirectory(recentDir);
+            Directory.CreateDirectory(unknownDir);
             File.WriteAllText(Path.Combine(oldDir, "combat_1_1.json"), "{}");
             File.WriteAllText(Path.Combine(protectedDir, "combat_2_1.json"), "{}");
             File.WriteAllText(Path.Combine(recentDir, "combat_3_1.json"), "{}");
+            File.WriteAllText(Path.Combine(unknownDir, "keep.txt"), "keep");
 
             string oldLegacy = Path.Combine(temp, "OLDSEED_1.json");
             string protectedLegacy = Path.Combine(temp, "PROTECTED_SEED_1.json");
@@ -103,6 +129,7 @@ public static class RetentionProbe
 
             SetOld(oldDir, cutoff);
             SetOld(protectedDir, cutoff);
+            SetOld(unknownDir, cutoff);
             SetOld(oldLegacy, cutoff);
             SetOld(protectedLegacy, cutoff);
 
@@ -116,16 +143,17 @@ public static class RetentionProbe
             bool removedOldDir = !Directory.Exists(oldDir);
             bool keptProtectedDir = Directory.Exists(protectedDir);
             bool keptRecentDir = Directory.Exists(recentDir);
+            bool keptUnknownDir = Directory.Exists(unknownDir);
             bool removedOldLegacy = !File.Exists(oldLegacy);
             bool keptProtectedLegacy = File.Exists(protectedLegacy);
             bool keptRecentLegacy = File.Exists(recentLegacy);
             bool countsOk = result.DeletedFiles == 1 && result.DeletedDirectories == 1 &&
                             result.SkippedProtected == 2;
 
-            GD.Print($"[RetentionProbe] oldDirRemoved={removedOldDir} protectedDirKept={keptProtectedDir} recentDirKept={keptRecentDir}");
+            GD.Print($"[RetentionProbe] oldDirRemoved={removedOldDir} protectedDirKept={keptProtectedDir} recentDirKept={keptRecentDir} unknownDirKept={keptUnknownDir}");
             GD.Print($"[RetentionProbe] oldLegacyRemoved={removedOldLegacy} protectedLegacyKept={keptProtectedLegacy} recentLegacyKept={keptRecentLegacy}");
             GD.Print($"[RetentionProbe] counts files={result.DeletedFiles} dirs={result.DeletedDirectories} protected={result.SkippedProtected} reparse={result.SkippedReparsePoints}");
-            pass &= removedOldDir && keptProtectedDir && keptRecentDir &&
+            pass &= removedOldDir && keptProtectedDir && keptRecentDir && keptUnknownDir &&
                     removedOldLegacy && keptProtectedLegacy && keptRecentLegacy && countsOk;
 
             string disabledFile = Path.Combine(temp, "DISABLED_1.json");
@@ -163,11 +191,78 @@ public static class RetentionProbe
             GD.Print($"[RetentionProbe] refs hasSave={refs.HasCurrentSave} parseFailed={refs.ParseFailed} starts={refs.StartTimes.Count} seeds={refs.Seeds.Count} ok={refsOk}");
             pass &= refsOk;
 
+            string savesDir2 = Path.Combine(temp, "saves2");
+            Directory.CreateDirectory(savesDir2);
+            File.WriteAllText(Path.Combine(savesDir2, "current_run.save"),
+                "{\"start_time\":1795000005,\"rng\":{\"seed\":\"PROFILE_TWO\"}}");
+            var merged = ContributionRetention.ReadCurrentRunRefs(new[] { savesDir, savesDir2 });
+            bool mergedOk = merged.HasCurrentSave && !merged.ParseFailed &&
+                            merged.StartTimes.Contains(1795000005) &&
+                            merged.Seeds.Contains("PROFILE_TWO") &&
+                            merged.StartTimes.Count == 3 && merged.Seeds.Count == 3;
+            GD.Print($"[RetentionProbe] merged starts={merged.StartTimes.Count} seeds={merged.Seeds.Count} contains={merged.StartTimes.Contains(1795000005)} ok={mergedOk}");
+            pass &= mergedOk;
+
             File.WriteAllText(Path.Combine(savesDir, "current_run.save.backup"), "not-json");
             var corruptRefs = (ContributionRetention.CurrentRunSaveState)refsMethod.Invoke(null, new object[] { savesDir })!;
             bool corruptOk = corruptRefs.HasCurrentSave && corruptRefs.ParseFailed;
             GD.Print($"[RetentionProbe] corrupt parseFailed={corruptRefs.ParseFailed} ok={corruptOk}");
             pass &= corruptOk;
+
+            string realSave = Path.Combine(resolvedSaveDir, "current_run.save");
+            string realBackup = realSave + ".backup";
+            string realMpSave = Path.Combine(resolvedSaveDir, "current_run_mp.save");
+            string realMpBackup = realMpSave + ".backup";
+            bool canCreateRealSave = !File.Exists(realSave) &&
+                                     !File.Exists(realBackup) &&
+                                     !File.Exists(realMpSave) &&
+                                     !File.Exists(realMpBackup);
+            if (!canCreateRealSave)
+            {
+                GD.Print("[RetentionProbe] realPath skipped: a current save already exists");
+            }
+            else
+            {
+                bool createdRealSave = false;
+                bool realOk = false;
+                try
+                {
+                    File.WriteAllText(realSave, "{\"start_time\":1795000006,\"rng\":{\"seed\":\"REAL_PATH_SEED\"}}");
+                    createdRealSave = true;
+
+                    var realState = ContributionRetention.ReadCurrentRunRefs();
+                    string realOldDir = Path.Combine(temp, "1795000006_REAL_PATH_SEED");
+                    Directory.CreateDirectory(realOldDir);
+                    File.WriteAllText(Path.Combine(realOldDir, "combat_1_1.json"), "{}");
+                    SetOld(realOldDir, cutoff);
+
+                    var realPrune = ContributionRetention.Prune(
+                        temp,
+                        cutoff,
+                        realState.StartTimes,
+                        realState.Seeds,
+                        enabled: true);
+                    bool protectedBySave = Directory.Exists(realOldDir);
+                    realOk = realState.HasCurrentSave && !realState.ParseFailed &&
+                             realState.StartTimes.Contains(1795000006) &&
+                             realState.Seeds.Contains("REAL_PATH_SEED") &&
+                             protectedBySave && realPrune.SkippedProtected >= 1;
+                    GD.Print($"[RetentionProbe] realPath hasSave={realState.HasCurrentSave} parseFailed={realState.ParseFailed} starts={realState.StartTimes.Count} seeds={realState.Seeds.Count} protectedDir={protectedBySave} skipped={realPrune.SkippedProtected} ok={realOk}");
+                }
+                finally
+                {
+                    if (createdRealSave)
+                    {
+                        try { File.Delete(realSave); }
+                        catch (Exception ex)
+                        {
+                            GD.Print($"[RetentionProbe] realPath cleanup failed: {ex.Message}");
+                            realOk = false;
+                        }
+                    }
+                }
+                pass &= realOk;
+            }
         }
         catch (Exception ex)
         {

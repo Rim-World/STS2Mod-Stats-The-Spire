@@ -1,6 +1,9 @@
+using System.Globalization;
 using System.Text.Json;
 using CommunityStats.Config;
+using Godot;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Saves.Managers;
 
 namespace CommunityStats.Util;
 
@@ -81,9 +84,12 @@ public static class ContributionRetention
     }
 
     /// <summary>
-    /// Read the current single-player and multiplayer save files. A missing
-    /// current save is normal (for example, after a finished run). A corrupt
-    /// save is not normal; callers must not prune when ParseFailed is true.
+    /// Read current single-player and multiplayer saves for all profiles.
+    /// Contribution data is account-wide while the game has three profiles,
+    /// so protecting only the active profile could delete another paused run.
+    /// A missing current save is normal (for example, after a finished run).
+    /// A corrupt save is not normal; callers must not prune when ParseFailed
+    /// is true.
     /// </summary>
     public static CurrentRunSaveState ReadCurrentRunRefs()
     {
@@ -97,8 +103,21 @@ public static class ContributionRetention
             if (!SaveManager.Instance.IsProfileInitialized)
                 return new CurrentRunSaveState(false, false, false, startTimes, seeds);
 
-            var savesDir = SaveManager.Instance.GetProfileScopedPath("saves");
-            ReadSaveFiles(savesDir, startTimes, seeds, ref hasSave, ref parseFailed);
+            var savesDirs = new List<string>(ProfileSaveManager.maxProfileCount);
+            for (int profileId = 1; profileId <= ProfileSaveManager.maxProfileCount; profileId++)
+            {
+                var dir = ResolveFileSystemPath(
+                    UserDataPathProvider.GetProfileScopedPath(profileId, "saves"));
+                if (!IsUsableSavesPath(dir))
+                {
+                    Safe.Warn($"[Retention] profile {profileId} save directory did not resolve to an absolute OS path; cleanup skipped.");
+                    return new CurrentRunSaveState(true, false, true, startTimes, seeds);
+                }
+
+                savesDirs.Add(dir);
+            }
+
+            ReadSaveFiles(savesDirs, startTimes, seeds, ref hasSave, ref parseFailed);
         }
         catch (Exception ex)
         {
@@ -110,38 +129,86 @@ public static class ContributionRetention
     }
 
     /// <summary>
-    /// Read current save files from an explicit saves directory. Used by the
-    /// probe to exercise the same path and parse logic with a temporary file.
+    /// Read current save files from explicit saves directories. Used by the
+    /// probe to exercise the same merge and parse logic with temporary files.
     /// </summary>
-    public static CurrentRunSaveState ReadCurrentRunRefs(string savesDir)
+    public static CurrentRunSaveState ReadCurrentRunRefs(IEnumerable<string> savesDirs)
     {
         var startTimes = new List<long>();
         var seeds = new List<string>();
+        var resolvedDirs = new List<string>();
         bool hasSave = false;
         bool parseFailed = false;
-        ReadSaveFiles(savesDir, startTimes, seeds, ref hasSave, ref parseFailed);
-        return new CurrentRunSaveState(true, hasSave, parseFailed, startTimes, seeds);
-    }
 
-    private static void ReadSaveFiles(
-        string savesDir,
-        List<long> startTimes,
-        List<string> seeds,
-        ref bool hasSave,
-        ref bool parseFailed)
-    {
-        foreach (var path in CandidateSavePaths(savesDir))
+        foreach (var savesDir in savesDirs)
         {
-            if (!File.Exists(path)) continue;
-            hasSave = true;
-            if (!TryReadSaveFile(path, out long startTime, out string seed))
+            var resolved = ResolveFileSystemPath(savesDir);
+            if (!IsUsableSavesPath(resolved))
             {
                 parseFailed = true;
                 continue;
             }
 
-            if (startTime > 0) startTimes.Add(startTime);
-            if (!string.IsNullOrWhiteSpace(seed)) seeds.Add(seed);
+            resolvedDirs.Add(resolved);
+        }
+
+        ReadSaveFiles(resolvedDirs, startTimes, seeds, ref hasSave, ref parseFailed);
+        return new CurrentRunSaveState(true, hasSave, parseFailed, startTimes, seeds);
+    }
+
+    /// <summary>
+    /// Read current save files from one explicit saves directory.
+    /// </summary>
+    public static CurrentRunSaveState ReadCurrentRunRefs(string savesDir)
+        => ReadCurrentRunRefs(new[] { ResolveFileSystemPath(savesDir) });
+
+    /// <summary>
+    /// Convert a Godot virtual path returned by SaveManager into an OS path.
+    /// System.IO APIs do not understand <c>user://</c> or <c>res://</c>.
+    /// Exposed for the deterministic probe's path assertion.
+    /// </summary>
+    public static string ResolveFileSystemPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return path;
+        if (path.StartsWith("user://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("res://", StringComparison.OrdinalIgnoreCase))
+            return ProjectSettings.GlobalizePath(path);
+        return path;
+    }
+
+    private static bool IsUsableSavesPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        if (path.StartsWith("user://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("res://", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return Path.IsPathFullyQualified(path);
+    }
+
+    private static void ReadSaveFiles(
+        IEnumerable<string> savesDirs,
+        List<long> startTimes,
+        List<string> seeds,
+        ref bool hasSave,
+        ref bool parseFailed)
+    {
+        foreach (var savesDir in savesDirs)
+        {
+            if (string.IsNullOrWhiteSpace(savesDir)) continue;
+
+            foreach (var path in CandidateSavePaths(savesDir))
+            {
+                if (!File.Exists(path)) continue;
+                hasSave = true;
+                if (!TryReadSaveFile(path, out long startTime, out string seed))
+                {
+                    parseFailed = true;
+                    continue;
+                }
+
+                if (startTime > 0) startTimes.Add(startTime);
+                if (!string.IsNullOrWhiteSpace(seed)) seeds.Add(seed);
+            }
         }
     }
 
@@ -201,6 +268,10 @@ public static class ContributionRetention
         if (string.IsNullOrWhiteSpace(contributionsDir) || !Directory.Exists(contributionsDir))
             return new PruneResult(0, 0, 0, 0);
 
+        // Never enumerate through a junction or symlink at the data root.
+        if (IsReparsePoint(contributionsDir))
+            return new PruneResult(0, 0, 0, 1);
+
         var cutoff = cutoffUtc.Kind == DateTimeKind.Utc
             ? cutoffUtc
             : cutoffUtc.ToUniversalTime();
@@ -246,7 +317,12 @@ public static class ContributionRetention
         {
             try
             {
-                if (IsReparsePoint(path))
+                var name = Path.GetFileName(path);
+                if (!IsRunDirectoryName(name)) continue;
+
+                // A run directory containing a junction or symlink could
+                // delete data outside contributions when recursively removed.
+                if (ContainsReparsePoint(path))
                 {
                     skippedReparse++;
                     continue;
@@ -308,8 +384,9 @@ public static class ContributionRetention
 
         foreach (var start in protectedStarts)
         {
-            if (stem.Equals(start.ToString(), StringComparison.Ordinal) ||
-                stem.StartsWith(start + "_", StringComparison.Ordinal))
+            var prefix = start.ToString(CultureInfo.InvariantCulture);
+            if (stem.Equals(prefix, StringComparison.Ordinal) ||
+                stem.StartsWith(prefix + "_", StringComparison.Ordinal))
                 return true;
         }
 
@@ -319,10 +396,49 @@ public static class ContributionRetention
     private static bool IsProtectedDirectory(string path, HashSet<long> protectedStarts)
     {
         var name = Path.GetFileName(path);
+        return TryParseRunStart(name, out long start) && protectedStarts.Contains(start);
+    }
+
+    private static bool IsRunDirectoryName(string name)
+        => TryParseRunStart(name, out _);
+
+    private static bool TryParseRunStart(string name, out long start)
+    {
+        start = 0;
         int separator = name.IndexOf('_');
-        if (separator <= 0) return false;
-        return long.TryParse(name[..separator], out long start) &&
-               protectedStarts.Contains(start);
+        if (separator <= 0 || separator == name.Length - 1) return false;
+
+        return long.TryParse(
+                   name[..separator],
+                   NumberStyles.None,
+                   CultureInfo.InvariantCulture,
+                   out start) &&
+               start > 0;
+    }
+
+    /// <summary>
+    /// Pre-scan a run directory before recursive deletion. A junction or
+    /// symlink inside the tree can make Directory.Delete fail after partly
+    /// removing the run directory; skip the whole tree instead.
+    /// </summary>
+    private static bool ContainsReparsePoint(string root)
+    {
+        if (IsReparsePoint(root)) return true;
+
+        var pending = new Stack<string>();
+        pending.Push(root);
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(current))
+            {
+                if (IsReparsePoint(entry)) return true;
+                if (Directory.Exists(entry)) pending.Push(entry);
+            }
+        }
+
+        return false;
     }
 
     private static bool IsReparsePoint(string path)

@@ -2,6 +2,21 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.4] - 2026-11-25
+
+### Fixed
+- Convert `SaveManager.GetProfileScopedPath` results from Godot `user://` paths to OS paths before using `System.IO`. 1.9.3 passed virtual paths to `File.Exists`, so real current-save protection never matched.
+- Read `current_run.save` / `current_run_mp.save` from all three game profiles, not only the active profile. Contribution data is account-wide.
+- Only prune directories whose names parse as `{StartTime}_{seed}`; unknown backup or user directories under `contributions/` are preserved.
+- Pre-scan a run tree for nested junctions or symlinks and skip the whole tree; a nested reparse point could otherwise cause partial deletion or an exception. The contributions root itself is also rejected if it is a reparse point.
+- Require every saves path to resolve to an absolute OS path; unresolved or virtual paths force cleanup to skip.
+
+### Verification
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 553,472 bytes with SHA-256 `9387ef9c177d1c6d25510551a794a683638d95745d4d1e75094b93b030a4fa92`.
+- Real-profile probe: `user://...` resolves to an existing OS saves directory; all three profile paths resolve; a real `current_run.save` created only when absent yields `HasCurrentSave=true` and protects an old temp run directory; the file is removed in `finally`.
+- Temporary-directory probe: expired run directory and legacy file removed; protected run/legacy and unknown directory kept; disabled mode removes nothing; multi-directory merge passes; `RESULT PASS`.
+- v0.113.1 runtime: not run. Graphical visual check: not done.
+
 ## [1.9.3] - 2026-11-25
 
 ### Changed
