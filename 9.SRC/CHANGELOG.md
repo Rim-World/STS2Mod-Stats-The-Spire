@@ -2,6 +2,20 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.1] - 2026-11-25
+
+### Changed
+- The run-history "Run Stats" entry button is now `390×75` with font size 33, up from `260×50` and 22. Its top-left position remains `(30, 210)`.
+- `RunHistoryPatch.CreateEntryButton` now owns the button metrics so the injection path and test probe use one definition.
+- The button text and chart icon scale with the font; the side-by-side popup geometry is unchanged.
+
+### Verification
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 519,168 bytes with SHA-256 `699d6a9108fc298c69747ad4090157e931d7058b86fa5d4941b9d83743c8df11`.
+- v0.111.1 headless button probe: `pos=(30, 210)`, `size=(390, 75)`, `font=33`, text `📊  本局统计`; `RESULT PASS`; popup and right window both opened.
+- Final v0.111.1 load: one `v1.9.1 initializing`; `Ctrl+F8` registered; no probe loaded.
+- Installed DLL hash matches `10.OUTPUT/1.9.1/`.
+- Graphical visual check and v0.113.1 runtime: not done.
+
 ## [1.9.0] - 2026-11-23
 
 ### Changed

@@ -29,6 +29,13 @@ public static class RunHistoryPatch
     private const string PopupName   = "ModRunHistoryStatsPopup";
     private static bool _replayWindowOpen;
 
+    // 1.9.1: the run-history entry button is 1.5x the previous 260x50 button.
+    private const float EntryButtonLeft = 30f;
+    private const float EntryButtonTop = 210f;
+    private const float EntryButtonWidth = 390f;
+    private const float EntryButtonHeight = 75f;
+    private const int EntryButtonFontSize = 33;
+
     [HarmonyPatch(typeof(NRunHistory), "SelectPlayer")]
     [HarmonyPostfix]
     public static void AfterSelectPlayer(NRunHistory __instance)
@@ -108,31 +115,7 @@ public static class RunHistoryPatch
         var button = FindChildByMeta(screen, ButtonMeta) as Button;
         if (button == null)
         {
-            button = new Button
-            {
-                Name = "ModRunHistoryStatsButton",
-                Text = "📊  " + L.Get("run_hist_btn"),
-                MouseFilter = Control.MouseFilterEnum.Stop,
-                // Round 9 round 51 (rev 3): no keyboard focus — prevent any
-                // accidental Space/Enter activation while navigating the
-                // surrounding native widgets.
-                FocusMode = Control.FocusModeEnum.None,
-            };
-            button.SetMeta(ButtonMeta, true);
-            button.AddThemeFontSizeOverride("font_size", 22);
-
-            // Round 9 round 52: moved from top-right to below the player
-            // icon container (top-left area). Anchors top-left with fixed
-            // offsets that match the layout of the native player icon row.
-            button.AnchorLeft   = 0.0f;
-            button.AnchorRight  = 0.0f;
-            button.AnchorTop    = 0.0f;
-            button.AnchorBottom = 0.0f;
-            button.OffsetLeft   = 30f;
-            button.OffsetRight  = 290f;
-            button.OffsetTop    = 210f;
-            button.OffsetBottom = 260f;
-
+            button = CreateEntryButton();
             screen.AddChild(button);
         }
 
@@ -150,6 +133,40 @@ public static class RunHistoryPatch
 
         var capturedHistory = history;
         button.Pressed += () => Safe.Run(() => OpenPopup(capturedHistory));
+    }
+
+    /// <summary>
+    /// Build the run-history entry button. Kept separate so the layout probe
+    /// can verify the 1.9.1 1.5x size without opening the full history screen.
+    /// </summary>
+    private static Button CreateEntryButton()
+    {
+        var button = new Button
+        {
+            Name = "ModRunHistoryStatsButton",
+            Text = "📊  " + L.Get("run_hist_btn"),
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            // Round 9 round 51 (rev 3): no keyboard focus — prevent any
+            // accidental Space/Enter activation while navigating the
+            // surrounding native widgets.
+            FocusMode = Control.FocusModeEnum.None,
+            CustomMinimumSize = new Vector2(EntryButtonWidth, EntryButtonHeight),
+        };
+        button.SetMeta(ButtonMeta, true);
+        button.AddThemeFontSizeOverride("font_size", EntryButtonFontSize);
+
+        // Round 9 round 52: moved from top-right to below the player
+        // icon container (top-left area). Anchors top-left with fixed
+        // offsets that match the layout of the native player icon row.
+        button.AnchorLeft   = 0.0f;
+        button.AnchorRight  = 0.0f;
+        button.AnchorTop    = 0.0f;
+        button.AnchorBottom = 0.0f;
+        button.OffsetLeft   = EntryButtonLeft;
+        button.OffsetRight  = EntryButtonLeft + EntryButtonWidth;
+        button.OffsetTop    = EntryButtonTop;
+        button.OffsetBottom = EntryButtonTop + EntryButtonHeight;
+        return button;
     }
 
     /// <summary>

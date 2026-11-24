@@ -10,7 +10,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.9.0";
+    public const string ModVersion = "1.9.1";
 
     // Feature toggles
     public static FeatureToggles Toggles { get; set; } = new();
