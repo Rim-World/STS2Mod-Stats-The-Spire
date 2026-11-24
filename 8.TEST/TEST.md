@@ -554,6 +554,7 @@
 | `check-release-194.log` | 2026-11-25 05:11 | 否 | 1 | 第一次发布门禁；12/12 PASS | 是 |
 | `check-release-194b.log` | 2026-11-25 05:16 | 否 | 1 | 发布门禁；12/12 PASS | 是 |
 | `check-release-194c.log` | 2026-11-25 05:28 | 否 | 1 | 最终文档与输出包门禁；12/12 PASS | 是 |
+| `check-release-194-final.log` | 2026-11-25 05:31 | 否 | 1 | 提交后最终发布门禁；387 个跟踪文件；12/12 PASS | 是 |
 | `final-load-194-stdout.log` | 2026-11-25 05:24 | 否 | 344 | 1.9.4 安装后无头加载；一次 `v1.9.4 initializing`；设置页与 `Ctrl+F8` 注册；无探针 | 是 |
 
 说明：`RetentionProbe/` 按文件夹整体登记，包含 `bin/` 与 `obj/`；日志由 `.gitignore` 排除。测试探针最终移出游戏 `mods`，存放于 `TMP/1.9.4/removed-probe-194-final/`。
