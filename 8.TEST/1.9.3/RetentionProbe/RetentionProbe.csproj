@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>sts2_retention_probe_193</AssemblyName>
+    <RootNamespace>StatsTheSpire.RetentionProbe</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <STS2GameDir Condition="'$(STS2GameDir)' == ''">C:\Game\Steam\steamapps\common\Slay the Spire 2</STS2GameDir>
+    <RitsuDir Condition="'$(RitsuDir)' == ''">C:\Game\Steam\steamapps\workshop\content\2868840\3747602295</RitsuDir>
+    <MainDll Condition="'$(MainDll)' == ''">$(MSBuildProjectDirectory)\..\..\..\TMP\1.9.3\build-v113\sts2_statsthespire_local.dll</MainDll>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="sts2"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\sts2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GodotSharp"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\GodotSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="sts2_statsthespire_local"><HintPath>$(MainDll)</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib"><HintPath>$(RitsuDir)\compat\0.113.0\STS2-RitsuLib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib.Runtime"><HintPath>$(RitsuDir)\compat\0.113.0\STS2-RitsuLib.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib.Settings"><HintPath>$(RitsuDir)\shared\STS2-RitsuLib.Settings.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

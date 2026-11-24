@@ -2,6 +2,20 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.3] - 2026-11-25
+
+### Changed
+- Restore the default 90-day contribution cleanup removed in 1.5.2.
+- Add a RitsuLib **Auto-clean** toggle, stored as `auto_cleanup` in `mod_prefs.json`; default is on.
+- Protect runs referenced by `current_run.save` and `current_run_mp.save`; skip cleanup if the current save cannot be parsed.
+- Skip reparse points and isolate per-file/per-directory failures.
+
+### Verification
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings.
+- v0.111.1 retention probe: old directory and legacy file removed; protected directory/file kept; disabled mode removed nothing; `start_time`/seed parsed; RitsuLib toggle present and defaults to true.
+- Startup cleanup log: first run removed 57 expired files and 0 directories; second run removed 0.
+- Graphical visual check and v0.113.1 runtime: not done.
+
 ## [1.9.2] - 2026-11-25
 
 ### Changed

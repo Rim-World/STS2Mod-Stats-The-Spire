@@ -69,6 +69,18 @@ public static class RitsuSettingsPage
                         allowModifierOnly: false,
                         distinguishModifierSides: false,
                         Text("settings.contribution_hotkey_desc"));
+
+                    section.AddToggle(
+                        "auto_cleanup",
+                        Text("settings.auto_cleanup"),
+                        Binding(
+                            "auto_cleanup",
+                            () => ModConfig.AutoCleanupEnabled,
+                            value =>
+                            {
+                                ModConfig.AutoCleanupEnabled = value;
+                                ApplySettingsChanged();
+                            }));
                 });
 
                 page.AddSection("toggles", section =>

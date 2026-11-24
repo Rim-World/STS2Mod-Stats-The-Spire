@@ -77,8 +77,9 @@ public static class L
 
         // RitsuLib settings page
         ["settings.title"] = "Stats the Spire — Settings",
-        ["settings.page_description"] = "Interface scale, feature toggles, and the contribution-panel hotkey. Language follows the game; restart the game after changing its language.",
+        ["settings.page_description"] = "Interface scale, feature toggles, the contribution-panel hotkey, and 90-day data cleanup. Language follows the game; restart the game after changing its language.",
         ["settings.section_general"] = "General",
+        ["settings.auto_cleanup"] = "Auto-clean contribution data older than 90 days (applies next launch)",
         ["settings.contribution_hotkey"] = "Contribution panel hotkey",
         ["settings.contribution_hotkey_desc"] = "Click to record a shortcut. The default is Ctrl+F8. Text input and the developer console suppress this hotkey.",
         ["settings.section_basic"] = "Basic Settings",
@@ -410,8 +411,9 @@ public static class L
 
         // RitsuLib 设置页
         ["settings.title"] = "Stats the Spire — 设置",
-        ["settings.page_description"] = "界面缩放、功能开关，以及贡献面板快捷键。语言自动跟随游戏语言；更改游戏语言后请重启游戏。",
+        ["settings.page_description"] = "界面缩放、功能开关、贡献面板快捷键，以及 90 天数据清理。语言自动跟随游戏语言；更改游戏语言后请重启游戏。",
         ["settings.section_general"] = "通用",
+        ["settings.auto_cleanup"] = "自动清理 90 天前的贡献数据（下次启动生效）",
         ["settings.contribution_hotkey"] = "贡献面板快捷键",
         ["settings.contribution_hotkey_desc"] = "点击后录制快捷键。默认 Ctrl+F8。文本输入框和开发者控制台会抑制此热键。",
         ["settings.section_basic"] = "基础设置",

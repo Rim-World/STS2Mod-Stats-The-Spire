@@ -34,8 +34,9 @@ public static class CommunityStatsMod
         if (!ModConfig.EnsureDirectories())
             Safe.Warn("[Startup] data directory unavailable; running without disk cache");
 
-        // Old contribution files are never deleted automatically. Users may
-        // keep years of run history; cleanup is an explicit manual action.
+        // Default-on 90-day cleanup. It runs after SaveManager initializes
+        // the profile so current_run.save can protect the active run.
+        ContributionRetention.ScheduleStartupPrune();
 
         // Pre-warm the in-memory career-stats cache from disk so the very first
         // 百科大全 → 角色数据 page open shows data instantly.

@@ -10,7 +10,7 @@ namespace CommunityStats.Config;
 /// </summary>
 public static class ModConfig
 {
-    public const string ModVersion = "1.9.2";
+    public const string ModVersion = "1.9.3";
 
     // Feature toggles
     public static FeatureToggles Toggles { get; set; } = new();
@@ -28,6 +28,10 @@ public static class ModConfig
 
     // Contribution panel hotkey (stable key token; RitsuLib parses it)
     public static string ContributionPanelHotkey { get; set; } = "Ctrl+F8";
+
+    // Default-on 90-day cleanup for contribution snapshots; users can
+    // disable it from the RitsuLib settings page.
+    public static bool AutoCleanupEnabled { get; set; } = true;
 
     // "My Data" filter
     public static bool UseMyDataOnly { get; set; }
@@ -152,6 +156,9 @@ public static class ModConfig
                     ContributionPanelHotkey = normalized;
             }
 
+            if (root.TryGetProperty("auto_cleanup", out var autoCleanup))
+                AutoCleanupEnabled = autoCleanup.GetBoolean();
+
             if (root.TryGetProperty("use_my_data_only", out var myData))
                 UseMyDataOnly = myData.GetBoolean();
         }
@@ -172,6 +179,7 @@ public static class ModConfig
             var data = new Dictionary<string, object?>
             {
                 ["feature_toggles"] = Toggles,
+                ["auto_cleanup"] = AutoCleanupEnabled,
                 ["use_my_data_only"] = UseMyDataOnly,
                 ["intent_panel_scale"] = IntentPanelScale,
                 ["contribution_panel_hotkey"] = ContributionPanelHotkey,
