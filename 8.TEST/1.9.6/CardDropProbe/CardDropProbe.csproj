@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>sts2_card_drop_probe_196</AssemblyName>
+    <RootNamespace>StatsTheSpire.CardDropProbe</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <STS2GameDir Condition="'$(STS2GameDir)' == ''">C:\Game\Steam\steamapps\common\Slay the Spire 2</STS2GameDir>
+    <RitsuDir Condition="'$(RitsuDir)' == ''">C:\Game\Steam\steamapps\workshop\content\2868840\3747602295</RitsuDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\9.SRC\src\Util\CardRewardGroupOdds.cs" Link="CardRewardGroupOdds.cs" />
+    <Compile Include="..\..\..\9.SRC\src\Util\RunContextInfo.cs" Link="RunContextInfo.cs" />
+    <Compile Include="..\..\..\9.SRC\src\UI\CardDropOddsIndicator.cs" Link="CardDropOddsIndicator.cs" />
+    <Compile Include="..\..\..\9.SRC\src\UI\InfoModPanel.cs" Link="InfoModPanel.cs" />
+    <Compile Include="..\..\..\9.SRC\src\Config\Localization.cs" Link="Localization.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="sts2"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\sts2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GodotSharp"><HintPath>$(STS2GameDir)\data_sts2_windows_x86_64\GodotSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib"><HintPath>$(RitsuDir)\compat\0.113.0\STS2-RitsuLib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib.Runtime"><HintPath>$(RitsuDir)\compat\0.113.0\STS2-RitsuLib.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="STS2-RitsuLib.Settings"><HintPath>$(RitsuDir)\shared\STS2-RitsuLib.Settings.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

@@ -152,15 +152,16 @@ public static class CardRewardGroupOdds
 
     /// <summary>
     /// Predicts whether LastingCandy adds a fourth card to the next combat
-    /// card reward. CombatRewardsSeen is incremented before the reward is
-    /// populated, so the next card is extra when the current count is even.
+    /// card reward. Rewards are populated before BeforeCombatRewardOffered
+    /// increments CombatRewardsSeen, so the fourth card is added when the
+    /// current count is odd.
     /// </summary>
     public static bool WillLastingCandyAddFourthCard(
         int combatRewardsSeen, bool hasLastingCandy, bool hasPowerCard)
     {
         if (!hasLastingCandy || !hasPowerCard || combatRewardsSeen < 0)
             return false;
-        return (combatRewardsSeen & 1) == 0;
+        return (combatRewardsSeen & 1) == 1;
     }
 
     private static void AddOutcome(

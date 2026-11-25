@@ -2,6 +2,18 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.6] - 2026-11-25
+
+### Fixed
+- Correct the Lasting Candy 3/4-card parity. `RewardsCmd.GenerateForRoomEnd` populates card rewards before `CombatRoom.OfferRoomEndRewards` calls `BeforeCombatRewardOffered`, so `CombatRewardsSeen` has not been incremented yet. The current count must be odd for the fourth card; 1.9.5 used the opposite parity.
+- Update the pure calculator fixture to assert count 0 → no fourth card, count 1 → fourth card, count 2 → no fourth card.
+
+### Verification
+- Pure calculator probe: 16/16 PASS.
+- v0.113.1 UI probe and isolated main-mod load: PASS.
+- v0.113.1 and v0.111.1 Release builds: 0 errors.
+- Real Lasting Candy UI, v0.111.1 runtime, and graphical visual check: not done.
+
 ## [1.9.5] - 2026-11-25
 
 ### Changed
