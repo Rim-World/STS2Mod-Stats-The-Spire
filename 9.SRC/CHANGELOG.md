@@ -2,6 +2,23 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.9.5] - 2026-11-25
+
+### Changed
+- The top-bar card drop panel now shows the next base card reward group's rare-count distribution: 0..N rare cards and at least 1 rare. The old single-card primary metric is removed.
+- The group uses the game's sequential pity rule: raw rare resets the offset to `-0.05`; raw non-rare adds `RarityGrowth` up to `0.4`; mapped rarities do not change the offset update.
+- Lasting Candy adds a fourth power card on its triggering combat. The fourth card uses the base rarity table, does not read or advance the shared offset, and is included in the group distribution.
+- Boss rewards are all rare. Big Game Hunter mutates the shared elite creation options to rare-only; the Lasting Candy fourth card therefore remains rare, and adding it requires a rare power card in the pool.
+- The panel keeps the Regular/Elite columns, labels the group size, and notes that Prayer Wheel, White Star, and The Hunt extra reward groups are excluded. White Star still resets later odds.
+- Missing card-pool rarities are remapped in the game order. The panel shows "Probability unavailable" instead of an invalid value when calculation fails.
+
+### Verification
+- Pure calculator probe: 16/16 PASS, including A0/A7+, regular/elite, 3/4 cards, Boss, Big Game Hunter, missing rarity, offset reset, and invalid inputs.
+- v0.113.1 real hover-panel probe: title, 3-card subtitle, 0..3 rows, at-least-one row, extra-group note, and offset refresh PASS.
+- v0.113.1 isolated main-mod load: one `v1.9.5 initializing`; settings page and `Ctrl+F8` registered.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; both DLLs are 565,248 bytes with SHA-256 `08a22766be47f8a614510b5be2e5a8a75fbd637084ee17ba1763753793e023e0`.
+- v0.111.1 runtime and graphical visual check: not done.
+
 ## [1.9.4] - 2026-11-25
 
 ### Fixed
