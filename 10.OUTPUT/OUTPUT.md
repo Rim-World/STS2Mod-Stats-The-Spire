@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-25 08:02 | `sts2_statsthespire_local.dll` | 1.9.5 | 565,248 字节 | 顶栏卡牌掉落改为「下一组基础卡牌奖励」稀有数量分布；连续保底枚举 0..N 张稀有；支持吃不完的糖第 4 张、Boss、BigGameHunter、稀有度缺失映射与额外组排除；SHA-256 `08a22766be47f8a614510b5be2e5a8a75fbd637084ee17ba1763753793e023e0`；双版本 Release 构建 0 错误；纯计算 16/16、v0.113.1 真实 UI 探针与隔离主 Mod 加载 PASS；v0.111.1 运行与视觉未做 |
 | 2026-11-25 05:11 | `sts2_statsthespire_local.dll` | 1.9.4 | 553,472 字节 | 独立审计修复：Godot `user://` 路径转 OS 路径；读取全部三个 profile 的当前存档；仅删除 `{StartTime}_{seed}` Run 目录；未知目录保留；根与嵌套 reparse 预扫描；路径必须为绝对 OS 路径；SHA-256 `9387ef9c177d1c6d25510551a794a683638d95745d4d1e75094b93b030a4fa92`；双版本 Release 构建 0 错误；门禁 12/12；v0.113.1 真实 save 探针 PASS；已安装 1.9.4 并加载；v0.111.1 未运行 |
 | 2026-11-25 04:34 | `sts2_statsthespire_local.dll` | 1.9.3 | 551,936 字节 | 恢复默认 90 天清理；新增 RitsuLib「自动清理」开关（`auto_cleanup`，默认开启）；保护 `current_run.save`/`current_run_mp.save` 引用的对局；读取失败跳过；跳过 reparse point；SHA-256 `f9d8362ea6c18a291d67fa7bdf3e096607efbd8b35d9700381429ecd0d2e971c`；v0.111.1 清理探针 PASS；双版本 Release 构建 0 错误；门禁 12/12；已安装并通过加载检查；v0.113.1 未运行；后续独立审计判定当前存档保护路径失效 |
 | 2026-11-25 03:56 | `sts2_statsthespire_local.dll` | 1.9.2 | 519,168 字节 | 历史入口按钮宽度从 390 收窄到 350，高度 75、字号 33、位置 `(30,210)` 不变；点击仍打开左右双窗；SHA-256 `6ed5214993ccf3ad0d0e68612cbb6e734cb77dc9dfe67965cd061b1490b1f3cf`；v0.111.1 按钮探针 PASS；双版本 Release 构建 0 错误；已安装并通过加载检查 |

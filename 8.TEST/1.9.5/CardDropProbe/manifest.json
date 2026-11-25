@@ -1,0 +1,11 @@
+{
+  "id": "sts2_card_drop_probe_195",
+  "name": "StatsTheSpire Card Drop Probe 1.9.5",
+  "author": "test",
+  "description": "Test-only probe for the next base card reward group panel.",
+  "version": "1.9.5",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "min_game_version": "0.111.1"
+}

@@ -142,14 +142,16 @@ public static class L
         ["potion.elite"] = "Elite combat drop",
 
         // Card drop odds (§3.17)
-        ["carddrop.title"] = "Card Drops (Next Combat)",
-        ["carddrop.subtitle"] = "Single-card rarity odds",
-        ["carddrop.rare"] = "Rare",
-        ["carddrop.uncommon"] = "Uncommon",
-        ["carddrop.common"] = "Common",
+        ["carddrop.title"] = "Next Base Card Reward",
+        ["carddrop.subtitle_3"] = "3 cards in this group; extra reward groups excluded",
+        ["carddrop.subtitle_4"] = "4 cards in this group, including Lasting Candy; extra groups excluded",
+        ["carddrop.rare_count"] = "{0} rare",
+        ["carddrop.at_least_one"] = "At least 1 rare",
         ["carddrop.col_regular"] = "Regular",
         ["carddrop.col_elite"] = "Elite",
-        ["carddrop.boss_row"] = "Boss reward: {0}",
+        ["carddrop.boss_group"] = "Boss reward: {0} rare",
+        ["carddrop.extra_groups_note"] = "Extra groups from Prayer Wheel, White Star, and The Hunt are excluded; they can change later odds.",
+        ["carddrop.unavailable"] = "Probability unavailable",
 
         // Shop prices (§3.16)
         ["shop.title"] = "Shop Prices",
@@ -476,14 +478,16 @@ public static class L
         ["potion.elite"] = "精英战掉落",
 
         // Card drop odds (§3.17)
-        ["carddrop.title"] = "卡牌掉落(下一场)",
-        ["carddrop.subtitle"] = "单张卡牌各稀有度出率",
-        ["carddrop.rare"] = "稀有",
-        ["carddrop.uncommon"] = "罕见",
-        ["carddrop.common"] = "普通",
+        ["carddrop.title"] = "下一组基础卡牌奖励",
+        ["carddrop.subtitle_3"] = "本组 3 张，不含额外奖励组",
+        ["carddrop.subtitle_4"] = "本组 4 张，含「吃不完的糖」，不含额外奖励组",
+        ["carddrop.rare_count"] = "{0} 张稀有",
+        ["carddrop.at_least_one"] = "至少 1 张稀有",
         ["carddrop.col_regular"] = "普通战斗",
         ["carddrop.col_elite"] = "精英战斗",
-        ["carddrop.boss_row"] = "Boss奖励：{0}",
+        ["carddrop.boss_group"] = "Boss奖励：{0} 张稀有",
+        ["carddrop.extra_groups_note"] = "转经轮、白星、狩猎的奖励组不计入本组；它们可能改变后续偏移。",
+        ["carddrop.unavailable"] = "概率不可用",
 
         // Shop prices (§3.16)
         ["shop.title"] = "商店价格",

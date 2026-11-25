@@ -536,6 +536,34 @@
 
 说明：`ButtonProbe/` 按文件夹整体登记，包含 `bin/` 与 `obj/`；日志由 `.gitignore` 排除。测试探针已移出游戏 `mods`，存放于 `TMP/1.9.1/removed-button-probe-2026-11-25/`。
 
+## 1.9.5
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `CardRewardOddsProbe/` | 2026-11-25 07:40 | 否 | 408 | 纯计算卡牌组探针；A0/A7+、普通/精英、3/4 张、Boss、BigGameHunter、稀有度缺失、偏移与非法输入；目录整体登记 | 是 |
+| `CardDropProbe/` | 2026-11-25 07:41 | 否 | 243 | 游戏内真实悬停面板探针；标题、3 张副标题、0..3 行、至少 1 行、额外组说明与偏移刷新；目录整体登记 | 是 |
+| `build-v113-195.log` | 2026-11-25 07:40 | 否 | 4 | 第一次 1.9.5 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113-195b.log` | 2026-11-25 07:42 | 否 | 4 | 版本升至 1.9.5 后的中间 v0.113.1 Release 构建；0 错误 | 是 |
+| `build-v111-195.log` | 2026-11-25 07:42 | 否 | 4 | 1.9.5 v0.111.1 参考程序集 Release 构建；0 错误 | 是 |
+| `build-v111-195b.log` | 2026-11-25 07:50 | 否 | 4 | 版本升至 1.9.5 后的中间 v0.111.1 Release 构建；0 错误、DLL 哈希与 v0.113.1 相同 | 是 |
+| `build-v113-195c.log` | 2026-11-25 07:53 | 否 | 4 | BigGameHunter 糖果第 4 张修正后的最终 v0.113.1 Release 构建；0 错误 | 是 |
+| `build-v111-195c.log` | 2026-11-25 07:53 | 否 | 4 | BigGameHunter 糖果第 4 张修正后的最终 v0.111.1 Release 构建；0 错误、DLL 哈希与 v0.113.1 相同 | 是 |
+| `build-v113-195d.log` | 2026-11-25 07:56 | 否 | 4 | BGH 精英列修正后的最终 v0.113.1 Release 构建；0 错误 | 是 |
+| `build-v111-195d.log` | 2026-11-25 07:56 | 否 | 4 | BGH 精英列修正后的最终 v0.111.1 Release 构建；0 错误、DLL 哈希与 v0.113.1 相同 | 是 |
+| `card-drop-probe-build-c.log` | 2026-11-25 07:56 | 否 | 1 | 最终 UI 探针构建；0 错误 | 是 |
+| `card-drop-probe-stdout-c.log` | 2026-11-25 07:57 | 否 | 384 | 最终 v0.113.1 UI 探针；`initialPanel=True`、`refreshedPanel=True`、`RESULT PASS` | 是 |
+| `final-load-195c-stdout.log` | 2026-11-25 07:58 | 否 | 386 | 最终隔离测试路径加载 1.9.5；一次 `v1.9.5 initializing`、设置页与 `Ctrl+F8` 注册；外部 45 秒超时终止 | 是 |
+| `card-reward-odds-probe-stdout-b.log` | 2026-11-25 07:53 | 否 | 1 | 修正后纯计算探针 16/16 PASS，EXIT=0 | 是 |
+| `card-drop-probe-build-b.log` | 2026-11-25 07:53 | 否 | 1 | 修正后游戏内 UI 探针构建；0 错误 | 是 |
+| `card-drop-probe-stdout-b.log` | 2026-11-25 07:54 | 否 | 384 | 修正后 v0.113.1 UI 探针；`initialPanel=True`、`refreshedPanel=True`、`RESULT PASS` | 是 |
+| `final-load-195b-stdout.log` | 2026-11-25 07:55 | 否 | 386 | 修正后隔离测试路径加载 1.9.5；一次 `v1.9.5 initializing`、设置页与 `Ctrl+F8` 注册；外部 45 秒超时终止 | 是 |
+| `card-reward-odds-probe-stdout.log` | 2026-11-25 07:40 | 否 | 1 | 纯计算探针 16/16 PASS，EXIT=0 | 是 |
+| `card-drop-probe-build.log` | 2026-11-25 07:41 | 否 | 1 | 游戏内 UI 探针构建；0 错误 | 是 |
+| `card-drop-probe-stdout.log` | 2026-11-25 07:45 | 否 | 384 | v0.113.1 UI 探针；`initialPanel=True`、`refreshedPanel=True`、`RESULT PASS` | 是 |
+| `final-load-195-stdout.log` | 2026-11-25 07:46 | 否 | 386 | 隔离测试路径加载 1.9.5；一次 `v1.9.5 initializing`、设置页与 `Ctrl+F8` 注册；外部 45 秒超时终止 | 是 |
+
+说明：`CardRewardOddsProbe/` 与 `CardDropProbe/` 按文件夹整体登记，包含 `bin/` 与 `obj/`；UI 探针使用 `mods_STEAMTEST` 临时部署，已移出游戏目录。v0.111.1 仅构建，未运行。
+
 ## 1.9.4
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
