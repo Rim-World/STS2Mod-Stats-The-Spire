@@ -553,6 +553,8 @@
 | `card-drop-probe-build-c.log` | 2026-11-25 07:56 | 否 | 1 | 最终 UI 探针构建；0 错误 | 是 |
 | `card-drop-probe-stdout-c.log` | 2026-11-25 07:57 | 否 | 384 | 最终 v0.113.1 UI 探针；`initialPanel=True`、`refreshedPanel=True`、`RESULT PASS` | 是 |
 | `final-load-195c-stdout.log` | 2026-11-25 07:58 | 否 | 386 | 最终隔离测试路径加载 1.9.5；一次 `v1.9.5 initializing`、设置页与 `Ctrl+F8` 注册；外部 45 秒超时终止 | 是 |
+| `verify-version-195c.log` | 2026-11-25 08:00 | 否 | 1 | 最终版本校验；`version-ok 1.9.5` | 是 |
+| `check-release-195-final.log` | 2026-11-25 08:08 | 否 | 1 | 提交后发布门禁；12/12 PASS | 是 |
 | `card-reward-odds-probe-stdout-b.log` | 2026-11-25 07:53 | 否 | 1 | 修正后纯计算探针 16/16 PASS，EXIT=0 | 是 |
 | `card-drop-probe-build-b.log` | 2026-11-25 07:53 | 否 | 1 | 修正后游戏内 UI 探针构建；0 错误 | 是 |
 | `card-drop-probe-stdout-b.log` | 2026-11-25 07:54 | 否 | 384 | 修正后 v0.113.1 UI 探针；`initialPanel=True`、`refreshedPanel=True`、`RESULT PASS` | 是 |
