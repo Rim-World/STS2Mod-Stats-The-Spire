@@ -548,8 +548,10 @@
 | `card-drop-probe-build.log` | 2026-11-25 08:06 | 否 | 1 | 1.9.6 UI 探针构建；0 错误 | 是 |
 | `card-drop-probe-stdout.log` | 2026-11-25 08:07 | 否 | 384 | 1.9.6 v0.113.1 UI 探针；`RESULT PASS` | 是 |
 | `final-load-196-stdout.log` | 2026-11-25 08:08 | 否 | 386 | 1.9.6 隔离主 Mod 加载；一次 `v1.9.6 initializing` | 是 |
-| `verify-version-196.log` | 2026-11-25 08:11 | 否 | 1 | 1.9.6 版本校验；`version-ok 1.9.6` | 是 |
-| `check-release-196.log` | 2026-11-25 08:11 | 否 | 1 | 1.9.6 发布门禁；12/12 PASS | 是 |
+| `verify-version-196.log` | 2026-11-25 08:09 | 否 | 1 | 1.9.6 版本校验；`version-ok 1.9.6` | 是 |
+| `check-release-196.log` | 2026-11-25 08:09 | 否 | 1 | 1.9.6 发布门禁；12/12 PASS | 是 |
+| `verify-version-196-final.log` | 2026-11-25 08:10 | 否 | 1 | 提交后最终版本校验；`version-ok 1.9.6` | 是 |
+| `check-release-196-final.log` | 2026-11-25 08:10 | 否 | 1 | 提交后最终发布门禁；12/12 PASS | 是 |
 
 说明：`CardRewardOddsProbe/` 与 `CardDropProbe/` 按文件夹整体登记；测试探针使用 `mods_STEAMTEST`，已移出游戏目录。
 
