@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-27 03:16 | `sts2_statsthespire_local.dll` | 1.10.0 | 566,272 字节 | 适配 v0.114.0 与 RitsuLib 0.6.16；HappyFlower/FakeHappyFlower 改用 `AfterPlayerTurnStartEarly`，TunePower 运行时选择 `AfterSideTurnEnd`/`AfterCardPlayed`；SHA-256 `933dc72a2c29f9f50908716a0e8d336ae4a862c7d31b1827cfd1bb2b3b97e46b`；v0.111.1、v0.113.1、v0.114.0 Release 构建 0 错误且 DLL 哈希一致；v0.114.0 隔离加载 816 条绑定、453 个目标、Fool 34/34；标准 AutoSlayer 种子 71401 victory、3/3 幕、49 层、28 场战斗 |
 | 2026-11-25 08:10 | `sts2_statsthespire_local.dll` | 1.9.6 | 565,248 字节 | 修正 1.9.5 的「吃不完的糖」奇偶：奖励先填充，`CombatRewardsSeen` 后递增；当前计数为奇数才是 4 张；SHA-256 `14b460b54f15ed98d63885cff85efd7f661b95b7e3f454ba683d76a4cbf70f16`；双版本 Release 构建 0 错误；纯计算 16/16、v0.113.1 UI 探针与隔离主 Mod 加载 PASS；真实糖果局 UI、v0.111.1 运行与视觉未做 |
 | 2026-11-25 08:02 | `sts2_statsthespire_local.dll` | 1.9.5 | 565,248 字节 | 已废止：顶栏卡牌掉落改为「下一组基础卡牌奖励」稀有数量分布；但「吃不完的糖」3/4 张奇偶预测相反，已由 1.9.6 修正；SHA-256 `08a22766be47f8a614510b5be2e5a8a75fbd637084ee17ba1763753793e023e0`；纯计算/UI 探针通过但未覆盖真实糖果时序 |
 | 2026-11-25 05:11 | `sts2_statsthespire_local.dll` | 1.9.4 | 553,472 字节 | 独立审计修复：Godot `user://` 路径转 OS 路径；读取全部三个 profile 的当前存档；仅删除 `{StartTime}_{seed}` Run 目录；未知目录保留；根与嵌套 reparse 预扫描；路径必须为绝对 OS 路径；SHA-256 `9387ef9c177d1c6d25510551a794a683638d95745d4d1e75094b93b030a4fa92`；双版本 Release 构建 0 错误；门禁 12/12；v0.113.1 真实 save 探针 PASS；已安装 1.9.4 并加载；v0.111.1 未运行 |

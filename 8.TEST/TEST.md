@@ -536,6 +536,28 @@
 
 说明：`ButtonProbe/` 按文件夹整体登记，包含 `bin/` 与 `obj/`；日志由 `.gitignore` 排除。测试探针已移出游戏 `mods`，存放于 `TMP/1.9.1/removed-button-probe-2026-11-25/`。
 
+## 1.10.0
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `build-v114-1100.log` | 2026-11-27 03:16 | 否 | 4 | 1.10.0 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113-1100.log` | 2026-11-27 03:16 | 否 | 4 | 1.10.0 v0.113.1 Release 构建；0 错误；DLL 哈希与 v0.114.0 相同 | 是 |
+| `build-v111-1100.log` | 2026-11-27 03:16 | 否 | 4 | 1.10.0 v0.111.1 Release 构建；0 错误；DLL 哈希与 v0.114.0 相同 | 是 |
+| `load-114-prefix-stdout.log` | 2026-11-27 03:08 | 否 | 292 | 修复前 v0.114.0 加载；HappyFlower/FakeHappyFlower 与 TunePower 目标失败；810 条绑定、450 个目标 | 是 |
+| `load-114-fixed-stdout.log` | 2026-11-27 03:12 | 否 | 292 | 修复后 v0.114.0 加载；816 条绑定、453 个目标；Fool 34/34；`v1.9.6 initializing` | 是 |
+| `autoslay-gate-build.log` | 2026-11-27 03:11 | 否 | 1 | AutoSlay 测试门构建；0 错误 | 是 |
+| `autoslay-71401-stdout.log` | 2026-11-27 03:12 | 否 | 197 | v0.114.0 标准 AutoSlayer 种子 71401；第 8 层战斗退出码 1 | 是 |
+| `autoslay-71401-game.log` | 2026-11-27 03:12 | 否 | 20 | 同一 AutoSlayer 的游戏日志；运行到第 8 层 | 是 |
+| `autoslay-71401-nomod-stdout.log` | 2026-11-27 03:19 | 否 | 201 | 同种子、禁用本 Mod 的对照；300 秒超时，仍在对局中 | 是 |
+| `autoslay-71401-nomod-game.log` | 2026-11-27 03:19 | 否 | 94 | 同一对照的游戏日志；到达第 2 幕 Boss | 是 |
+| `autoslay-71401-retry-stdout.log` | 2026-11-27 03:25 | 否 | 438 | 1.10.0 复跑；300 秒超时，到达第 2 幕 Boss 第 33 层，无提前退出 | 是 |
+| `autoslay-71401-retry-game.log` | 2026-11-27 03:25 | 否 | 93 | 同一复跑的游戏日志；第 2 幕 Boss 战斗 | 是 |
+| `autoslay-71401-full-stdout.log` | 2026-11-27 03:33 | 否 | 639 | v0.114.0 完整标准 AutoSlayer；victory、3/3 幕、49 层、28 场战斗、退出码 0 | 是 |
+| `autoslay-71401-full-game.log` | 2026-11-27 03:33 | 否 | 142 | 同一完整局的游戏日志；`Run completed successfully` | 是 |
+| `final-load-1100-stdout.log` | 2026-11-27 03:18 | 否 | 161 | 1.10.0 最终加载；`v1.10.0 initializing`、Ctrl+F8、816 条绑定、453 个目标、Fool 34/34 | 是 |
+
+说明：AutoSlayer 测试使用 `mods_STEAMTEST` 的独立测试 ID 与 `stats_autoslay_gate`；RitsuLib 0.6.16 本地测试安装位于游戏 `mods/STS2-RitsuLib`，测试结束后恢复设置与目录。
+
 ## 1.9.6
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |

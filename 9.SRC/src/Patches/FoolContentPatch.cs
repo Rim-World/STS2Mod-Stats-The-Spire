@@ -61,8 +61,9 @@ public static class FoolContentPatch
         (PowerNamespace + "SimpletonPower", "AfterAutoPostPlayPhaseEntered", true),
         // 歌之道：首次打出「唱」旋律时获得格挡
         (PowerNamespace + "SongPathPower", "AfterCardPlayed", true),
-        // 调音：回合结束应用「免费牌」，把来源传给 FreeCardPower
-        (PowerNamespace + "TunePower", "AfterSideTurnEnd", true),
+        // 调音：v0.113 在回合结束应用「免费牌」；v0.114 改为
+        // 获得 Ki 旋律时升级手牌。两者都要建立来源上下文，具体目标由
+        // TryPatchTune 在运行时选择。
         // 暴力和弦：首次打出「哇」旋律时对全体敌人造成伤害
         (PowerNamespace + "ViolentChordPower", "AfterCardPlayed", true),
         // 呀！：箭被拔出时获得能量
@@ -140,8 +141,12 @@ public static class FoolContentPatch
                 skipped++;
         }
 
-        Safe.Info($"[FoolContent] {installed} hooks installed, {skipped} skipped (targets={Targets.Length})");
         TryPatchEnnuiHandDraw(harmony);
+        if (TryPatchTune(harmony, powerPrefix, powerPostfix))
+            installed++;
+        else
+            skipped++;
+        Safe.Info($"[FoolContent] {installed} hooks installed, {skipped} skipped (targets={Targets.Length + 1})");
     }
 
     /// <summary>
@@ -177,6 +182,37 @@ public static class FoolContentPatch
         {
             Safe.Warn($"[FoolContent] EnnuiPower.ModifyHandDraw failed: {ex.Message}");
         }
+    }
+
+    private static bool TryPatchTune(Harmony harmony, HarmonyMethod powerPrefix,
+        HarmonyMethod powerPostfix)
+    {
+        var type = AccessTools.TypeByName(PowerNamespace + "TunePower");
+        if (type == null)
+        {
+            Safe.Warn("[FoolContent] TunePower type not found; skipped");
+            return false;
+        }
+
+        foreach (var methodName in new[] { "AfterSideTurnEnd", "AfterCardPlayed" })
+        {
+            var method = AccessTools.DeclaredMethod(type, methodName);
+            if (method == null) continue;
+
+            try
+            {
+                harmony.Patch(method, prefix: powerPrefix, postfix: powerPostfix);
+                Safe.Info($"[FoolContent] TunePower.{methodName} installed");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Safe.Warn($"[FoolContent] TunePower.{methodName} failed: {ex.Message}");
+            }
+        }
+
+        Safe.Warn("[FoolContent] TunePower has no compatible hook; skipped");
+        return false;
     }
 
     public static void AfterEnnuiHandDraw(PowerModel __instance, Player player,

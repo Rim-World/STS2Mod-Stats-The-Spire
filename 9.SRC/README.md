@@ -2,7 +2,7 @@
 
 Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统计、怪物意图状态机、药水/卡牌掉落概率、问号房间概率与商店价格。
 
-本仓库是基于作者公开源码的维护分支，按 MIT License 发布，许可证全文见 `LICENSE`。同一 DLL 目标兼容游戏 v0.111.1 与 v0.113.1。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
+本仓库是基于作者公开源码的维护分支，按 MIT License 发布，许可证全文见 `LICENSE`。同一 DLL 目标兼容游戏 v0.111.1、v0.113.1 与 v0.114.0。本 Mod 代码不联网、不上传数据、不修改游戏平衡；硬依赖 RitsuLib 自身可能发送遥测。
 
 ## 功能
 
@@ -21,7 +21,7 @@ Slay the Spire 2 的纯离线统计 Mod。显示战斗贡献、个人生涯统�
 - .NET SDK 9.0
 - Slay the Spire 2 安装目录
 - 游戏自带 `data_sts2_windows_x86_64` 下的 `sts2.dll`、`GodotSharp.dll`、`0Harmony.dll`
-- NuGet 包 `STS2.RitsuLib 0.6.14`（`dotnet restore` 自动获取）
+- NuGet 包 `STS2.RitsuLib.Compat.0.111.0 0.6.16`（`dotnet restore` 自动获取）
 
 ```bash
 dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the Spire 2 安装目录>"
@@ -55,8 +55,8 @@ dotnet build sts2_statsthespire_local.csproj -c Debug -p:STS2GameDir="<Slay the 
 
 ## 兼容性
 
-- 单一构建：同一个 `sts2_statsthespire_local.dll` 目标兼容 v0.111.1 与 v0.113.1。
-- 源码已通过两个版本的 `sts2.dll` 编译。
+- 单一构建：同一个 `sts2_statsthespire_local.dll` 目标兼容 v0.111.1、v0.113.1 与 v0.114.0。
+- 源码已通过三个版本的 `sts2.dll` 编译。
 - 1.4.4 已在 v0.113.1 与 v0.111.1 完成实机验证。
 - 1.5.0 的 RitsuLib 设置页、热键、放弃/胜利收尾和同 seed 隔离已在 v0.111.1 与 v0.113.1 验证。
 - 1.5.1 补上 legacy 续局商店购买复制、设置损坏日志与 `min_game_version` 修正；源码通过两版程序集构建。

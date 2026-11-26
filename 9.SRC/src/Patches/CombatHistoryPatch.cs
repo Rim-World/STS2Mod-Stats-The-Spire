@@ -353,8 +353,16 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(Candelabra), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(Chandelier), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(Lantern), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(HappyFlower), "AfterSideTurnStart", prefix, postfix);
-        TryPatch(harmony, typeof(FakeHappyFlower), "AfterSideTurnStart", prefix, postfix);
+        // HappyFlower moved its energy grant from AfterSideTurnStart
+        // (v0.113) to BeforeSideTurnStart + AfterPlayerTurnStartEarly
+        // (v0.114). Patch the early player-turn hook on 0.114 so the
+        // energy still receives the relic as its source.
+        Safe.TryPatchFirst(harmony, typeof(HappyFlower),
+            new[] { "AfterSideTurnStart", "AfterPlayerTurnStartEarly" },
+            prefix, postfix, "[RelicPatch]");
+        Safe.TryPatchFirst(harmony, typeof(FakeHappyFlower),
+            new[] { "AfterSideTurnStart", "AfterPlayerTurnStartEarly" },
+            prefix, postfix, "[RelicPatch]");
         TryPatch(harmony, typeof(GremlinHorn), "AfterDeath", prefix, postfix);
 
         // ── Draw relics ──
@@ -1249,7 +1257,7 @@ public static class RealDamageGuardPatch
             });
             if (root != null)
             {
-                TryPatchMethod(harmony, root, prefix, postfix, "v0.113 root (DamageTargetData)");
+                TryPatchMethod(harmony, root, prefix, postfix, "modern root (DamageTargetData)");
                 patched++;
             }
         }

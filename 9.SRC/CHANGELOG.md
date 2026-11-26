@@ -2,6 +2,20 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.10.0] - 2026-11-27
+
+### Changed
+- Add Slay the Spire 2 v0.114.0 support while keeping v0.111.1 and v0.113.1.
+- Upgrade the compile dependency to `STS2.RitsuLib.Compat.0.111.0` 0.6.16; the manifest now requires RitsuLib 0.6.16.
+- `HappyFlower` and `FakeHappyFlower` now patch `AfterPlayerTurnStartEarly` on v0.114.0 and keep `AfterSideTurnStart` on v0.113.1.
+- `TunePower` selects `AfterSideTurnEnd` on v0.113.1 and `AfterCardPlayed` on v0.114.0 at runtime.
+- Remove the `v0.113` label from the modern `CreatureCmd.Damage` root guard; the same `DamageTargetData` overload works on v0.114.0.
+
+### Verification
+- Release builds against v0.111.1, v0.113.1, and v0.114.0: 0 errors, 7 existing nullable warnings.
+- v0.114.0 + RitsuLib 0.6.16 isolated load: one `v1.10.0 initializing`; settings page registered; `PatchInventory` 816 bound entries and 453 distinct targets; `FoolContent` 34/34 hooks.
+- v0.114.0 standard AutoSlayer seed 71401: victory, Silent, standard, 3/3 acts, floor 49, 28 combats, 71 summary sources, exit code 0. First run exited with code 1 at floor 8; a retry reached Act 2 Boss, and the full run completed.
+
 ## [1.9.6] - 2026-11-25
 
 ### Fixed

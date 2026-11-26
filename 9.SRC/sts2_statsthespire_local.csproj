@@ -8,9 +8,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.9.6</Version>
-    <AssemblyVersion>1.9.6.0</AssemblyVersion>
-    <FileVersion>1.9.6.0</FileVersion>
+    <Version>1.10.0</Version>
+    <AssemblyVersion>1.10.0.0</AssemblyVersion>
+    <FileVersion>1.10.0.0</FileVersion>
 
     <!-- Reproducible release binaries must not embed the builder's profile path. -->
     <Deterministic>true</Deterministic>
@@ -35,7 +35,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
 
     <!--
-      One DLL supports v0.111.1 and v0.113.1. Version-specific game APIs are
+      One DLL supports v0.111.1, v0.113.1, and v0.114.0. Version-specific game APIs are
       selected at runtime; do not define per-version compilation symbols.
     -->
   </PropertyGroup>
@@ -46,7 +46,7 @@
     copy RitsuLib assemblies into this mod's output.
   -->
   <ItemGroup>
-    <PackageReference Include="STS2.RitsuLib" Version="0.6.14" PrivateAssets="all" />
+    <PackageReference Include="STS2.RitsuLib.Compat.0.111.0" Version="0.6.16" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- STS2 game assemblies -->
