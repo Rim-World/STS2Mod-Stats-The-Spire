@@ -555,6 +555,8 @@
 | `autoslay-71401-full-stdout.log` | 2026-11-27 03:33 | 否 | 639 | v0.114.0 完整标准 AutoSlayer；victory、3/3 幕、49 层、28 场战斗、退出码 0 | 是 |
 | `autoslay-71401-full-game.log` | 2026-11-27 03:33 | 否 | 142 | 同一完整局的游戏日志；`Run completed successfully` | 是 |
 | `final-load-1100-stdout.log` | 2026-11-27 03:18 | 否 | 161 | 1.10.0 最终加载；`v1.10.0 initializing`、Ctrl+F8、816 条绑定、453 个目标、Fool 34/34 | 是 |
+| `verify-version-1100.log` | 2026-11-27 03:34 | 否 | 1 | 1.10.0 版本校验；`version-ok 1.10.0` | 是 |
+| `check-release-1100.log` | 2026-11-27 03:34 | 否 | 1 | 1.10.0 发布门禁；12/12 PASS | 是 |
 
 说明：AutoSlayer 测试使用 `mods_STEAMTEST` 的独立测试 ID 与 `stats_autoslay_gate`；RitsuLib 0.6.16 本地测试安装位于游戏 `mods/STS2-RitsuLib`，测试结束后恢复设置与目录。
 
