@@ -8,6 +8,8 @@ public class ContributionAccum
     public string SourceId { get; set; } = "";
     public string SourceType { get; set; } = "card"; // "card" | "relic" | "potion"
     public int TimesPlayed { get; set; }
+    /// <summary>Number of times this source auto-played a card. Manual plays stay in TimesPlayed.</summary>
+    public int AutoPlayedCount { get; set; }
     public int DirectDamage { get; set; }
     public int AttributedDamage { get; set; }   // indirect (poison, vuln bonus, etc.)
     public int ModifierDamage { get; set; }      // from additive/multiplicative modifiers (Strength, etc.)
@@ -37,6 +39,7 @@ public class ContributionAccum
     public void MergeFrom(ContributionAccum other)
     {
         TimesPlayed += other.TimesPlayed;
+        AutoPlayedCount += other.AutoPlayedCount;
         DirectDamage += other.DirectDamage;
         AttributedDamage += other.AttributedDamage;
         ModifierDamage += other.ModifierDamage;

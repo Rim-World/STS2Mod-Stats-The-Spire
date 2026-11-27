@@ -46,6 +46,11 @@ public sealed class CombatTracker
     private static readonly AsyncLocal<string?> _activeCardOriginAL = new();
     private static readonly AsyncLocal<string?> _activeRelicIdAL = new();
     private static readonly AsyncLocal<string?> _activePotionIdAL = new();
+    // Root source of the current auto-play chain. Null for manual card plays.
+    // Nested auto-plays inherit this value; a nested manual play temporarily
+    // clears it and restores it when that manual card finishes.
+    private static readonly AsyncLocal<string?> _autoRootIdAL = new();
+    private static readonly AsyncLocal<string?> _autoRootTypeAL = new();
     private static readonly AsyncLocal<string?> _activePowerSourceIdAL = new();
     private static readonly AsyncLocal<string?> _activePowerSourceTypeAL = new();
     // 4.18 fix: also remember the power id itself (e.g. "POISON_POWER") so
@@ -102,6 +107,18 @@ public sealed class CombatTracker
     {
         get => _activePotionIdAL.Value;
         set => _activePotionIdAL.Value = value;
+    }
+
+    // Root source of the current auto-play chain.
+    private string? _autoRootId
+    {
+        get => _autoRootIdAL.Value;
+        set => _autoRootIdAL.Value = value;
+    }
+    private string? _autoRootType
+    {
+        get => _autoRootTypeAL.Value;
+        set => _autoRootTypeAL.Value = value;
     }
 
     // Public accessors for source tagging (NEW-1: local cost modifier patches need active context)
@@ -208,8 +225,9 @@ public sealed class CombatTracker
     // are the base draw; only later cards consume pending hand-draw bonuses.
     private int _handDrawCount;
     // Nested card plays: save the outer card context and restore it when the
-    // inner play finishes.
-    private readonly AsyncLocal<Stack<(string? CardId, string? CardOrigin)>?> _cardContextStackAL = new();
+    // inner play finishes. AutoRootId is saved too so a manual card nested in
+    // an auto chain does not inherit the auto source.
+    private readonly AsyncLocal<Stack<(string? CardId, string? CardOrigin, string? AutoRootId, string? AutoRootType)>?> _cardContextStackAL = new();
     // A single combat can reach the flush path more than once (victory fires
     // CombatRoom.OnCombatEnded and later CombatManager.CombatEnded; defeat only
     // fires the latter). Flush and display exactly once, and keep the flag true
@@ -240,7 +258,9 @@ public sealed class CombatTracker
         string? PotionId,
         string? PowerSourceId,
         string? PowerSourceType,
-        string? PowerId);
+        string? PowerId,
+        string? AutoRootId,
+        string? AutoRootType);
 
     public AttributionContext CaptureAttributionContext() => new(
         _activeCardId,
@@ -249,7 +269,9 @@ public sealed class CombatTracker
         _activePotionId,
         _activePowerSourceId,
         _activePowerSourceType,
-        _activePowerId);
+        _activePowerId,
+        _autoRootId,
+        _autoRootType);
 
     public void RestoreAttributionContext(AttributionContext context)
     {
@@ -260,6 +282,8 @@ public sealed class CombatTracker
         _activePowerSourceId = context.PowerSourceId;
         _activePowerSourceType = context.PowerSourceType;
         _activePowerId = context.PowerId;
+        _autoRootId = context.AutoRootId;
+        _autoRootType = context.AutoRootType;
     }
 
     // Public DPS accessors (PRD 3.7)
@@ -401,6 +425,8 @@ public sealed class CombatTracker
         _activePowerSourceId = null;
         _activePowerSourceType = null;
         _activePowerId = null;
+        _autoRootId = null;
+        _autoRootType = null;
         _encounterId = encounterId;
         _encounterType = encounterType;
         _damageTakenByPlayer = 0;
@@ -449,6 +475,8 @@ public sealed class CombatTracker
         _currentCombat.Clear();
         _energyNextTurnLayers.Clear();
         _handDrawCount = 0;
+        _autoRootId = null;
+        _autoRootType = null;
         ContributionMap.Instance.ClearPendingHandDrawBonus();
         ClearPendingDrawSource();
         ClearPendingPowerSource();
@@ -468,13 +496,46 @@ public sealed class CombatTracker
     public string? ActivePowerSourceId => _activePowerSourceId;
     public string? ActivePowerSourceType => _activePowerSourceType;
     public string? ActivePowerId => _activePowerId;
+    public string? ActiveAutoRootId => _autoRootId;
+    public string? ActiveAutoRootType => _autoRootType;
+    public bool IsAutoPlayFrame => _autoRootId != null;
 
     // ── Card Play Tracking ──────────────────────────────────
 
     public void OnCardPlayStarted(string cardId, int cardHash)
+        => OnCardPlayStarted(cardId, cardHash, isAutoPlay: false);
+
+    public void OnCardPlayStarted(string cardId, int cardHash, bool isAutoPlay)
     {
-        var stack = _cardContextStackAL.Value ??= new Stack<(string?, string?)>();
-        stack.Push((_activeCardId, _activeCardOrigin));
+        var origin = ContributionMap.Instance.GetCardOrigin(cardHash);
+        var stack = _cardContextStackAL.Value ??= new Stack<(string?, string?, string?, string?)>();
+        stack.Push((_activeCardId, _activeCardOrigin, _autoRootId, _autoRootType));
+
+        string? autoRootId = null;
+        string? autoRootType = null;
+        if (isAutoPlay)
+        {
+            // Nested auto-plays inherit the outer root. The first auto-play
+            // resolves the source from the hook that triggered it.
+            if (_autoRootId != null)
+            {
+                autoRootId = _autoRootId;
+                autoRootType = _autoRootType;
+            }
+            else
+            {
+                (autoRootId, autoRootType) = ResolveAutoPlayRoot(origin);
+            }
+
+            // No context at all: the auto-played card is the only honest
+            // source. It still uses AutoPlayedCount, never TimesPlayed.
+            if (string.IsNullOrEmpty(autoRootId))
+            {
+                autoRootId = cardId;
+                autoRootType = "card";
+            }
+        }
+
         _activeCardId = cardId;
         // Safety: clear stale potion context (shouldn't still be set, but guards against
         // edge cases where PotionUsed didn't fire, e.g. combat ended mid-potion)
@@ -482,10 +543,23 @@ public sealed class CombatTracker
         // Fix C: resolve origin BEFORE GetOrCreate so the bucket key routes correctly
         // on first write. A deck-native BATTLE_TRANCE and a potion-generated BATTLE_TRANCE
         // now land in distinct buckets instead of colliding by plain cardId.
-        var origin = ContributionMap.Instance.GetCardOrigin(cardHash);
         _activeCardOrigin = origin?.originId;
-        var accum = GetOrCreate(cardId, "card");
-        accum.TimesPlayed++;
+        _autoRootId = autoRootId;
+        _autoRootType = autoRootType;
+
+        if (isAutoPlay)
+        {
+            // The auto-played card itself gets no row and no TimesPlayed.
+            // Its whole payload is written to the root source at write time.
+            GetOrCreateAtOrigin(autoRootId!, autoRootType ?? "card", null).AutoPlayedCount++;
+        }
+        else
+        {
+            // A manual card nested in an auto chain temporarily has no auto
+            // root; its own effects stay on its own row.
+            var accum = GetOrCreate(cardId, "card");
+            accum.TimesPlayed++;
+        }
         // Reset orb first-trigger flag so first orb trigger during this card play
         // goes to channeling source, subsequent triggers go to this card.
         ContributionMap.Instance.ResetOrbFirstTrigger();
@@ -503,14 +577,18 @@ public sealed class CombatTracker
         var stack = _cardContextStackAL.Value;
         if (stack != null && stack.Count > 0)
         {
-            var (outerId, outerOrigin) = stack.Pop();
+            var (outerId, outerOrigin, outerAutoId, outerAutoType) = stack.Pop();
             _activeCardId = outerId;
             _activeCardOrigin = outerOrigin;
+            _autoRootId = outerAutoId;
+            _autoRootType = outerAutoType;
         }
         else
         {
             _activeCardId = null;
             _activeCardOrigin = null;
+            _autoRootId = null;
+            _autoRootType = null;
         }
         // Round 14 v5 review §9: defensive clear of pending upgrade state at end
         // of each card play. OnCardPlayStarted already overwrites these each time,
@@ -521,6 +599,65 @@ public sealed class CombatTracker
         _pendingUpgradeSourceId = null;
         _pendingUpgradeSourceType = null;
         _pendingUpgradeSourceOrigin = null;
+    }
+
+    /// <summary>
+    /// Resolve the root source of a new auto-play chain from the live hook
+    /// context. Power, relic, potion and outer card are checked in the same
+    /// priority order as ResolveSource. A generated card's recorded origin is
+    /// the final fallback before treating the auto-played card as its own root.
+    /// </summary>
+    private (string? id, string? type) ResolveAutoPlayRoot(
+        (string originId, string originType)? cardOrigin)
+    {
+        string? id;
+        string? type;
+
+        if (_activePowerSourceId != null)
+        {
+            id = _activePowerSourceId;
+            type = _activePowerSourceType ?? "card";
+        }
+        else if (_activePowerId != null)
+        {
+            // The power hook has no resolved source. The power id still maps
+            // Mayhem / Stampede / Simpleton back to their card rows.
+            id = _activePowerId;
+            type = "power";
+        }
+        else if (_activeRelicId != null)
+        {
+            id = _activeRelicId;
+            type = "relic";
+        }
+        else if (_activePotionId != null)
+        {
+            id = _activePotionId;
+            type = "potion";
+        }
+        else if (_activeCardId != null)
+        {
+            id = _activeCardId;
+            type = "card";
+        }
+        else if (cardOrigin != null)
+        {
+            id = cardOrigin.Value.originId;
+            type = cardOrigin.Value.originType;
+        }
+        else
+        {
+            return (null, null);
+        }
+
+        return id switch
+        {
+            "MAYHEM_POWER" => ("MAYHEM", "card"),
+            "STAMPEDE_POWER" => ("STAMPEDE", "card"),
+            "SIMPLETON_POWER" => ("SIMPLEON", "card"),
+            "SIMPLEON_POWER" => ("SIMPLEON", "card"),
+            _ => (id, type),
+        };
     }
 
     // ── Relic Context Tracking ──────────────────────────────
@@ -600,6 +737,8 @@ public sealed class CombatTracker
         _activePowerSourceId = null;
         _activePowerSourceType = null;
         _activePowerId = null;
+        _autoRootId = null;
+        _autoRootType = null;
         _pendingDrawSourceId = null;
         _pendingDrawSourceType = null;
         _pendingDrawRemainingAL.Value = null;
@@ -652,11 +791,16 @@ public sealed class CombatTracker
     //   - Turn-start/end power hook: _activeCardId is null → power branch
     //     runs (same as before).
     //   - Power hook during card play: both set → power wins (the fix).
-    //   - Explicit cardSourceId arg: still highest priority (caller knows best).
-    //   - Orb context: still above power for orb passive/evoke damage.
+    //   - Auto-play frame: root source wins over cardSourceId and hooks.
+    //   - Explicit cardSourceId arg: next after auto root; caller knows best.
+    //   - Orb context: above power for orb passive/evoke damage.
 
     private (string id, string type) ResolveSource(string? cardSourceId)
     {
+        // The whole auto-play chain belongs to its root source. This overrides
+        // the auto card's own cardSourceId and any nested hook context.
+        if (_autoRootId != null)
+            return (_autoRootId, _autoRootType ?? "card");
         if (cardSourceId != null)
             return (cardSourceId, "card");
         // Orb context takes priority (orb passive/evoke damage always wins)
@@ -823,6 +967,17 @@ public sealed class CombatTracker
                     modifierTotal += mod.Amount;
                 }
             }
+            if (_autoRootId != null)
+            {
+                // Auto-played damage, including its additive/multiplicative
+                // modifiers, is one contribution to the root source.
+                modifiers.Clear();
+                if (modifierTotal > 0)
+                {
+                    modifiers.Add(new ContributionMap.ModifierContribution(
+                        _autoRootId, _autoRootType ?? "card", modifierTotal));
+                }
+            }
         }
 
         // PRD-04 §4.1 — multi-multiplicative modifier scaling.
@@ -854,6 +1009,7 @@ public sealed class CombatTracker
         // SeekingEdge split: non-primary targets get damage attributed to SeekingEdge source
         bool seekingRedirect = false;
         if (ContributionMap.Instance.IsSeekingEdgeActive
+            && _autoRootId == null
             && cardSourceId == "SOVEREIGN_BLADE"
             && targetHash != ContributionMap.Instance.SeekingEdgePrimaryTarget)
         {
@@ -892,7 +1048,10 @@ public sealed class CombatTracker
                 int amount = Math.Min(c.amount, directDamage);
                 if (amount > 0)
                 {
-                    GetOrCreate(c.sourceId, c.sourceType).ModifierDamage += amount;
+                    if (_autoRootId != null)
+                        GetOrCreate(_autoRootId, _autoRootType ?? "card").ModifierDamage += amount;
+                    else
+                        GetOrCreate(c.sourceId, c.sourceType).ModifierDamage += amount;
                     directDamage -= amount;
                 }
             }
@@ -906,11 +1065,15 @@ public sealed class CombatTracker
             if (_pendingUpgradeDamageDelta > 0 && directDamage > 0)
             {
                 int upgSplit = Math.Min(_pendingUpgradeDamageDelta, directDamage);
-                string upgSrcId = _pendingUpgradeSourceId ?? sourceId2;
-                string upgSrcType = _pendingUpgradeSourceType ?? sourceType2;
+                string upgSrcId = _autoRootId ?? _pendingUpgradeSourceId ?? sourceId2;
+                string upgSrcType = _autoRootId != null
+                    ? (_autoRootType ?? "card")
+                    : (_pendingUpgradeSourceType ?? sourceType2);
                 // Fix D: route upgrade bonus to upgrader's origin bucket so SKILL_POTION
                 // Armaments and deck Armaments don't collide on a shared ARMAMENTS bucket.
-                GetOrCreate(upgSrcId, upgSrcType, originOverride: _pendingUpgradeSourceOrigin).UpgradeDamage += upgSplit;
+                // Auto-played cards stay on the root row.
+                GetOrCreate(upgSrcId, upgSrcType,
+                    originOverride: _autoRootId != null ? null : _pendingUpgradeSourceOrigin).UpgradeDamage += upgSplit;
                 directDamage -= upgSplit;
             }
 
@@ -941,7 +1104,7 @@ public sealed class CombatTracker
                 // those power ids on the enemy, so fractions.Count==0 and we
                 // route through the existing single-source resolver.
                 bool distributed = false;
-                if (!hasOrbContext && _activePowerId != null && directDamage > 0)
+                if (_autoRootId == null && !hasOrbContext && _activePowerId != null && directDamage > 0)
                 {
                     // Try debuff-layer fractions first (Poison, Doom — per-enemy stacks)
                     var fractions = ContributionMap.Instance.GetDebuffSourceFractions(
@@ -1113,13 +1276,32 @@ public sealed class CombatTracker
             var modifiers = ContributionMap.Instance.LastBlockModifiers;
             if (modifiers.Count > 0)
             {
-                modifierList = new List<(string, string, int)>();
-                foreach (var mod in modifiers)
+                if (_autoRootId != null)
                 {
-                    if (mod.Amount > 0)
+                    int autoModifierTotal = 0;
+                    foreach (var mod in modifiers)
                     {
-                        modifierList.Add((mod.SourceId, mod.SourceType, mod.Amount));
-                        modifierTotal += mod.Amount;
+                        if (mod.Amount > 0) autoModifierTotal += mod.Amount;
+                    }
+                    if (autoModifierTotal > 0)
+                    {
+                        modifierList = new List<(string, string, int)>
+                        {
+                            (_autoRootId, _autoRootType ?? "card", autoModifierTotal)
+                        };
+                        modifierTotal = autoModifierTotal;
+                    }
+                }
+                else
+                {
+                    modifierList = new List<(string, string, int)>();
+                    foreach (var mod in modifiers)
+                    {
+                        if (mod.Amount > 0)
+                        {
+                            modifierList.Add((mod.SourceId, mod.SourceType, mod.Amount));
+                            modifierTotal += mod.Amount;
+                        }
                     }
                 }
                 modifiers.Clear();
@@ -1132,7 +1314,9 @@ public sealed class CombatTracker
                 if (amt > 0)
                 {
                     modifierList ??= new List<(string, string, int)>();
-                    modifierList.Add((c.sourceId, c.sourceType, amt));
+                    modifierList.Add(_autoRootId != null
+                        ? (_autoRootId, _autoRootType ?? "card", amt)
+                        : (c.sourceId, c.sourceType, amt));
                     modifierTotal += amt;
                 }
             }
@@ -1153,8 +1337,10 @@ public sealed class CombatTracker
             if (_pendingUpgradeBlockDelta > 0 && baseAmount > 0)
             {
                 upgSplit = Math.Min(_pendingUpgradeBlockDelta, baseAmount);
-                upgSrcId = _pendingUpgradeSourceId ?? sourceId;
-                upgSrcType = _pendingUpgradeSourceType ?? sourceType;
+                upgSrcId = _autoRootId ?? _pendingUpgradeSourceId ?? sourceId;
+                upgSrcType = _autoRootId != null
+                    ? (_autoRootType ?? "card")
+                    : (_pendingUpgradeSourceType ?? sourceType);
             }
 
             int poolBaseAmount = baseAmount - upgSplit;
@@ -1184,7 +1370,9 @@ public sealed class CombatTracker
             if (upgSplit > 0)
             {
                 // Fix D: route upgrade block to upgrader's origin bucket.
-                GetOrCreate(upgSrcId, upgSrcType, originOverride: _pendingUpgradeSourceOrigin).UpgradeBlock += upgSplit;
+                // Auto-played cards stay on the root row with no child origin.
+                GetOrCreate(upgSrcId, upgSrcType,
+                    originOverride: _autoRootId != null ? null : _pendingUpgradeSourceOrigin).UpgradeBlock += upgSplit;
             }
         }
     }
@@ -1193,6 +1381,14 @@ public sealed class CombatTracker
 
     public void OnPowerSourceRecorded(string powerId)
     {
+        // Auto-played card effects belong to the root source, including the
+        // powers they apply. The later power tick must resolve back to that root.
+        if (_autoRootId != null)
+        {
+            ContributionMap.Instance.RecordPowerSource(
+                powerId, _autoRootId, _autoRootType ?? "card");
+            return;
+        }
         // Fix 3.6: power > relic > potion > card priority. When a relic hook
         // (e.g. BurningBlood applying Heal, or a relic's AfterCardPlayed buff)
         // fires during card play, the power source attribution must follow
@@ -1239,14 +1435,25 @@ public sealed class CombatTracker
     public void OnPowerApplied(string powerId, decimal amount, int creatureHash, bool isPlayerTarget,
         bool isLocalOwner = true)
     {
-        // Fix 3.6: power > relic > potion > card priority (see ResolveSource notes).
-        string? sourceId = _activePowerSourceId ?? _activeRelicId ?? _activePotionId ?? _activeCardId;
-        string sourceType = _activePowerSourceId != null ? (_activePowerSourceType ?? "card") :
+        // Fix 3.6: auto root > power > relic > potion > card priority.
+        string? sourceId;
+        string sourceType;
+        if (_autoRootId != null)
+        {
+            sourceId = _autoRootId;
+            sourceType = _autoRootType ?? "card";
+        }
+        else
+        {
+            sourceId = _activePowerSourceId ?? _activeRelicId ?? _activePotionId ?? _activeCardId;
+            sourceType = _activePowerSourceId != null ? (_activePowerSourceType ?? "card") :
                             _activeRelicId != null ? "relic" :
                             _activePotionId != null ? "potion" :
                             _activeCardId != null ? "card" : "card";
+        }
 
-        if (TryConsumePendingPowerSource(powerId, out var pendingId, out var pendingType))
+        if (TryConsumePendingPowerSource(powerId, out var pendingId, out var pendingType)
+            && _autoRootId == null)
         {
             sourceId = pendingId;
             sourceType = pendingType;
@@ -1319,6 +1526,11 @@ public sealed class CombatTracker
     /// </summary>
     public void OnPowerDamage(string powerId, int damage)
     {
+        if (_autoRootId != null)
+        {
+            GetOrCreate(_autoRootId, _autoRootType ?? "card").AttributedDamage += damage;
+            return;
+        }
         var source = ContributionMap.Instance.GetPowerSource(powerId);
         if (source != null)
         {
@@ -1373,6 +1585,14 @@ public sealed class CombatTracker
 
     public void OnCardDrawn(bool fromHandDraw)
     {
+        if (_autoRootId != null)
+        {
+            GetOrCreate(_autoRootId, _autoRootType ?? "card").CardsDrawn++;
+            // A pending source must not leak past the auto frame.
+            ClearPendingDrawSource();
+            return;
+        }
+
         if (fromHandDraw)
         {
             // The base five cards are not a bonus. Only actual cards beyond
@@ -1423,6 +1643,12 @@ public sealed class CombatTracker
     public void OnEnergyGained(int amount)
     {
         if (amount <= 0) return;
+
+        if (_autoRootId != null)
+        {
+            GetOrCreate(_autoRootId, _autoRootType ?? "card").EnergyGained += amount;
+            return;
+        }
 
         // EnergyNextTurnPower merges every card's stacks into one power.
         // The generic source lookup returns only the first card, which made
@@ -1480,7 +1706,10 @@ public sealed class CombatTracker
     public void AddEnergyBonusDirect(string sourceId, string sourceType, int amount)
     {
         if (amount <= 0 || string.IsNullOrEmpty(sourceId)) return;
-        GetOrCreate(sourceId, sourceType).EnergyGained += amount;
+        if (_autoRootId != null)
+            GetOrCreate(_autoRootId, _autoRootType ?? "card").EnergyGained += amount;
+        else
+            GetOrCreate(sourceId, sourceType).EnergyGained += amount;
     }
 
     /// <summary>Called when player gains Stars (GainStars hook).</summary>
@@ -1611,6 +1840,25 @@ public sealed class CombatTracker
     {
         if (totalDamage <= 0 || string.IsNullOrEmpty(cardSourceId)) return;
 
+        if (_autoRootId != null)
+        {
+            GetOrCreate(_autoRootId, _autoRootType ?? "card").DirectDamage += totalDamage;
+
+            var autoModifiers = ContributionMap.Instance.LastDamageModifiers;
+            if (autoModifiers.Count > 0)
+            {
+                int modifierTotal = 0;
+                foreach (var mod in autoModifiers)
+                {
+                    if (mod.Amount > 0) modifierTotal += mod.Amount;
+                }
+                if (modifierTotal > 0)
+                    GetOrCreate(_autoRootId, _autoRootType ?? "card").ModifierDamage += modifierTotal;
+                autoModifiers.Clear();
+            }
+            return;
+        }
+
         // Ensure OSTY parent entry exists
         GetOrCreate(OstyParentId, "pet");
 
@@ -1695,7 +1943,8 @@ public sealed class CombatTracker
         if (_ostyDeathHandled) return;
         _ostyDeathHandled = true;
 
-        string? killerCardId = _activeCardId;
+        string? killerCardId = _autoRootId ?? _activeCardId;
+        string killerType = _autoRootId != null ? (_autoRootType ?? "card") : "card";
 
         if (allowPetWasted
             && remainingHp > 0
@@ -1705,7 +1954,7 @@ public sealed class CombatTracker
             // Keep the cost on the visible top-level card row. A generated
             // BoneShards/Sacrifice may have an origin with no accumulator;
             // storing the cost there would make the row disappear.
-            GetOrCreateAtOrigin(killerCardId, "card", null).PetWasted += remainingHp;
+            GetOrCreateAtOrigin(killerCardId, killerType, null).PetWasted += remainingHp;
         }
 
         ContributionMap.Instance.ClearOstyHpStack();
@@ -1753,8 +2002,10 @@ public sealed class CombatTracker
             }
 
             // No layer records for this target — fall back to active context.
-            // Priority: activeCard > activePotion > activeRelic > activePowerSource > "DOOM".
-            if (_activeCardId != null)
+            // Priority: auto root > activeCard > activePotion > activeRelic > activePowerSource > "DOOM".
+            if (_autoRootId != null)
+                GetOrCreate(_autoRootId, _autoRootType ?? "card").AttributedDamage += hp;
+            else if (_activeCardId != null)
                 GetOrCreate(_activeCardId, "card").AttributedDamage += hp;
             else if (_activePotionId != null)
                 GetOrCreate(_activePotionId, "potion").AttributedDamage += hp;
@@ -1929,6 +2180,9 @@ public sealed class CombatTracker
 
     private string? ResolveOriginFor(string sourceId)
     {
+        // Auto-root rows stay top-level even when the auto-played card is a
+        // generated card with a recorded origin. The root is the parent.
+        if (_autoRootId != null && sourceId == _autoRootId) return null;
         // Only the currently-playing card's origin propagates to its own bucket. Other
         // attribution paths (relic/potion/power-source) use origin=null (main bucket).
         if (sourceId == _activeCardId) return _activeCardOrigin;

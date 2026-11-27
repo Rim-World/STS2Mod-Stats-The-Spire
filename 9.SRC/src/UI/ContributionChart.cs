@@ -423,18 +423,25 @@ public partial class ContributionChart : VBoxContainer
         nameLabel.ClipText = true;
         row.AddChild(nameLabel);
 
-        // Times played (for cards) — omit on the dedicated self-damage row
-        // to avoid a misleading double count (the play count already showed
-        // on the positive row).
-        if (accum.SourceType == "card" && accum.TimesPlayed > 0 && !IsNegativeRow(rowMode))
+        // Play counts: manual plays are xN; auto plays are separate. Never
+        // show x0 for a source that only auto-played cards.
+        if (!IsNegativeRow(rowMode) && (accum.TimesPlayed > 0 || accum.AutoPlayedCount > 0))
         {
+            string playText;
+            if (accum.TimesPlayed > 0 && accum.AutoPlayedCount > 0)
+                playText = $"x{accum.TimesPlayed} + {L.Get("chart.auto_played")}{accum.AutoPlayedCount}";
+            else if (accum.TimesPlayed > 0)
+                playText = $"x{accum.TimesPlayed}";
+            else
+                playText = $"{L.Get("chart.auto_played")}{accum.AutoPlayedCount}";
+
             var playLabel = new Label
             {
-                Text = $"x{accum.TimesPlayed}",
-                CustomMinimumSize = new Vector2(30, BarHeight)
+                Text = playText,
+                CustomMinimumSize = new Vector2(accum.AutoPlayedCount > 0 ? 56 : 30, BarHeight)
             };
             playLabel.AddThemeColorOverride("font_color", PlayCountColor);
-            playLabel.AddThemeFontSizeOverride("font_size", 11);
+            playLabel.AddThemeFontSizeOverride("font_size", accum.AutoPlayedCount > 0 ? 9 : 11);
             row.AddChild(playLabel);
         }
         else

@@ -105,6 +105,7 @@ public sealed class RunContributionAggregator
                 continue;
             }
             mem.TimesPlayed          = Math.Max(mem.TimesPlayed, disk.TimesPlayed);
+            mem.AutoPlayedCount      = Math.Max(mem.AutoPlayedCount, disk.AutoPlayedCount);
             mem.DirectDamage         = Math.Max(mem.DirectDamage, disk.DirectDamage);
             mem.AttributedDamage     = Math.Max(mem.AttributedDamage, disk.AttributedDamage);
             mem.ModifierDamage       = Math.Max(mem.ModifierDamage, disk.ModifierDamage);
@@ -130,6 +131,7 @@ public sealed class RunContributionAggregator
         SourceId                = src.SourceId,
         SourceType              = src.SourceType,
         TimesPlayed             = src.TimesPlayed,
+        AutoPlayedCount         = src.AutoPlayedCount,
         DirectDamage            = src.DirectDamage,
         AttributedDamage        = src.AttributedDamage,
         ModifierDamage          = src.ModifierDamage,
@@ -184,6 +186,7 @@ public sealed class RunContributionAggregator
                 SourceId = src.SourceId,
                 SourceType = src.SourceType,
                 TimesPlayed = src.TimesPlayed,
+                AutoPlayedCount = src.AutoPlayedCount,
                 DirectDamage = src.DirectDamage,
                 AttributedDamage = src.AttributedDamage,
                 ModifierDamage = src.ModifierDamage,

@@ -448,6 +448,7 @@ public static class ContributionPersistence
         SourceId = a.SourceId,
         SourceType = a.SourceType,
         TimesPlayed = a.TimesPlayed,
+        AutoPlayedCount = a.AutoPlayedCount,
         DirectDamage = a.DirectDamage,
         AttributedDamage = a.AttributedDamage,
         ModifierDamage = a.ModifierDamage,
@@ -500,6 +501,7 @@ public static class ContributionPersistence
             SourceId = d.SourceId,
             SourceType = sourceType,
             TimesPlayed = d.TimesPlayed,
+            AutoPlayedCount = d.AutoPlayedCount,
             DirectDamage = d.DirectDamage,
             AttributedDamage = d.AttributedDamage,
             ModifierDamage = d.ModifierDamage,
@@ -584,6 +586,7 @@ public static class ContributionPersistence
         public string SourceId { get; set; } = "";
         public string SourceType { get; set; } = "card";
         public int TimesPlayed { get; set; }
+        public int AutoPlayedCount { get; set; }
         public int DirectDamage { get; set; }
         public int AttributedDamage { get; set; }
         public int ModifierDamage { get; set; }

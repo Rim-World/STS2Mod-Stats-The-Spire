@@ -73,6 +73,7 @@ public static class L
         ["chart.none"] = "  (none)",
         ["chart.self_damage_suffix"] = "self-damage",
         ["chart.pet_wasted_suffix"] = "pet-waste",
+        ["chart.auto_played"] = "auto",
         ["source.pet_prefix"] = "[Pet] ",
 
         // RitsuLib settings page
@@ -409,6 +410,7 @@ public static class L
         ["chart.none"] = "  (无)",
         ["chart.self_damage_suffix"] = "自伤",
         ["chart.pet_wasted_suffix"] = "宠物损耗",
+        ["chart.auto_played"] = "自动",
         ["source.pet_prefix"] = "[宠] ",
 
         // RitsuLib 设置页

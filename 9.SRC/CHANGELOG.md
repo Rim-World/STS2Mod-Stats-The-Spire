@@ -2,6 +2,24 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.11.0] - 2026-11-28
+
+### Changed
+- Auto-played cards roll up to their root source. Mayhem, Stampede, and Simpleton auto-play damage, modifier damage, upgrade damage, block, draw, energy, stars, healing, self-damage, and pet values are written to the source card row.
+- `TimesPlayed` counts manual source plays only. Add `AutoPlayedCount` for auto plays and show both counts in the contribution chart.
+- Auto-played cards no longer create their own contribution row. Nested auto-plays inherit the root; a manual card nested in an auto chain stays on its own row.
+- Add the missing Stampede `AfterAutoPostPlayPhaseEntered` context. Map the real `SIMPLETON_POWER` (and legacy `SIMPLEON_POWER`) to the `SIMPLEON` card source.
+- Persist `AutoPlayedCount` in combat, run-summary, and live JSON. Old JSON reads the missing field as 0.
+- Version and manifest move to 1.11.0.
+
+### Verification
+- v0.114.0 targeted probe: `RESULT PASS pass=5 fail=0` with the final 1.11.0 DLL. Mayhem, Stampede, and Simpleton root rows have the expected auto count; actual damage matches the root damage; auto-card rows and power rows are absent; nested auto and manual-in-auto stack tests pass.
+- Live JSON contains `AutoPlayedCount` on source rows. Old-field default is covered by the persistence path; the field was not round-tripped through an old save file.
+- v0.114.0 final load: one `v1.11.0 initializing`; `PatchInventory` 818 bound entries and 454 distinct targets; `Ctrl+F8` registered; no test probe in `mods`.
+- v0.113.1 and v0.111.1 Release builds: 0 errors, 7 existing nullable warnings; all three DLLs share SHA-256 `c5d6de8337bb452eb8b4351806d695266f40eff4ed25b5f15f73a39268807c0a`.
+- v0.113.1 runtime probe: failed in the test copy because RitsuLib 0.6.15 could not satisfy the 0.6.16 runtime request; the test was not accepted as code evidence. v0.111.1 runtime: not run because no local runtime is installed.
+- Contribution chart visual check: not done.
+
 ## [1.10.0] - 2026-11-27
 
 ### Changed

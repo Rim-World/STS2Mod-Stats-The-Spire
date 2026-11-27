@@ -4,6 +4,7 @@
 
 | 时间 | 名称 | 版本 | 大小 | 说明 |
 |---|---|---|---|---|
+| 2026-11-28 00:32 | `sts2_statsthespire_local.dll` | 1.11.0 | 570,368 字节 | 自动出牌按根来源汇总：乱战/惊逃/傻瓜自动牌的伤害、修正伤害、升级伤害、格挡、抽牌、能量、星星、治疗、自伤与宠物数值写入来源牌行；`TimesPlayed` 只算手动；新增 `AutoPlayedCount`；自动牌不再单独成行；惊逃补上下文；实际 `SIMPLETON_POWER` 映射到 `SIMPLEON`；SHA-256 `c5d6de8337bb452eb8b4351806d695266f40eff4ed25b5f15f73a39268807c0a`；三版本 Release 构建 0 错误且哈希一致；v0.114.0 定向 5/5、live JSON PASS；v0.113.1/v0.111.1 运行与 UI 视觉未验证 |
 | 2026-11-27 03:16 | `sts2_statsthespire_local.dll` | 1.10.0 | 566,272 字节 | 适配 v0.114.0 与 RitsuLib 0.6.16；HappyFlower/FakeHappyFlower 改用 `AfterPlayerTurnStartEarly`，TunePower 运行时选择 `AfterSideTurnEnd`/`AfterCardPlayed`；SHA-256 `933dc72a2c29f9f50908716a0e8d336ae4a862c7d31b1827cfd1bb2b3b97e46b`；v0.111.1、v0.113.1、v0.114.0 Release 构建 0 错误且 DLL 哈希一致；v0.114.0 隔离加载 816 条绑定、453 个目标、Fool 34/34；标准 AutoSlayer 种子 71401 victory、3/3 幕、49 层、28 场战斗 |
 | 2026-11-25 08:10 | `sts2_statsthespire_local.dll` | 1.9.6 | 565,248 字节 | 修正 1.9.5 的「吃不完的糖」奇偶：奖励先填充，`CombatRewardsSeen` 后递增；当前计数为奇数才是 4 张；SHA-256 `14b460b54f15ed98d63885cff85efd7f661b95b7e3f454ba683d76a4cbf70f16`；双版本 Release 构建 0 错误；纯计算 16/16、v0.113.1 UI 探针与隔离主 Mod 加载 PASS；真实糖果局 UI、v0.111.1 运行与视觉未做 |
 | 2026-11-25 08:02 | `sts2_statsthespire_local.dll` | 1.9.5 | 565,248 字节 | 已废止：顶栏卡牌掉落改为「下一组基础卡牌奖励」稀有数量分布；但「吃不完的糖」3/4 张奇偶预测相反，已由 1.9.6 修正；SHA-256 `08a22766be47f8a614510b5be2e5a8a75fbd637084ee17ba1763753793e023e0`；纯计算/UI 探针通过但未覆盖真实糖果时序 |

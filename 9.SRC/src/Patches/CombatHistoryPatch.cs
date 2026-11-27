@@ -60,7 +60,7 @@ public static class CombatHistoryPatch
 
             var cardId = card?.Id.Entry;
             if (cardId != null)
-                CombatTracker.Instance.OnCardPlayStarted(cardId, card!.GetHashCode());
+                CombatTracker.Instance.OnCardPlayStarted(cardId, card!.GetHashCode(), cardPlay.IsAutoPlay);
 
             // NEW-1/NEW-2: Centralized cost savings attribution at play time
             if (card != null)
@@ -882,6 +882,7 @@ public static class PowerHookContextPatcher
             new[] { "AfterCardPlayed", "BeforeCardPlayed" }, prefix, postfix, "[PowerPatch]");
         TryPatch(harmony, typeof(PrepTimePower), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(MayhemPower), "AfterAutoPrePlayPhaseEntered", prefix, postfix);
+        TryPatch(harmony, typeof(StampedePower), "AfterAutoPostPlayPhaseEntered", prefix, postfix);
         TryPatch(harmony, typeof(StratagemPower), "AfterShuffle", prefix, postfix);
         // Energy-on-turn-start powers (AfterEnergyReset fires once per player turn).
         TryPatch(harmony, typeof(RadiancePower), "AfterEnergyReset", prefix, postfix);
@@ -928,8 +929,8 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(SpeedsterPower), "AfterCardDrawn", prefix, postfix);
         TryPatch(harmony, typeof(SerpentFormPower), "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(TrashToTreasurePower), "AfterCardGeneratedForCombat", prefix, postfix);
-        // StampedePower.BeforeTurnEnd not patchable at runtime (not implemented, only inherited)
-        // Stampede's auto-played cards generate their own CardPlay events.
+        // Stampede's auto-played cards get power context from
+        // AfterAutoPostPlayPhaseEntered above, then generate their own CardPlay events.
 
         // NOTE: TemporaryStrengthPower.AfterSideTurnEnd is handled by TempStrengthRevertPatch
         // with specific revert logic, not the generic Set/Clear power context.
@@ -1693,8 +1694,15 @@ public static class CardOriginPatch
             var replacementId = replacement.Id.Entry;
             if (replacementId == null) return;
 
-            // Use the currently-playing card (e.g. BEGONE!, CHARGE!!) as origin,
-            // falling back to the original card ID if no active context.
+            // Use the auto-play root first; otherwise the currently-playing card.
+            var activeAutoRoot = CombatTracker.Instance.ActiveAutoRootId;
+            if (activeAutoRoot != null)
+            {
+                CombatTracker.Instance.RecordCardOrigin(
+                    replacement.GetHashCode(), activeAutoRoot,
+                    CombatTracker.Instance.ActiveAutoRootType ?? "card");
+                return;
+            }
             var activeCard = CombatTracker.Instance.ActiveCardId;
             var originId = activeCard ?? original?.Id.Entry ?? "unknown";
             CombatTracker.Instance.RecordCardOrigin(
@@ -2325,8 +2333,13 @@ public static class LocalCostModifierSourceTagPatch
         string sourceId;
         string sourceType;
 
-        // Fix 3.6: power > relic > potion > card priority
-        if (tracker.ActivePowerSourceId != null)
+        // Fix 3.6: power > relic > potion > card priority. Auto root wins.
+        if (tracker.ActiveAutoRootId != null)
+        {
+            sourceId = tracker.ActiveAutoRootId;
+            sourceType = tracker.ActiveAutoRootType ?? "card";
+        }
+        else if (tracker.ActivePowerSourceId != null)
         {
             sourceId = tracker.ActivePowerSourceId;
             sourceType = tracker.ActivePowerSourceType ?? "power";
@@ -2458,7 +2471,8 @@ public static class EnergyCostSetterTagPatch
         var tracker = CombatTracker.Instance;
         string sourceId;
         string sourceType;
-        if (tracker.ActivePowerSourceId != null) { sourceId = tracker.ActivePowerSourceId; sourceType = tracker.ActivePowerSourceType ?? "power"; }
+        if (tracker.ActiveAutoRootId != null) { sourceId = tracker.ActiveAutoRootId; sourceType = tracker.ActiveAutoRootType ?? "card"; }
+        else if (tracker.ActivePowerSourceId != null) { sourceId = tracker.ActivePowerSourceId; sourceType = tracker.ActivePowerSourceType ?? "power"; }
         else if (tracker.ActiveRelicId != null) { sourceId = tracker.ActiveRelicId; sourceType = "relic"; }
         else if (tracker.ActivePotionId != null) { sourceId = tracker.ActivePotionId; sourceType = "potion"; }
         else if (tracker.ActiveCardId != null) { sourceId = tracker.ActiveCardId; sourceType = "card"; }
@@ -2967,11 +2981,16 @@ public static class EnemyStrReductionPatch
                 return;
             }
 
-            // Source attribution: power > relic > potion > card
+            // Source attribution: auto root > power > relic > potion > card
             var tracker = CombatTracker.Instance;
             string? sourceId = null;
             string sourceType = "card";
-            if (tracker.ActivePowerSourceId != null)
+            if (tracker.ActiveAutoRootId != null)
+            {
+                sourceId = tracker.ActiveAutoRootId;
+                sourceType = tracker.ActiveAutoRootType ?? "card";
+            }
+            else if (tracker.ActivePowerSourceId != null)
             {
                 sourceId = tracker.ActivePowerSourceId;
                 sourceType = tracker.ActivePowerSourceType ?? "card";
@@ -3157,6 +3176,16 @@ public static class CardGenerationOriginPatch
         // power. Priority matches ResolveSource: power > relic > potion > card.
         var tracker = CombatTracker.Instance;
 
+        // Auto-played cards generate children for the root source, not for
+        // the auto-played card itself.
+        if (tracker.ActiveAutoRootId != null)
+        {
+            CombatTracker.Instance.RecordCardOrigin(
+                card.GetHashCode(), tracker.ActiveAutoRootId,
+                tracker.ActiveAutoRootType ?? "card");
+            return;
+        }
+
         if (tracker.ActivePowerSourceId != null)
         {
             CombatTracker.Instance.RecordCardOrigin(
@@ -3216,7 +3245,12 @@ public static class OstySummonPatch
             string sourceId;
             string sourceType;
 
-            if (source is CardModel card)
+            if (CombatTracker.Instance.ActiveAutoRootId != null)
+            {
+                sourceId = CombatTracker.Instance.ActiveAutoRootId!;
+                sourceType = CombatTracker.Instance.ActiveAutoRootType ?? "card";
+            }
+            else if (source is CardModel card)
             {
                 sourceId = card.Id.Entry ?? "unknown";
                 sourceType = "card";
@@ -3396,12 +3430,17 @@ public static class OrbChanneledPatch
     {
         Safe.Run(() =>
         {
-            // Power/relic source takes priority (matches ResolveSource order).
-            // When Storm channels during another card's play, _activePowerSourceId = "STORM"
-            // must take priority over _activeCardId = "DEFRAGMENT".
-            string? sourceId = CombatTracker.Instance.ActivePowerSourceId;
-            string sourceType = CombatTracker.Instance.ActivePowerSourceType ?? "card";
+            // Auto root > power > relic > card. When Storm channels during
+            // another card's play, the power source wins; inside an auto-play
+            // chain the root card owns the orb.
+            string? sourceId = CombatTracker.Instance.ActiveAutoRootId;
+            string sourceType = CombatTracker.Instance.ActiveAutoRootType ?? "card";
 
+            if (sourceId == null)
+            {
+                sourceId = CombatTracker.Instance.ActivePowerSourceId;
+                sourceType = CombatTracker.Instance.ActivePowerSourceType ?? "card";
+            }
             if (sourceId == null)
             {
                 sourceId = CombatTracker.Instance.ActiveRelicId;

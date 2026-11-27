@@ -536,6 +536,24 @@
 
 说明：`ButtonProbe/` 按文件夹整体登记，包含 `bin/` 与 `obj/`；日志由 `.gitignore` 排除。测试探针已移出游戏 `mods`，存放于 `TMP/1.9.1/removed-button-probe-2026-11-25/`。
 
+## 1.11.0
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `AutoPlayProbe/` | 2026-11-28 00:00 | 否 | 222 | 自动出牌根来源定向探针工程；真实能力 hook、`AsyncLocal` 测试门、嵌套与手动嵌套用例 | 是 |
+| `autoplay-probe-final-build.log` | 2026-11-28 00:31 | 否 | 0.3 | 最终探针构建；0 错误 | 是 |
+| `autoplay-probe-final-stdout.log` | 2026-11-28 00:31 | 否 | 458 | v0.114.0 最终探针；`RESULT PASS pass=5 fail=0`；乱战/惊逃/傻瓜实际伤害与根来源一致 | 是 |
+| `autoplay-probe-final-game.log` | 2026-11-28 00:31 | 否 | 4 | 同一最终探针的游戏日志 | 是 |
+| `live-72020.json` | 2026-11-28 00:31 | 否 | 1 | 最终 `live.json` 证据；来源行含 `AutoPlayedCount`、`TimesPlayed`、`ModifierDamage` | 是 |
+| `build-v114-final.log` | 2026-11-28 00:29 | 否 | 4 | 1.11.0 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113-final.log` | 2026-11-28 00:30 | 否 | 4 | 1.11.0 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111-final.log` | 2026-11-28 00:30 | 否 | 4 | 1.11.0 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `final-load-1110-console.log` | 2026-11-28 00:33 | 否 | 296 | 最终安装加载；`v1.11.0 initializing`、818 条绑定、454 个目标、`Ctrl+F8`；无测试探针 | 是 |
+| `autoplay-probe-v113-stdout.log` | 2026-11-28 00:14 | 否 | 234 | v0.113.1 测试副本运行失败；RitsuLib 0.6.15 不满足 0.6.16 运行时请求；不作为代码证据 | 是 |
+| `autoplay-probe-build9.log` | 2026-11-28 00:12 | 否 | 0.3 | 加入嵌套与手动嵌套用例后的探针构建；0 错误 | 是 |
+
+说明：早期 `autoplay-probe2..9` 为调试记录，仅 `autoplay-probe-final-*` 是最终证据。测试探针部署已从游戏 `mods` 移出；主 Mod 1.11.0 保留安装。
+
 ## 1.10.0
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |

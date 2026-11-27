@@ -1,0 +1,17 @@
+{
+  "id": "sts2_autoplay_probe_1110",
+  "name": "StatsTheSpire AutoPlay Probe 1.11.0",
+  "author": "test",
+  "description": "Test-only probe for auto-play root-source rollup.",
+  "version": "1.11.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.111.1",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.10.0"
+    }
+  ]
+}
