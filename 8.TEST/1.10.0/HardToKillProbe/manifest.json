@@ -1,0 +1,17 @@
+{
+  "id": "sts2_hardtokill_probe_1100",
+  "name": "StatsTheSpire HardToKill Probe 1.10.0",
+  "author": "test",
+  "description": "Test-only probe for HardToKill HP-loss cap statistics.",
+  "version": "1.10.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.114.0",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.10.0"
+    }
+  ]
+}

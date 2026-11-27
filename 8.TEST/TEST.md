@@ -557,8 +557,18 @@
 | `final-load-1100-stdout.log` | 2026-11-27 03:18 | 否 | 161 | 1.10.0 最终加载；`v1.10.0 initializing`、Ctrl+F8、816 条绑定、453 个目标、Fool 34/34 | 是 |
 | `verify-version-1100.log` | 2026-11-27 03:34 | 否 | 1 | 1.10.0 版本校验；`version-ok 1.10.0` | 是 |
 | `check-release-1100.log` | 2026-11-27 03:34 | 否 | 1 | 1.10.0 发布门禁；12/12 PASS | 是 |
+| `HardToKillProbe/` | 2026-11-27 22:19 | 否 | 123 | v0.114「难以杀灭」定向战斗探针工程；首战加入 200 HP 假人并施加 9 层能力，执行单次、多段、格挡与击杀攻击 | 是 |
+| `hardtokill-probe-build.log` | 2026-11-27 22:16 | 否 | 0.4 | 首次构建；0 错误 | 否 |
+| `hardtokill-probe-build2.log` | 2026-11-27 22:19 | 否 | 0.3 | 改用无槽位假人后的最终构建；0 错误 | 是 |
+| `hardtokill-probe-build3.log` | 2026-11-27 22:22 | 否 | 0.3 | 测试源码注释修正后的复构建；0 错误 | 是 |
+| `hardtokill-probe-stdout.log` | 2026-11-27 22:19 | 否 | 190 | 首次运行失败；外骨骼槽位在无头模式为空，不是统计失败 | 是 |
+| `hardtokill-probe-game.log` | 2026-11-27 22:19 | 否 | 3 | 首次运行游戏日志 | 否 |
+| `hardtokill-probe2-stdout.log` | 2026-11-27 22:20 | 否 | 320 | 最终运行；`RESULT PASS pass=6 fail=0`；单次 9、多段 10、格挡 14、击杀 5、UNTRACKED=0 | 是 |
+| `hardtokill-probe2-game.log` | 2026-11-27 22:20 | 否 | 4 | 最终运行游戏日志 | 是 |
 
 说明：AutoSlayer 测试使用 `mods_STEAMTEST` 的独立测试 ID 与 `stats_autoslay_gate`；RitsuLib 0.6.16 本地测试安装位于游戏 `mods/STS2-RitsuLib`，测试结束后恢复设置与目录。
+
+HardToKill 测试说明：测试探针已移出游戏 `mods`，存放于 `TMP/1.10.0/hardtokill-2026-11-27/removed-test-probe-2026-11-27/`；测试设置已恢复；测试生成的对局与贡献目录已移入同一备份目录。探针直接施加 `HardToKillPower`，不依赖外骨骼槽位。
 
 ## 1.9.6
 
