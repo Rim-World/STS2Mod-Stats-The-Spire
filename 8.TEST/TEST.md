@@ -551,8 +551,11 @@
 | `final-load-1110-console.log` | 2026-11-28 00:33 | 否 | 296 | 最终安装加载；`v1.11.0 initializing`、818 条绑定、454 个目标、`Ctrl+F8`；无测试探针 | 是 |
 | `autoplay-probe-v113-stdout.log` | 2026-11-28 00:14 | 否 | 234 | v0.113.1 测试副本运行失败；RitsuLib 0.6.15 不满足 0.6.16 运行时请求；不作为代码证据 | 是 |
 | `autoplay-probe-build9.log` | 2026-11-28 00:12 | 否 | 0.3 | 加入嵌套与手动嵌套用例后的探针构建；0 错误 | 是 |
+| `ritsu0616-load-stdout.log` | 2026-11-28 18:35 | 否 | 308 | v0.114.0 + RitsuLib 0.6.16 过审包加载；分支 0.114.0、设置页 19/19、主 Mod 设置页注册 | 是 |
+| `ritsu0616-autoslay-62005-stdout.log` | 2026-11-28 18:45 | 否 | 956 | v0.114.0 完整 AutoSlayer 种子 62005；victory、3/3 幕、49 层；含 RitsuLib 与主 Mod 初始化证据 | 是 |
+| `ritsu0616-autoslay-62005-game.log` | 2026-11-28 18:45 | 否 | 148 | 同一完整跑局的 AutoSlayer 游戏日志；`Run completed successfully` | 是 |
 
-说明：早期 `autoplay-probe2..9` 为调试记录，仅 `autoplay-probe-final-*` 是最终证据。测试探针部署已从游戏 `mods` 移出；主 Mod 1.11.0 保留安装。
+说明：早期 `autoplay-probe2..9` 为调试记录，仅 `autoplay-probe-final-*` 是最终证据。测试探针部署已从游戏 `mods` 移出；主 Mod 1.11.0 保留安装。`ritsu0616-*` 使用临时游戏目录加载 Steam 过审包，未改动用户安装目录。
 
 ## 1.10.0
 
