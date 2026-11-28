@@ -554,8 +554,9 @@
 | `ritsu0616-load-stdout.log` | 2026-11-28 18:35 | 否 | 308 | v0.114.0 + RitsuLib 0.6.16 过审包加载；分支 0.114.0、设置页 19/19、主 Mod 设置页注册 | 是 |
 | `ritsu0616-autoslay-62005-stdout.log` | 2026-11-28 18:45 | 否 | 956 | v0.114.0 完整 AutoSlayer 种子 62005；victory、3/3 幕、49 层；含 RitsuLib 与主 Mod 初始化证据 | 是 |
 | `ritsu0616-autoslay-62005-game.log` | 2026-11-28 18:45 | 否 | 148 | 同一完整跑局的 AutoSlayer 游戏日志；`Run completed successfully` | 是 |
+| `workshop-ritsu-load-1853-stdout.log` | 2026-11-28 18:52 | 否 | 316 | 实际游戏加载；本地 RitsuLib 移走后从 Workshop `3747602295` 加载 0.6.16；主 Mod 设置页与 `Ctrl+F8` 正常 | 是 |
 
-说明：早期 `autoplay-probe2..9` 为调试记录，仅 `autoplay-probe-final-*` 是最终证据。测试探针部署已从游戏 `mods` 移出；主 Mod 1.11.0 保留安装。`ritsu0616-*` 使用临时游戏目录加载 Steam 过审包，未改动用户安装目录。
+说明：早期 `autoplay-probe2..9` 为调试记录，仅 `autoplay-probe-final-*` 是最终证据。测试探针部署已从游戏 `mods` 移出；主 Mod 1.11.0 保留安装。`ritsu0616-*` 使用临时游戏目录加载 Steam 过审包；`workshop-ritsu-load-*` 使用实际游戏目录，当时本地 RitsuLib 已移走。
 
 ## 1.10.0
 
