@@ -577,6 +577,12 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(WhisperingEarring),
             "AfterAutoPrePlayPhaseEnteredLate", prefix, postfix);
 
+        // Auto-play root: HistoryCourse copies the last attack played on the
+        // previous turn. Its hook fires before the normal card context exists,
+        // so the copy would otherwise be credited to the copy itself.
+        TryPatch(harmony, typeof(HistoryCourse),
+            "AfterAutoPrePlayPhaseEntered", prefix, postfix);
+
         // Turn start / side turn start triggers.
         TryPatch(harmony, typeof(TwistedFunnel), "BeforeSideTurnStart", prefix, postfix);
         // FuneraryMask does not override AfterSideTurnStart on v0.113.1.
@@ -889,6 +895,14 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(PrepTimePower), "AfterSideTurnStart", prefix, postfix);
         TryPatch(harmony, typeof(MayhemPower), "AfterAutoPrePlayPhaseEntered", prefix, postfix);
         TryPatch(harmony, typeof(StampedePower), "AfterAutoPostPlayPhaseEntered", prefix, postfix);
+
+        // Auto-play roots for card-applied powers that play another card:
+        // Hellraiser (draw), ImitationLearning (copy), LostLute (melody).
+        // LostLutePower does not exist in v0.111.1, so resolve it by name.
+        TryPatch(harmony, typeof(HellraiserPower), "AfterCardDrawnEarly", prefix, postfix);
+        TryPatch(harmony, typeof(ImitationLearningPower), "AfterCardPlayed", prefix, postfix);
+        TryPatchTypeName(harmony, "MegaCrit.Sts2.Core.Models.Powers.LostLutePower",
+            "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(StratagemPower), "AfterShuffle", prefix, postfix);
         // Energy-on-turn-start powers (AfterEnergyReset fires once per player turn).
         TryPatch(harmony, typeof(RadiancePower), "AfterEnergyReset", prefix, postfix);
@@ -959,6 +973,23 @@ public static class PowerHookContextPatcher
         {
             Safe.Warn($"[PowerPatch] Failed {type.Name}.{methodName}: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Patch a power type that only exists in some game versions
+    /// (LostLutePower is absent from v0.111.1). Resolve by name so the
+    /// single DLL still compiles against the oldest reference assembly.
+    /// </summary>
+    private static void TryPatchTypeName(Harmony harmony, string typeName, string methodName,
+        HarmonyMethod prefix, HarmonyMethod postfix)
+    {
+        var type = AccessTools.TypeByName(typeName);
+        if (type == null)
+        {
+            Safe.Info($"[PowerPatch] skipped {typeName}.{methodName} (type not present)");
+            return;
+        }
+        TryPatch(harmony, type, methodName, prefix, postfix);
     }
 }
 

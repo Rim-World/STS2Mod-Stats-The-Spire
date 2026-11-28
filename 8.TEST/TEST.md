@@ -2,6 +2,31 @@
 
 本文件登记开发过程中的测试工具、日志与测试数据。版本目录为 `8.TEST/<version>/`。
 
+## 1.13.0
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `AutoSourceProbe/` | 2026-11-28 19:45 | 否 | 143 | 自动出牌来源定向探针源码、工程与构建缓存；历史课、地狱狂徒、失落鲁特琴、精炼混沌、注能、彼岸咆哮与愚者 | 是 |
+| `build-v114.log` | 2026-11-28 19:49 | 否 | 4 | 1.13.0 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113.log` | 2026-11-28 19:49 | 否 | 4 | 1.13.0 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111.log` | 2026-11-28 19:49 | 否 | 4 | 1.13.0 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `autosource-probe-build4.log` | 2026-11-28 19:46 | 否 | 2 | 最终探针构建；0 错误、3 个可空警告 | 是 |
+| `autosource-probe-final-stdout.log` | 2026-11-28 19:50 | 否 | 410 | 最终 1.13.0 DLL 探针 `RESULT PASS pass=7 fail=0 skip=0` | 是 |
+| `autosource-probe-final-game.log` | 2026-11-28 19:50 | 否 | 4 | 最终探针 AutoSlayer 游戏日志 | 是 |
+| `autosource-probe-stdout.log` | 2026-11-28 19:44 | 否 | 407 | 首次探针：历史课根来源缺失，定位自动出牌测试门 | 是 |
+| `autosource-probe2-stdout.log` | 2026-11-28 19:45 | 否 | 410 | 第二次探针：确认历史课 hook 与历史记录，但仍被测试门拦截 | 是 |
+| `autosource-probe3-stdout.log` | 2026-11-28 19:47 | 否 | 408 | 打开全局测试门后 7/7 PASS | 是 |
+| `autosource-probe4-stdout.log` | 2026-11-28 19:48 | 否 | 409 | 加入注能用例后 7/7 PASS | 是 |
+| `autosource-probe-game.log` | 2026-11-28 19:44 | 否 | 4 | 首次探针游戏日志 | 是 |
+| `autosource-probe-game2.log` | 2026-11-28 19:45 | 否 | 4 | 第二次探针游戏日志 | 是 |
+| `autosource-probe-game3.log` | 2026-11-28 19:47 | 否 | 4 | 第三次探针游戏日志 | 是 |
+| `autosource-probe-game4.log` | 2026-11-28 19:48 | 否 | 4 | 第四次探针游戏日志 | 是 |
+| `final-load-1130-stdout.log` | 2026-11-28 19:54 | 否 | 318 | 实际游戏安装 1.13.0 加载；一次 `v1.13.0 initializing`、828 条绑定、458 个目标；无测试探针 | 是 |
+| `check-release-1130.log` | 2026-11-28 19:52 | 否 | 1 | 1.13.0 发布门禁 12/12 PASS | 是 |
+| `verify-version-1130.log` | 2026-11-28 19:52 | 否 | 1 | 1.13.0 版本校验；`version-ok 1.13.0` | 是 |
+
+说明：`AutoSourceProbe` 的测试门与探针只存在于测试工程，不进入主 Mod；最终安装到实际游戏 `mods` 的只有主 Mod。测试环境中的探针已移到 `TMP/1.13.0/disabled-autosource-probe/`。
+
 ## 1.12.0
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |

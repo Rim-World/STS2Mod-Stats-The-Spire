@@ -656,6 +656,9 @@ public sealed class CombatTracker
             "STAMPEDE_POWER" => ("STAMPEDE", "card"),
             "SIMPLETON_POWER" => ("SIMPLEON", "card"),
             "SIMPLEON_POWER" => ("SIMPLEON", "card"),
+            "HELLRAISER_POWER" => ("HELLRAISER", "card"),
+            "IMITATION_LEARNING_POWER" => ("IMITATION_LEARNING", "card"),
+            "LOST_LUTE_POWER" => ("LOST_LUTE", "card"),
             _ => (id, type),
         };
     }

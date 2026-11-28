@@ -2,6 +2,21 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.13.0] - 2026-11-28
+
+### Changed
+- Add relic context for `HistoryCourse.AfterAutoPrePlayPhaseEntered`; the copied attack now credits `HISTORY_COURSE` instead of the copied card.
+- Add power context for `HellraiserPower.AfterCardDrawnEarly`, `ImitationLearningPower.AfterCardPlayed`, and `LostLutePower.AfterCardPlayed`. `LostLutePower` is resolved by runtime type name and skipped on v0.111.1.
+- Add fallback mappings `HELLRAISER_POWER` → `HELLRAISER`, `IMITATION_LEARNING_POWER` → `IMITATION_LEARNING`, and `LOST_LUTE_POWER` → `LOST_LUTE`. Real power sources keep priority.
+- Keep existing auto-play paths unchanged: card `OnPlay`, Bombardment/HowlFromBeyond self-play, Imbued enchanted-card, Distilled Chaos potion, and Sly (explicitly unsplit).
+
+### Verification
+- v0.114.0 `AutoSourceProbe` 7/7 PASS: HistoryCourse `auto=1`, 32 damage; Hellraiser `auto=1`, 6 damage; LostLute `auto=1`; Distilled Chaos `auto=3`; Imbued card root; HowlFromBeyond `auto=1`, 18 damage; The Fool `auto=2`.
+- All source rows keep `TimesPlayed=0`; no auto-card child rows.
+- Release builds against v0.111.1, v0.113.1, and v0.114.0: 0 errors, 7 existing nullable warnings; all three DLLs share SHA-256 `610ccba21a0b5590963edb94a4697ca5e0b614e8b11cfa23817e4073623aacc7`.
+- v0.114.0 final load: `v1.13.0 initializing`; `PatchInventory` 828 bound entries and 458 distinct targets.
+- v0.113.1/v0.111.1 runtime and ImitationLearning's multiplayer-only trigger remain unverified.
+
 ## [1.12.0] - 2026-11-28
 
 ### Changed
