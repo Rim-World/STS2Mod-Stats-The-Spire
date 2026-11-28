@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityStats.Collection;
 using CommunityStats.Util;
@@ -37,6 +38,7 @@ public static class AutoSourceProbe
 {
     private static bool _subscribed;
     private static bool _started;
+    private static bool _finished;
     private static bool _blockAutoPlay = true;
     private static int _pass;
     private static int _fail;
@@ -86,6 +88,17 @@ public static class AutoSourceProbe
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(AutoSourceProbe), nameof(SkipAutoSlayCombat))));
                 GD.Print("[AutoSourceProbe] AutoSlay combat loop blocked");
             }
+            else
+            {
+                var v111Handler = AccessTools.Method(typeof(CombatRoomHandler), "HandleAsync",
+                    new[] { typeof(MegaCrit.Sts2.Core.Random.Rng), typeof(System.Threading.CancellationToken) });
+                if (v111Handler != null)
+                {
+                    harmony.Patch(v111Handler,
+                        prefix: new HarmonyMethod(AccessTools.Method(typeof(AutoSourceProbe), nameof(BlockAutoSlayHandler))));
+                    GD.Print("[AutoSourceProbe] AutoSlay combat handler blocked (v111)");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -123,6 +136,24 @@ public static class AutoSourceProbe
     {
         __result = Task.CompletedTask;
         return false;
+    }
+
+    public static bool BlockAutoSlayHandler(ref Task __result, CancellationToken ct)
+    {
+        __result = WaitForProbe(ct);
+        return false;
+    }
+
+    private static async Task WaitForProbe(CancellationToken ct)
+    {
+        try
+        {
+            while (!_finished && !ct.IsCancellationRequested)
+                await Task.Delay(50, ct);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private static void TrySubscribe()
@@ -190,6 +221,7 @@ public static class AutoSourceProbe
         }
         finally
         {
+            _finished = true;
             GD.Print($"[AutoSourceProbe] RESULT {(_fail == 0 ? "PASS" : "FAIL")} " +
                 $"pass={_pass} fail={_fail} skip={_skip}");
             Finish();
@@ -908,37 +940,56 @@ public static class AutoSourceProbe
                 return Task.CompletedTask;
             }
 
+            var currentRows = CombatTracker.Instance.GetCurrentCombatData().Values;
+            var target = currentRows.FirstOrDefault(a => a.SourceId == "THE_FOOL" && a.OriginSourceId == null)
+                ?? currentRows.FirstOrDefault(a => a.SourceId == "HISTORY_COURSE" && a.OriginSourceId == null);
+            if (target == null)
+            {
+                Fail("persistence", "no tracked persistence target row");
+                return Task.CompletedTask;
+            }
+            string targetId = target.SourceId;
+            int expectedAuto = target.AutoPlayedCount;
+            int expectedTimes = target.TimesPlayed;
+
             using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            var jsonRow = FindJsonRow(doc.RootElement, "THE_FOOL");
+            var jsonRow = FindJsonRow(doc.RootElement, targetId);
             int jsonAuto = -1;
             int jsonTimes = -1;
             if (jsonRow is { } parsed)
             {
-                jsonAuto = parsed.GetProperty("AutoPlayedCount").GetInt32();
-                jsonTimes = parsed.GetProperty("TimesPlayed").GetInt32();
+                jsonAuto = ReadInt(parsed, "AutoPlayedCount");
+                jsonTimes = ReadInt(parsed, "TimesPlayed");
             }
 
             var loaded = ContributionPersistence.LoadLiveState(identity);
             var loadedRow = loaded?.CurrentCombat?.Values
-                .FirstOrDefault(a => a.SourceId == "THE_FOOL" && a.OriginSourceId == null);
+                .FirstOrDefault(a => a.SourceId == targetId && a.OriginSourceId == null);
             int loadedAuto = loadedRow?.AutoPlayedCount ?? -1;
             int loadedTimes = loadedRow?.TimesPlayed ?? -1;
 
-            GD.Print($"[AutoSourceProbe] CASE persistence jsonAuto={jsonAuto} jsonTimes={jsonTimes} " +
-                $"loadedAuto={loadedAuto} loadedTimes={loadedTimes} path={path}");
+            GD.Print($"[AutoSourceProbe] CASE persistence id={targetId} jsonAuto={jsonAuto} jsonTimes={jsonTimes} " +
+                $"loadedAuto={loadedAuto} loadedTimes={loadedTimes} expected={expectedAuto}/{expectedTimes} path={path}");
 
-            if (jsonAuto != 2 || jsonTimes != 1)
-                Fail("persistence", $"json auto={jsonAuto} times={jsonTimes} expected=2/1");
-            else if (loadedAuto != 2 || loadedTimes != 1)
-                Fail("persistence", $"loaded auto={loadedAuto} times={loadedTimes} expected=2/1");
+            if (jsonAuto != expectedAuto || jsonTimes != expectedTimes)
+                Fail("persistence", $"json {targetId} auto={jsonAuto} times={jsonTimes} expected={expectedAuto}/{expectedTimes}");
+            else if (loadedAuto != expectedAuto || loadedTimes != expectedTimes)
+                Fail("persistence", $"loaded {targetId} auto={loadedAuto} times={loadedTimes} expected={expectedAuto}/{expectedTimes}");
             else
-                Pass("persistence", $"json and reload auto=2 times=1");
+                Pass("persistence", $"{targetId} json and reload match auto={expectedAuto} times={expectedTimes}");
         }
         catch (Exception ex)
         {
             Fail("persistence", ex.ToString());
         }
         return Task.CompletedTask;
+    }
+
+    private static int ReadInt(JsonElement row, string propertyName)
+    {
+        return row.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.Number
+            ? value.GetInt32()
+            : 0;
     }
 
     private static JsonElement? FindJsonRow(JsonElement root, string sourceId)

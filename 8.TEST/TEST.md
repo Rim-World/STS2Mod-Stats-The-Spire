@@ -8,7 +8,7 @@
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
 |---|---|---|---|---|---|
-| `AutoSourceProbe/` | 2026-11-28 20:45 | 否 | 249 | 1.13.1 定向探针源码、工程与清单；精确计数、真实来源、手动 OnPlay、保存重载 | 是 |
+| `AutoSourceProbe/` | 2026-11-28 20:45 | 否 | 267 | 1.13.1 定向探针源码、工程与清单；含 v0.111.1 `HandleAsync` 隔离、可选 JSON 字段与保存重载修正 | 是 |
 | `build-v114.log` | 2026-11-28 20:45 | 否 | 3.7 | 1.13.1 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
 | `autosource-probe-build.log` | 2026-11-28 20:45 | 否 | 0.9 | 探针首次构建；缺 `Creature` using 的失败证据 | 是 |
 | `autosource-probe-build2.log` | 2026-11-28 20:45 | 否 | 1.9 | 探针构建通过；3 个可空警告 | 是 |
@@ -19,6 +19,16 @@
 | `autosource-probe-v114c-stdout.log` | 2026-11-28 20:50 | 否 | 468 | v0.114.0 最终探针 `RESULT PASS pass=11 fail=0 skip=0` | 是 |
 | `build-v113.log` | 2026-11-28 20:51 | 否 | 3.6 | 1.13.1 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
 | `build-v111.log` | 2026-11-28 20:51 | 否 | 3.6 | 1.13.1 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `autoslay-gate-v111-build.log` | 2026-11-28 23:10 | 否 | 1 | v0.111.1 AutoSlayGate 构建；0 错误 | 是 |
+| `autosource-probe-build-v111.log` | 2026-11-28 23:10 | 否 | 2 | v0.111.1 探针首次构建；0 错误、2 个可空警告 | 是 |
+| `autosource-probe-build-v111b.log` | 2026-11-28 23:21 | 否 | 2 | 修正 v0.111.1 `HandleAsync` 隔离后的探针构建 | 是 |
+| `autosource-probe-build-v111c.log` | 2026-11-28 23:27 | 否 | 2 | 修正可选 JSON 字段后的最终 v0.111.1 探针构建 | 是 |
+| `v111-load-20261128-stdout.log` | 2026-11-28 23:09 | 否 | 328 | v0.111.1 无头加载；一次初始化、设置页、`Ctrl+F8`、755/422；无探针 | 是 |
+| `v111-autoslay-62005-stdout.log` | 2026-11-28 23:15 | 否 | 834 | v0.111.1 完整 AutoSlay；3 幕、49 地图点、29 战斗文件、35 来源、退出码 0 | 是 |
+| `autosource-probe-v111-stdout.log` | 2026-11-28 23:12 | 否 | 357 | v0.111.1 首次探针；2 PASS、5 FAIL、4 SKIP；AutoSlayer 未隔离，污染伤害 | 是 |
+| `autosource-probe-v111b-stdout.log` | 2026-11-28 23:26 | 否 | 324 | v0.111.1 第二次探针；6 PASS、1 FAIL、4 SKIP；剩余为 JSON 省略字段 | 是 |
+| `autosource-probe-v111c-stdout.log` | 2026-11-28 23:28 | 否 | 411 | v0.111.1 最终探针 `RESULT PASS pass=7 fail=0 skip=4`；退出码 0 | 是 |
+| `v111-final-load-20261128-stdout.log` | 2026-11-28 23:30 | 否 | 306 | 移除测试门与探针后的干净加载；主菜单完成；外部 60 秒超时退出码 124 | 是 |
 | `autosource-probe-build-v113.log` | 2026-11-28 20:51 | 否 | 1.4 | v0.113.1 探针构建；0 错误、2 个可空警告 | 是 |
 | `autosource-probe-v113-stdout.log` | 2026-11-28 20:52 | 否 | 335 | v0.113.1 首次运行；主 Mod 初始化，但测试环境 RitsuLib 失败，探针未运行 | 是 |
 | `autosource-probe-v113b-stdout.log` | 2026-11-28 20:56 | 否 | 318 | 加 AutoSlay 测试门后仍因 RitsuLib 失败未启动探针 | 是 |
@@ -27,7 +37,7 @@
 | `verify-version-1131.log` | 2026-11-28 21:04 | 否 | 0.1 | 版本校验；`version-ok 1.13.1` | 是 |
 | `check-release-1131.log` | 2026-11-28 21:04 | 否 | 1 | 发布门禁 12/12 PASS | 是 |
 
-说明：`AutoSourceProbe` 的自动出牌门只存在于测试工程，不进入主 Mod。实际游戏 `mods` 只安装 1.13.1 主 Mod；v0.113.1 测试环境的 RitsuLib 失败不是主 Mod 异常。
+说明：`AutoSourceProbe` 的自动出牌门只存在于测试工程，不进入主 Mod。实际游戏 `mods` 只安装 1.13.1 主 Mod；v0.113.1 测试环境的 RitsuLib 失败不是主 Mod 异常。v0.111.1 测试门与探针已移出游戏 `mods`。
 
 ## 1.13.0
 
