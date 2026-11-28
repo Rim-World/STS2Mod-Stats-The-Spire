@@ -2,6 +2,18 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.13.1] - 2026-11-28
+
+### Changed
+- Remove the duplicate `LostLutePower.AfterCardPlayed` context registration from `PowerHookContextPatcher`. `FoolContentPatch` is now the sole production owner and continues to resolve the type by name for older game versions.
+- Extend `AutoSourceProbe` with exact `AutoPlayedCount`/`TimesPlayed` assertions, real-source priority, manual `THE_FOOL` and `CASCADE` plays, LostLute/Distilled Chaos damage checks, a production patch-count check, and live JSON save/reload.
+- Correct the plan, README, source checklist, SPEC traceability, and test registry to match the verified scope.
+
+### Verification
+- v0.114.0 `AutoSourceProbe` 11/11 PASS: one LostLute production prefix/postfix; Hellraiser auto=1/damage 6; LostLute auto=1/damage 32; real relic source auto=1/damage 32; manual The Fool auto=2/times=1; manual Cascade auto=2/times=1; HowlFromBeyond auto=1; Distilled Chaos auto=3/damage 18; Imbued auto=1/damage 6; HistoryCourse auto=1/damage 32; live JSON and reload auto=2/times=1.
+- v0.113.1 main mod initialized as `v1.13.1`; `LostLutePower` was absent and logged as skipped. The test environment's RitsuLib failed to initialize, so the directed probe did not run.
+- Release builds against v0.111.1, v0.113.1, and v0.114.0: 0 errors, 7 existing nullable warnings; all three DLLs share SHA-256 `9b5fb559fa20a71955048985010f5d3c4bc7f8330869f7a5fb12892c211a3d6c`.
+
 ## [1.13.0] - 2026-11-28
 
 ### Changed

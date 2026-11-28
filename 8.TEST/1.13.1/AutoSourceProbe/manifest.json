@@ -1,0 +1,17 @@
+{
+  "id": "sts2_autosource_probe_1131",
+  "name": "Stats the Spire Auto Source Probe 1.13.1",
+  "author": "test",
+  "description": "Test-only directed probe for HistoryCourse, HellraiserPower, LostLutePower, TheFool, Cascade, HowlFromBeyond and DistilledChaos attribution.",
+  "version": "1.13.1",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.113.0",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.13.1"
+    }
+  ]
+}

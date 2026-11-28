@@ -897,12 +897,13 @@ public static class PowerHookContextPatcher
         TryPatch(harmony, typeof(StampedePower), "AfterAutoPostPlayPhaseEntered", prefix, postfix);
 
         // Auto-play roots for card-applied powers that play another card:
-        // Hellraiser (draw), ImitationLearning (copy), LostLute (melody).
-        // LostLutePower does not exist in v0.111.1, so resolve it by name.
+        // Hellraiser (draw) and ImitationLearning (copy). LostLutePower
+        // already has its context in FoolContentPatch; do not register a
+        // second prefix/postfix pair here. That patch also resolves the
+        // type by name, so v0.111.1 remains supported without a compile-time
+        // reference to LostLutePower.
         TryPatch(harmony, typeof(HellraiserPower), "AfterCardDrawnEarly", prefix, postfix);
         TryPatch(harmony, typeof(ImitationLearningPower), "AfterCardPlayed", prefix, postfix);
-        TryPatchTypeName(harmony, "MegaCrit.Sts2.Core.Models.Powers.LostLutePower",
-            "AfterCardPlayed", prefix, postfix);
         TryPatch(harmony, typeof(StratagemPower), "AfterShuffle", prefix, postfix);
         // Energy-on-turn-start powers (AfterEnergyReset fires once per player turn).
         TryPatch(harmony, typeof(RadiancePower), "AfterEnergyReset", prefix, postfix);
@@ -973,23 +974,6 @@ public static class PowerHookContextPatcher
         {
             Safe.Warn($"[PowerPatch] Failed {type.Name}.{methodName}: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// Patch a power type that only exists in some game versions
-    /// (LostLutePower is absent from v0.111.1). Resolve by name so the
-    /// single DLL still compiles against the oldest reference assembly.
-    /// </summary>
-    private static void TryPatchTypeName(Harmony harmony, string typeName, string methodName,
-        HarmonyMethod prefix, HarmonyMethod postfix)
-    {
-        var type = AccessTools.TypeByName(typeName);
-        if (type == null)
-        {
-            Safe.Info($"[PowerPatch] skipped {typeName}.{methodName} (type not present)");
-            return;
-        }
-        TryPatch(harmony, type, methodName, prefix, postfix);
     }
 }
 

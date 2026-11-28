@@ -2,6 +2,31 @@
 
 本文件登记开发过程中的测试工具、日志与测试数据。版本目录为 `8.TEST/<version>/`。
 
+## 1.13.1
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `AutoSourceProbe/` | 2026-11-28 20:45 | 否 | 249 | 1.13.1 定向探针源码、工程与清单；精确计数、真实来源、手动 OnPlay、保存重载 | 是 |
+| `build-v114.log` | 2026-11-28 20:45 | 否 | 3.7 | 1.13.1 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
+| `autosource-probe-build.log` | 2026-11-28 20:45 | 否 | 0.9 | 探针首次构建；缺 `Creature` using 的失败证据 | 是 |
+| `autosource-probe-build2.log` | 2026-11-28 20:45 | 否 | 1.9 | 探针构建通过；3 个可空警告 | 是 |
+| `autosource-probe-build3.log` | 2026-11-28 20:47 | 否 | 1.9 | 真实来源用例改用 Ki 后构建 | 是 |
+| `autosource-probe-build4.log` | 2026-11-28 20:49 | 否 | 1.4 | 真实来源用例改用 Wah 后最终 v0.114 探针构建 | 是 |
+| `autosource-probe-v114-stdout.log` | 2026-11-28 20:47 | 否 | 481 | v0.114.0 首次 1.13.1 探针；10 PASS、1 FAIL（真实来源无触发） | 是 |
+| `autosource-probe-v114b-stdout.log` | 2026-11-28 20:48 | 否 | 467 | v0.114.0 第二次探针；9 PASS、2 FAIL（Ki 抽牌干扰与多目标伤害） | 是 |
+| `autosource-probe-v114c-stdout.log` | 2026-11-28 20:50 | 否 | 468 | v0.114.0 最终探针 `RESULT PASS pass=11 fail=0 skip=0` | 是 |
+| `build-v113.log` | 2026-11-28 20:51 | 否 | 3.6 | 1.13.1 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111.log` | 2026-11-28 20:51 | 否 | 3.6 | 1.13.1 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `autosource-probe-build-v113.log` | 2026-11-28 20:51 | 否 | 1.4 | v0.113.1 探针构建；0 错误、2 个可空警告 | 是 |
+| `autosource-probe-v113-stdout.log` | 2026-11-28 20:52 | 否 | 335 | v0.113.1 首次运行；主 Mod 初始化，但测试环境 RitsuLib 失败，探针未运行 | 是 |
+| `autosource-probe-v113b-stdout.log` | 2026-11-28 20:56 | 否 | 318 | 加 AutoSlay 测试门后仍因 RitsuLib 失败未启动探针 | 是 |
+| `autosource-probe-v113c-stdout.log` | 2026-11-28 20:59 | 否 | 318 | 换回 RitsuLib 0.6.15 后仍报类型缺失；主 Mod 加载，探针未运行 | 是 |
+| `final-load-1131-stdout.log` | 2026-11-28 21:03 | 否 | 307 | 实际游戏安装 1.13.1 加载；一次 `v1.13.1 initializing`、826 条绑定、458 个目标；无探针 | 是 |
+| `verify-version-1131.log` | 2026-11-28 21:04 | 否 | 0.1 | 版本校验；`version-ok 1.13.1` | 是 |
+| `check-release-1131.log` | 2026-11-28 21:04 | 否 | 1 | 发布门禁 12/12 PASS | 是 |
+
+说明：`AutoSourceProbe` 的自动出牌门只存在于测试工程，不进入主 Mod。实际游戏 `mods` 只安装 1.13.1 主 Mod；v0.113.1 测试环境的 RitsuLib 失败不是主 Mod 异常。
+
 ## 1.13.0
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
