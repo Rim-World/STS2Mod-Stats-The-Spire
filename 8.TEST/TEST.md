@@ -14,6 +14,8 @@
 | `earring-probe3-stdout.log` | 2026-11-28 19:06 | 否 | 495 | 最终定向探针 `RESULT PASS pass=1 fail=0`；auto=2、伤害 32、格挡 5、能量 1 | 是 |
 | `earring-probe3-game.log` | 2026-11-28 19:06 | 否 | 4 | 同一最终探针的 AutoSlayer 游戏日志 | 是 |
 | `final-load-1120-stdout.log` | 2026-11-28 19:08 | 否 | 318 | 1.12.0 安装加载；一次 `v1.12.0 initializing`、820 条绑定、455 个目标、`Ctrl+F8`；无探针 | 是 |
+| `check-release-1120.log` | 2026-11-28 19:10 | 否 | 1 | 1.12.0 发布门禁 12/12 PASS | 是 |
+| `verify-version-1120.log` | 2026-11-28 19:10 | 否 | 1 | 1.12.0 版本校验；`version-ok 1.12.0` | 是 |
 | `earring-probe-stdout.log` | 2026-11-28 19:02 | 否 | 344 | 首次失败：AutoSlayer 抢先结束回合，auto=1；测试门修正证据 | 是 |
 | `earring-probe2-stdout.log` | 2026-11-28 19:04 | 否 | 470 | 第二次失败：战前 EffectiveBlock=0；改为结束回合消耗格挡的证据 | 是 |
 
