@@ -2,6 +2,23 @@
 
 本文件登记开发过程中的测试工具、日志与测试数据。版本目录为 `8.TEST/<version>/`。
 
+## 1.12.0
+
+| 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |
+|---|---|---|---|---|---|
+| `EarringProbe/` | 2026-11-28 19:00 | 否 | 16 | 低语耳环真实 hook 定向探针；AutoSlayer 只启动跑局，战斗循环被阻断；测试攻击/防御、有效格挡与能量 | 是 |
+| `build-v114.log` | 2026-11-28 18:59 | 否 | 4 | 1.12.0 v0.114.0 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v113.log` | 2026-11-28 19:00 | 否 | 4 | 1.12.0 v0.113.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `build-v111.log` | 2026-11-28 19:00 | 否 | 4 | 1.12.0 v0.111.1 Release 构建；0 错误、7 个既有警告 | 是 |
+| `earring-probe-build3.log` | 2026-11-28 19:06 | 否 | 0.3 | 最终探针构建；0 错误 | 是 |
+| `earring-probe3-stdout.log` | 2026-11-28 19:06 | 否 | 495 | 最终定向探针 `RESULT PASS pass=1 fail=0`；auto=2、伤害 32、格挡 5、能量 1 | 是 |
+| `earring-probe3-game.log` | 2026-11-28 19:06 | 否 | 4 | 同一最终探针的 AutoSlayer 游戏日志 | 是 |
+| `final-load-1120-stdout.log` | 2026-11-28 19:08 | 否 | 318 | 1.12.0 安装加载；一次 `v1.12.0 initializing`、820 条绑定、455 个目标、`Ctrl+F8`；无探针 | 是 |
+| `earring-probe-stdout.log` | 2026-11-28 19:02 | 否 | 344 | 首次失败：AutoSlayer 抢先结束回合，auto=1；测试门修正证据 | 是 |
+| `earring-probe2-stdout.log` | 2026-11-28 19:04 | 否 | 470 | 第二次失败：战前 EffectiveBlock=0；改为结束回合消耗格挡的证据 | 是 |
+
+说明：`EarringProbe` 的 `AutoPlayGate` 与 `CombatRoomHandler.PlayCombatAsync` 测试门只存在于测试工程，不进入主 Mod。最终探针在临时游戏目录运行，未安装到实际 `mods`。
+
 ## 1.7.1
 
 | 文件名 | 创建时间 | 是否清理 | 文件大小（KB） | 用途 | 引用和复用 |

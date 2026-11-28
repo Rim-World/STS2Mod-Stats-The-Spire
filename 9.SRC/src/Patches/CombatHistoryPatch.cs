@@ -571,6 +571,12 @@ public static class RelicHookContextPatcher
         TryPatch(harmony, typeof(BeatingRemnant), "AfterModifyingHpLostAfterOsty", prefix, postfix);
         TryPatch(harmony, typeof(BeatingRemnant), "BeforeSideTurnStart", prefix, postfix);
 
+        // Auto-play root: WhisperingEarring (Vakuu) plays the first turn.
+        // The prefix keeps the relic context alive across the async hook, so
+        // every CardCmd.AutoPlay call resolves to WHISPERING_EARRING.
+        TryPatch(harmony, typeof(WhisperingEarring),
+            "AfterAutoPrePlayPhaseEnteredLate", prefix, postfix);
+
         // Turn start / side turn start triggers.
         TryPatch(harmony, typeof(TwistedFunnel), "BeforeSideTurnStart", prefix, postfix);
         // FuneraryMask does not override AfterSideTurnStart on v0.113.1.

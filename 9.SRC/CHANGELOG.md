@@ -2,6 +2,17 @@
 
 本文件遵循 Keep a Changelog。项目级版本日志见 `../7.ChangeLog/`。
 
+## [1.12.0] - 2026-11-28
+
+### Changed
+- Whispering Earring (`WHISPERING_EARRING`) now sets its relic context for `AfterAutoPrePlayPhaseEnteredLate`. Every card auto-played by Vakuu's first turn resolves to the relic root instead of its own card row.
+- Auto-played card damage, modifier damage, upgrade damage, block, block modifiers, mitigation, self-damage, pet values, draw, energy, stars, and healing go to the relic row. `AutoPlayedCount` increments per actual auto play; `TimesPlayed` stays manual-only.
+- The relic's +1 energy per turn keeps its existing `ModifyMaxEnergy` attribution and is not counted in the auto-play row.
+
+### Verification
+- v0.114.0 `EarringProbe` PASS: `auto=2`, direct damage 32, effective block 5 after the enemy attack, `TimesPlayed=0`, `EnergyGained=1`, and no BLUDGEON/DEFEND_SILENT auto rows.
+- Release builds against v0.111.1, v0.113.1, and v0.114.0: 0 errors, 7 existing nullable warnings; all three DLLs share SHA-256 `f4129eb1990ac0f14fd91d1d27c648cf81a2287093a77d37dcb82b38cc8ab7c2`.
+
 ## [1.11.0] - 2026-11-28
 
 ### Changed

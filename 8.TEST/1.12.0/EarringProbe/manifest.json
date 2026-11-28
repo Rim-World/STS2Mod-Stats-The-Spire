@@ -1,0 +1,17 @@
+{
+  "id": "sts2_earring_probe_1120",
+  "name": "Stats the Spire Earring Probe 1.12.0",
+  "author": "test",
+  "description": "Test-only directed probe for WhisperingEarring auto-play root attribution.",
+  "version": "1.12.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": true,
+  "min_game_version": "0.114.0",
+  "dependencies": [
+    {
+      "id": "sts2_statsthespire_local",
+      "min_version": "1.12.0"
+    }
+  ]
+}
